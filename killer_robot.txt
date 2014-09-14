@@ -1,0 +1,34 @@
+rnd 100
+swp
+posx
+add
+swp
+seta 0
+setmp
+swp
+memsave
+rnd 100
+swp
+posy
+add
+swp
+memload
+move
+jmpm 19
+jmp 1
+scan
+jmpl 19
+lock
+fire
+rnd 40
+add
+memsave
+lock
+swp
+rnd 40
+add
+swp
+memload
+swp
+fire
+jmp 17

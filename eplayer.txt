@@ -1,0 +1,44 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; simple player robot		;
+; programmed by 	epholl	;
+; modified by 		moergil	;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; pick random target and double fire on it
+scan
+lock
+fire
+fire
+
+; saving X to memory 0
+seta 0
+setmp
+posx
+memsave
+
+; saving Y to memory 1
+incmp
+posy
+memsave
+
+; adding random -5 to 5 value to saved X
+rnd 15
+swp
+decmp
+memload
+add
+memsave
+
+; adding random -5 to 5 value to saved Y
+rnd 15
+swp
+incmp
+memload
+add
+
+; setting X to A and Y to B
+swp
+memload
+
+move ; and moving to new position
+jmp 1 ; repeat forewer

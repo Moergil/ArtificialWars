@@ -1,0 +1,6 @@
+scan
+lock
+fire
+fire
+wait
+jmp 1

@@ -1,0 +1,6 @@
+scan 0
+lock 0
+fire 0
+fire 0
+wait 10
+jmp 1

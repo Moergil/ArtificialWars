@@ -1,0 +1,15 @@
+//obstacle posX posY
+//obstacle leftBorder rightBorder upperBorder lowerBorder
+
+//objective_units leftBorder rightBorder upperBorder lowerBorder ownerPlayer numberOfUnits opt.String "invisible"
+// ^^ whole line message.
+
+//robot red green blue player posX posY instructionFileName
+
+objective_units 0 1000 0 1000 1 0 invisible
+Destroy enemy green robots.
+exterminator 255 128 128 0 200 250 ext1.asm
+robot 255 128 128 0 200 350 player.txt
+robot 100 150 100 1 600 200 killer_robot.txt
+robot 100 150 100 1 600 300 killer_robot.txt
+robot 100 150 100 1 600 400 killer_robot.txt

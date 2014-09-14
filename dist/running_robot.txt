@@ -1,0 +1,11 @@
+rnd 200
+swp 0
+posx 0
+add 0
+swp 0
+posy 0
+swp 0
+move 0
+wait 1
+jmpm 9
+jmp 1

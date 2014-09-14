@@ -1,0 +1,6 @@
+scan
+lock
+fire
+fire
+fire
+jmp 0
