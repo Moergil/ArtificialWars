@@ -4,6 +4,7 @@ LDA #$01
 STA $00
 STA $01
 
+FIBONACCI:
 ; setting value 1 to memory 0x0000 and 0x0001
 LDA $00
 ADC $01
@@ -24,7 +25,7 @@ DEX
 ; if X is not 0, return to beginning
 ; in this scenario every instruction is 2 byte long, so 7*2 bytes backwards
 ; BNE $EF if you need constant for this scenario
-BNE $EF
+BNE FIBONACCI
 
 ; loading result to A
 LDA $02

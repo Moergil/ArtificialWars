@@ -71,6 +71,7 @@ public class InstructionSet
 	public interface MemoryAddressing
 	{
 		int getOperandsBytesSize();
+		String getShortName();
 	}
 	
 	@FunctionalInterface

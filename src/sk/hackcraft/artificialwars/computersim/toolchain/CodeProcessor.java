@@ -10,7 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 
-public abstract class CodeProcessor<SO extends CodeProcessorStateObject>
+public abstract class CodeProcessor<S extends CodeProcessorState>
 {
 	public byte[] process(byte input[]) throws CodeProcessException, IOException
 	{
@@ -22,35 +22,11 @@ public abstract class CodeProcessor<SO extends CodeProcessorStateObject>
 		return outputStream.toByteArray();
 	}
 	
-	public void process(InputStream input, OutputStream output) throws CodeProcessException, IOException
-	{
-		BufferedReader br = new BufferedReader(new InputStreamReader(input));
+	public abstract void process(InputStream input, OutputStream output) throws CodeProcessException, IOException;
 
-		DataOutputStream dataOutput = new DataOutputStream(output);
-
-		SO stateObject = createStateObject();
-		
-		started();
-		
-		int lineNumber = 0;
-		String line;
-		while ((line = br.readLine()) != null)
-		{
-			stateObject.setLineNumber(lineNumber++);
-			process(dataOutput, line, stateObject);
-		}
-		
-		finished(stateObject);
-	}
+	protected abstract S started();
 	
-	protected abstract SO createStateObject();
-	protected abstract void process(DataOutput output, String line, SO stateObject) throws CodeProcessException, IOException;
-	
-	protected void started()
-	{	
-	}
-	
-	protected void finished(SO stateObject)
+	protected void finished(S stateObject)
 	{
 	}
 	

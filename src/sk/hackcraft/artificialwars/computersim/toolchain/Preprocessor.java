@@ -1,15 +1,22 @@
 package sk.hackcraft.artificialwars.computersim.toolchain;
 
+import java.io.BufferedReader;
 import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.CodeProcessException;
+
 // TODO support for constants and macros
-public class Preprocessor extends CodeProcessor<CodeProcessorStateObject>
+public class Preprocessor extends CodeProcessor<CodeProcessorState>
 {
 	public static String exampleMacros1 = ""
 			+ "DEF MACRO test op1 op2"
@@ -33,19 +40,39 @@ public class Preprocessor extends CodeProcessor<CodeProcessorStateObject>
 	}
 	
 	@Override
-	protected CodeProcessorStateObject createStateObject()
-	{
-		return new CodeProcessorStateObject();
-	}
-	
-	@Override
-	protected void started()
+	protected CodeProcessorState started()
 	{
 		System.out.println("Preprocessor started.");
+		
+		return new CodeProcessorState(1);
 	}
 	
 	@Override
-	protected void process(DataOutput output, String line, CodeProcessorStateObject stateObject) throws CodeProcessException, IOException
+	public void process(InputStream input, OutputStream output) throws CodeProcessException, IOException
+	{
+		BufferedReader br = new BufferedReader(new InputStreamReader(input));
+	
+		DataOutputStream dataOutput = new DataOutputStream(output);
+	
+		CodeProcessorState stateObject = started();
+	
+		while (stateObject.getPass() < stateObject.getPasses())
+		{
+			int lineNumber = 0;
+			String line;
+			while ((line = br.readLine()) != null)
+			{
+				stateObject.setLineNumber(lineNumber++);
+				process(dataOutput, line, stateObject);
+			}
+			
+			stateObject.incrementPass();
+		}
+		
+		finished(stateObject);
+	}
+
+	protected void process(DataOutput output, String line, CodeProcessorState stateObject) throws CodeProcessException, IOException
 	{
 		Matcher commentMatcher = lineCommentPattern.matcher(line);
 		
@@ -85,7 +112,7 @@ public class Preprocessor extends CodeProcessor<CodeProcessorStateObject>
 	}
 	
 	@Override
-	protected void finished(CodeProcessorStateObject stateObject)
+	protected void finished(CodeProcessorState stateObject)
 	{
 		System.out.println("Preprocessing finished.");
 		System.out.println("Processed " + stateObject.getLineNumber() + " lines.");

@@ -15,50 +15,7 @@ import sk.hackcraft.artificialwars.computersim.toolchain.Preprocessor;
 
 
 public class Testing
-{
-	// fibonacci
-	public static String fibonacciAssembly = ""
-			+ "; load X to value 10, used in loop\n"
-			+ "LDA $FACE\n"
-			+ "LDX #$0A\n"
-			
-			+ "; setting value 1 to memory 0x0000 and 0x0001\n"
-			+ "LDA #$01\n"
-			+ "STA $00\n"
-			+ "STA $01\n"
-			
-			+ "; algorithm\n"
-			+ "; loading value from 0x0000 to A\n"
-			+ "; adding with value from 0x0001\n"
-			+ "; storing result to 0x0002\n"
-			+ "LDA $00\n"
-			+ "ADC $01\n"
-			+ "STA $02\n"
-			
-			+ "; cleanup\n"
-			+ "; moving values in memory one byte lower\n"
-			+ "; 0x0001 to 0x0000 and 0x0002 to 0x0001\n"
-			+ "LDA $01\n"
-			+ "STA $00\n"
-			+ "LDA $02\n"
-			+ "STA $01\n"
-			
-			+ "; decrementing X\n"
-			+ "DEX\n"
-			
-			+ "; if X is not 0, return to beginning\n"
-			+ "; in this scenario every instruction is 2 byte long, so 7*2 bytes backwards\n"
-			+ "BNE $EF\n"
-			
-			+ "; loading result to A\n"
-			+ "LDA $02";
-		
-	public static String testAssembly = ""
-			+ "LDA #$01\n"
-			+ "STA $00\n"
-			+ "LDA #$00\n"
-			+ "LDA $00";
-		
+{		
 	public static void main(String[] args) throws Exception
 	{
 		/**
@@ -114,7 +71,7 @@ public class Testing
 		Preprocessor preprocessor = new Preprocessor(";");
 		AssemblerTEK1608 assembler = new AssemblerTEK1608();
 		
-		byte assembly[] = Files.readAllBytes(new File("fibonacci.asm").toPath());
+		byte assembly[] = Files.readAllBytes(new File("test.asm").toPath());
 		byte preprocessedAssembly[] = preprocessor.process(assembly);
 		byte objectCode[] = assembler.process(preprocessedAssembly);
 		
