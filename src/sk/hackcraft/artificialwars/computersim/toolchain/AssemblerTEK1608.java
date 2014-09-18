@@ -45,6 +45,7 @@ zpg,Y		....	zeropage, Y-indexed	 	OPC $LL,Y	 	operand is address incremented by 
 	{
 		super(new ProcessorTEK1608().getInstructionSet(), "^([A-Z]{3})$");
 		
+		// TODO modify regexes, so they will be split to parameter extraction and parameter validation parts, because of variables
 		addRegex(TEK1608MemoryAddressing.ACCUMULATOR, "A");
 		addRegex(TEK1608MemoryAddressing.ABSOLUTE, "\\$([0-9A-F]{2})([0-9A-F]{2})");
 		addRegex(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, "\\$([0-9A-F]{2})([0-9A-F]{2}),X");
@@ -69,6 +70,9 @@ zpg,Y		....	zeropage, Y-indexed	 	OPC $LL,Y	 	operand is address incremented by 
 		enableLabels("BVS", TEK1608LabelType.RELATIVE);
 		enableLabels("JMP", TEK1608LabelType.ABSOLUTE);
 		enableLabels("JSR", TEK1608LabelType.ABSOLUTE);
+		
+		addVariableType("BYTE", 1);
+		addVariableType("WORD", 2);
 	}
 	
 	private enum TEK1608LabelType implements LabelType

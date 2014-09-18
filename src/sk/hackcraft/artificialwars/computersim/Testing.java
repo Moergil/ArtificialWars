@@ -90,7 +90,7 @@ public class Testing
 		
 		byte[] memoryArray = memory1.getMemory();
 		
-		System.arraycopy(objectCode, 0, memoryArray, 0x0a, objectCode.length);
+		System.arraycopy(objectCode, 0, memoryArray, 0, objectCode.length);
 		
 		// memory chip 2
 		MemChip1024 memory2 = new MemChip1024();
@@ -115,6 +115,8 @@ public class Testing
 			printMemory(memory1.getMemory(), 32);
 			System.out.println();
 		}
+		
+		System.out.println("End");
 	}
 	
 	private static void printMemory(byte data[], int count)

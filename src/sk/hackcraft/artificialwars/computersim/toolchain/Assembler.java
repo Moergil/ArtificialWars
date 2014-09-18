@@ -1,12 +1,16 @@
 package sk.hackcraft.artificialwars.computersim.toolchain;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -28,8 +32,11 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 	private final Map<MemoryAddressing, Pattern> instructionMemoryAddressingRegexes = new HashMap<>();
 	private final Pattern labelPattern;
 	
+	private final Map<String, Integer> variableTypes = new HashMap<>();
+	
 	private final Map<String, Integer> labels = new HashMap<>();
 	private final Map<String, String> constants = new HashMap<>();
+	private final Map<String, Integer> variables = new HashMap<>();
 	private final List<InstructionRecord> instructions = new LinkedList<>();
 	
 	private final Map<String, LabelType> relativeLabelAddressing = new HashMap<>();
@@ -50,6 +57,11 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 	protected void enableLabels(String instructionName, LabelType type)
 	{
 		relativeLabelAddressing.put(instructionName, type);
+	}
+	
+	protected void addVariableType(String name, int bytesSize)
+	{
+		variableTypes.put(name, bytesSize);
 	}
 
 	@Override
@@ -80,19 +92,59 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		DataOutput dataOutput = new DataOutputStream(output);
 		for (InstructionRecord r : instructions)
 		{
-			processRecord(r, dataOutput, state);
+			processRecord(r, state);
 		}
+		
+		byte offset[];
+		
+		int programStartAddress = state.getProgramStartAddress();
+		byte program[] = state.getProgramBytes();
+		
+		int dataStartAddress = state.getDataStartAddress();
+		byte data[] = state.getDataBytes();
+		
+		offset = new byte[programStartAddress];
+		
+		output.write(offset);
+		output.write(program);
+
+		int programSegmentEnd = offset.length + program.length;
+		if (programSegmentEnd > dataStartAddress)
+		{
+			throw new CodeProcessException(-1, "Segments collision.");
+		}
+		
+		int gap = dataStartAddress - programSegmentEnd;
+		
+		offset = new byte[gap];
+		
+		output.write(offset);
+		output.write(data);
 		
 		finished(state);
 	}
 
-	private void scanLine(String line, AssemblerState state) throws CodeProcessException
+	private void scanLine(String line, AssemblerState state) throws CodeProcessException, IOException
 	{
-		String chunks[] = line.split(" ");
+		Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(line);
+		
+		ArrayList<String> list = new ArrayList<>();
+		while (m.find())
+		{
+			list.add(m.group(1));
+		}
+
+		String chunks[] = new String[list.size()];
+		list.toArray(chunks);
 
 		for (int i = 0; i < chunks.length; i++)
 		{
 			chunks[i] = chunks[i].trim();
+		}
+		
+		if (chunks.length == 0)
+		{
+			return;
 		}
 		
 		// pragmas
@@ -101,8 +153,72 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 			if (chunks[0].equals(".SEG") && chunks[1].equals("PRG"))
 			{
 				int offset = Integer.decode("0x" + chunks[2].substring(1));
-				state.setAddress(offset);
+				state.setProgramStartAddress(offset);
 			}
+			
+			if (chunks[0].equals(".SEG") && chunks[1].equals("DAT"))
+			{
+				int offset = Integer.decode("0x" + chunks[2].substring(1));
+				state.setDataStartAddress(offset);
+			}
+		}
+		
+		// variables
+		if (variableTypes.containsKey(chunks[0]))
+		{
+			int size = variableTypes.get(chunks[0]);
+			byte binaryData[] = new byte[size];
+			
+			String name = chunks[1];
+			String data = (chunks.length > 2) ? chunks[2] : null;
+			
+			if (data != null)
+			{
+				int begin = 0;
+				int end = data.length() - 1;
+				if (data.charAt(begin) == '\"' && data.charAt(end) == '\"')
+				{
+					String string = data.substring(begin + 1, end);
+					binaryData = string.getBytes(StandardCharsets.US_ASCII);
+				}
+				else
+				{
+					String dataChunks[] = data.split(",");
+					
+					for (int i = 0; i < dataChunks.length; i++)
+					{
+						dataChunks[i] = dataChunks[i].trim();
+					}
+					
+					ByteBuffer buf = ByteBuffer.allocate(size * dataChunks.length);
+					
+					for (String dataChunk : dataChunks)
+					{
+						int value = Integer.decode("0x" + dataChunk.substring(1));
+		
+						switch (size)
+						{
+							case 1:
+								buf.put((byte)value);
+								break;
+							case 2:
+								buf.putShort((short)value);
+								break;
+							default:
+								throw new CodeProcessException(state.getLineNumber(), "Incorrect bytes size while writing number value: " + size);
+						}
+					}
+					
+					binaryData = buf.array();
+				}
+			}
+			
+			state.getDataOutput().write(binaryData);
+			
+			variables.put(name, state.getDataAddress());
+			
+			state.addToDataAddress(binaryData.length);
+			return;
 		}
 		
 		// constants definitions
@@ -121,7 +237,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		if (labelMatcher.find())
 		{
 			String name = labelMatcher.group(1);
-			int address = state.getAddress();
+			int address = state.getProgramAddress();
 			
 			labels.put(name, address);
 			
@@ -145,6 +261,13 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 				param = constants.get(param);
 			}
 			
+			// variables
+			// only absolute addressing is supported
+			if (variables.containsKey(param))
+			{
+				param = String.format("$%04X", variables.get(param));
+			}
+			
 			Instruction ins = instructionSet.get(name);
 			
 			MemoryAddressing ma = detectMemoryAddressing(param, ins);
@@ -152,7 +275,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 			String maName = (ma != null) ? ma.getShortName() : "LBL";
 			System.out.printf("I: %s %s%n", name, maName);
 			
-			InstructionRecord record = new InstructionRecord(state.getLineNumber(), state.getAddress(), name, param, ma);
+			InstructionRecord record = new InstructionRecord(state.getLineNumber(), state.getProgramAddress(), name, param, ma);
 			instructions.add(record);
 			
 			int offset = 1;
@@ -169,11 +292,11 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 				throw new CodeProcessException(state.getLineNumber(), "Can't determine instruction length: " + name);
 			}
 
-			state.addToAddress(offset);
+			state.addToProgramAddress(offset);
 		}
 	}
 	
-	private void processRecord(InstructionRecord record, DataOutput output, AssemblerState state) throws CodeProcessException, IOException
+	private void processRecord(InstructionRecord record, AssemblerState state) throws CodeProcessException, IOException
 	{
 		String name = record.getName();
 		
@@ -214,6 +337,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 			throw new CodeProcessException(record.getLine(), "Can't process parameter: " + record.getName() + " " + param + " " + record.getMemoryAddressing());
 		}
 		
+		DataOutput output = state.getProgramOutput();
 		ins.getParser().parse(ins, ma, m, output);
 		
 		System.out.printf("%04X %s --> %02X %s%n", record.getAddress(), record.getName(), ins.getCode(ma), debugParamValue);
@@ -246,32 +370,99 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 	
 	protected static class AssemblerState extends CodeProcessorState
 	{
-		private int address;
+		private int programStartAddress, dataStartAddress;
+		private int programAddress, dataAddress;
+		
+		private ByteArrayOutputStream programOutput, dataOutput;
+		private DataOutputStream programDataOutput, dataDataOutput;
 		
 		public AssemblerState()
 		{
 			super(2);
+			
+			programOutput = new ByteArrayOutputStream();
+			dataOutput = new ByteArrayOutputStream();
+			
+			programDataOutput = new DataOutputStream(programOutput);
+			dataDataOutput = new DataOutputStream(dataOutput);
 		}
 		
-		public void addToAddress(int value)
+		public void setProgramStartAddress(int address)
 		{
-			this.address += value;
+			programStartAddress = address;
+			programAddress = address;
 		}
 		
-		public int getAddress()
+		public int getProgramStartAddress()
 		{
-			return address;
+			return programStartAddress;
 		}
 		
-		public void setAddress(int address)
+		public void setDataStartAddress(int address)
 		{
-			this.address = address;
+			dataStartAddress = address;
+			dataAddress = address;
+		}
+		
+		public int getDataStartAddress()
+		{
+			return dataStartAddress;
+		}
+		
+		public void addToProgramAddress(int value)
+		{
+			this.programAddress += value;
+		}
+		
+		public int getProgramAddress()
+		{
+			return programAddress;
+		}
+		
+		public void setProgramAddress(int address)
+		{
+			this.programAddress = address;
+		}
+		
+		public void addToDataAddress(int value)
+		{
+			this.dataAddress += value;
+		}
+		
+		public int getDataAddress()
+		{
+			return dataAddress;
+		}
+		
+		public void setDataAddress(int dataAddress)
+		{
+			this.dataAddress = dataAddress;
+		}
+		
+		public DataOutput getProgramOutput()
+		{
+			return programDataOutput;
+		}
+		
+		public DataOutput getDataOutput()
+		{
+			return dataDataOutput;
+		}
+		
+		public byte[] getProgramBytes()
+		{
+			return programOutput.toByteArray();
+		}
+		
+		public byte[] getDataBytes()
+		{
+			return dataOutput.toByteArray();
 		}
 		
 		@Override
 		public void reset()
 		{
-			address = 0;
+			programAddress = 0;
 			super.reset();
 		}
 	}
