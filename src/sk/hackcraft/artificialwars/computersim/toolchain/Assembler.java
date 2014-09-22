@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -20,6 +21,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import sk.hackcraft.artificialwars.computersim.Endianness;
+import sk.hackcraft.artificialwars.computersim.Util;
 import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.CodeProcessException;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.Instruction;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.MemoryAddressing;
@@ -27,10 +30,10 @@ import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.MemoryAd
 public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 {
 	private final InstructionSet instructionSet;
+	private final Endianness endianness;
 	
-	private final Pattern instructionNamePattern;
 	private final Map<MemoryAddressing, Pattern> instructionMemoryAddressingRegexes = new HashMap<>();
-	private final Pattern labelPattern;
+	private final Pattern labelCatchPattern;
 	
 	private final Map<String, Integer> variableTypes = new HashMap<>();
 	
@@ -41,17 +44,24 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 	
 	private final Map<String, LabelType> relativeLabelAddressing = new HashMap<>();
 	
-	public Assembler(InstructionSet instructionSet, String instructionNamePattern)
+	public Assembler(InstructionSet instructionSet, Endianness endianness)
 	{
 		this.instructionSet = instructionSet;
-		
-		this.instructionNamePattern = Pattern.compile(instructionNamePattern);
-		this.labelPattern = Pattern.compile("^([A-Z0-9]+):");
+		this.endianness = endianness;
+
+		this.labelCatchPattern = Pattern.compile("^(.+):");
 	}
 
-	protected void addRegex(MemoryAddressing ma, String regex)
+	protected void addMemoryAddressingFormat(MemoryAddressing ma, String memoryAddressingFormat)
 	{
-		instructionMemoryAddressingRegexes.put(ma, Pattern.compile("^" + regex + "$"));
+		String quoted = Pattern.quote(memoryAddressingFormat);
+		
+		String patternText = quoted.replaceAll("([%])", "\\\\E([\\$A-Z][A-Z0-9_]*)\\\\Q");
+		patternText = patternText.replaceAll("\\\\Q\\\\E", "");
+
+		Pattern pattern = Pattern.compile("^" + patternText + "$");
+
+		instructionMemoryAddressingRegexes.put(ma, pattern);
 	}
 	
 	protected void enableLabels(String instructionName, LabelType type)
@@ -72,29 +82,79 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		return new AssemblerState();
 	}
 	
+	private int decodeHexValue(String value)
+	{
+		return Integer.decode("0x" + value.substring(1));
+	}
+	
+	private void decodeHexValue(String value, byte output[])
+	{
+		int binaryValue = decodeHexValue(value);
+		endianness.valueToBytes(binaryValue, output);
+	}
+	
+	private boolean validateHexaValue(String value, int bytesCount)
+	{
+		value = value.substring(1);
+		
+		if (value.length() != bytesCount * 2)
+		{
+			return false;
+		}
+		
+		try
+		{
+			Integer.decode("0x" + value);
+			return true;
+		}
+		catch (NumberFormatException e)
+		{
+			return false;
+		}
+	}
+	
 	@Override
 	public void process(InputStream input, OutputStream output) throws CodeProcessException, IOException
 	{
 		BufferedReader br = new BufferedReader(new InputStreamReader(input));
 
 		AssemblerState state = started();
-	
-		// 1 pass - check labels, constants and decode instructions
-		int lineNumber = 0;
-		String line;
-		while ((line = br.readLine()) != null)
+
+		List<String> lines = readLines(br);
+
+		// 1 pass - find segments, labels, variables and constants
+		// also writes data to data segments
+		System.out.println("=== Pass 1 ===");
+		List<String> parts;
+		for (String line : lines)
 		{
-			state.setLineNumber(lineNumber++);
-			scanLine(line, state);
+			state.incrementLineNumber();
+			
+			parts = splitLine(line);
+			scanIdentifiers(line, parts, state);
 		}
 
-		// 2 pass - insert values, calculate labels and write instructions to output
-		DataOutput dataOutput = new DataOutputStream(output);
+		// 2 pass - find, preprocess and record instructions
+		// puts instructions to records with memory addressing and such
+		System.out.println("=== Pass 2 ===");
+		for (String line : lines)
+		{
+			state.incrementLineNumber();
+			
+			parts = splitLine(line);
+			scanCode(line, parts, state);
+		}
+
+		// 3 pass - insert values, calculate labels and write instructions to output
+		// writes instructions to output, with resolving jump adresses
+		System.out.println("=== Pass 3 ===");
+		state.rewind();
 		for (InstructionRecord r : instructions)
 		{
 			processRecord(r, state);
 		}
 		
+		// write result
 		byte offset[];
 		
 		int programStartAddress = state.getProgramStartAddress();
@@ -124,53 +184,66 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		finished(state);
 	}
 
-	private void scanLine(String line, AssemblerState state) throws CodeProcessException, IOException
+	private List<String> readLines(BufferedReader br) throws IOException
+	{
+		List<String> lines = new ArrayList<>();
+		String line;
+		while ((line = br.readLine()) != null)
+		{
+			lines.add(line);
+		}
+
+		return lines;
+	}
+	
+	private List<String> splitLine(String line)
 	{
 		Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(line);
 		
 		ArrayList<String> list = new ArrayList<>();
 		while (m.find())
 		{
-			list.add(m.group(1));
-		}
-
-		String chunks[] = new String[list.size()];
-		list.toArray(chunks);
-
-		for (int i = 0; i < chunks.length; i++)
-		{
-			chunks[i] = chunks[i].trim();
+			list.add(m.group(1).trim());
 		}
 		
-		if (chunks.length == 0)
+		return list;
+	}
+
+	private void scanIdentifiers(String line, List<String> parts, AssemblerState state) throws CodeProcessException, IOException
+	{
+		// pragmas
+		String firstPart = parts.get(0);
+		if (firstPart.charAt(0) == '.')
 		{
+			if (firstPart.equals(".SEG"))
+			{
+				String segment = parts.get(1);
+				int offset = decodeHexValue(parts.get(2));
+				
+				switch (segment)
+				{
+					case "PRG":
+						System.out.printf("S: PRG -> %04X%n", offset);
+						state.setProgramStartAddress(offset);
+						break;
+					case "DAT":
+						System.out.printf("S: DAT -> %04X%n", offset);
+						state.setDataStartAddress(offset);
+						break;
+				}
+			}
+			
 			return;
 		}
 		
-		// pragmas
-		if (chunks[0].charAt(0) == '.')
-		{
-			if (chunks[0].equals(".SEG") && chunks[1].equals("PRG"))
-			{
-				int offset = Integer.decode("0x" + chunks[2].substring(1));
-				state.setProgramStartAddress(offset);
-			}
-			
-			if (chunks[0].equals(".SEG") && chunks[1].equals("DAT"))
-			{
-				int offset = Integer.decode("0x" + chunks[2].substring(1));
-				state.setDataStartAddress(offset);
-			}
-		}
-		
 		// variables
-		if (variableTypes.containsKey(chunks[0]))
+		if (variableTypes.containsKey(firstPart))
 		{
-			int size = variableTypes.get(chunks[0]);
+			int size = variableTypes.get(firstPart);
 			byte binaryData[] = new byte[size];
 			
-			String name = chunks[1];
-			String data = (chunks.length > 2) ? chunks[2] : null;
+			String name = parts.get(1);
+			String data = (parts.size() > 2) ? parts.get(2) : null;
 			
 			if (data != null)
 			{
@@ -189,7 +262,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 					{
 						dataChunks[i] = dataChunks[i].trim();
 					}
-					
+
 					ByteBuffer buf = ByteBuffer.allocate(size * dataChunks.length);
 					
 					for (String dataChunk : dataChunks)
@@ -215,6 +288,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 			
 			state.getDataOutput().write(binaryData);
 			
+			System.out.printf("V: %s -> %s%n", name, data);
 			variables.put(name, state.getDataAddress());
 			
 			state.addToDataAddress(binaryData.length);
@@ -222,143 +296,202 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		}
 		
 		// constants definitions
-		if (chunks.length == 3)
+		if (parts.size() == 3 && parts.get(1).equals("="))
 		{
-			if (chunks[1].equals("="))
-			{
-				System.out.printf("C: %s -> %s%n", chunks[0], chunks[2]);
-				constants.put(chunks[0], chunks[2]);
-				return;
-			}
-		}
-		
-		// labels
-		Matcher labelMatcher = labelPattern.matcher(chunks[0]);
-		if (labelMatcher.find())
-		{
-			String name = labelMatcher.group(1);
-			int address = state.getProgramAddress();
+			String name = parts.get(0);
+			String value = parts.get(2);
 			
-			labels.put(name, address);
-			
-			System.out.printf("L: %04X %s%n", address, name);
+			System.out.printf("C: %s -> %s%n", name, value);
+			constants.put(name, value);
 			return;
 		}
 		
-		// instructions
-		Matcher instructionMatcher = instructionNamePattern.matcher(chunks[0]);
-		if (instructionMatcher.find())
+		// labels
+		Matcher labelMatcher = labelCatchPattern.matcher(firstPart);
+		if (labelMatcher.find())
 		{
-			String name = instructionMatcher.group(1);
+			String name = labelMatcher.group(1);
 			
-			int operandIndex = 1;
-			String param = (chunks.length > operandIndex) ? chunks[operandIndex] : "";
+			labels.put(name, null);
 			
-			// constants are used as soon as possible
-			// that also means, that constant has to be defined before first use
-			if (constants.containsKey(param))
-			{
-				param = constants.get(param);
-			}
-			
-			// variables
-			// only absolute addressing is supported
-			if (variables.containsKey(param))
-			{
-				param = String.format("$%04X", variables.get(param));
-			}
-			
-			Instruction ins = instructionSet.get(name);
-			
-			MemoryAddressing ma = detectMemoryAddressing(param, ins);
+			System.out.printf("L: %s%n", name);
+			return;
+		}
+	}
+	
+	private void scanCode(String line, List<String> parts, AssemblerState state) throws CodeProcessException, IOException
+	{
+		String name = parts.get(0);
+		
+		// updating label with address
+		Matcher labelMatcher = labelCatchPattern.matcher(parts.get(0));
+		if (labelMatcher.find())
+		{
+			String labelName = labelMatcher.group(1);
+			int address = state.getProgramAddress();
+			labels.put(labelName, address);
+			return;
+		}
 
-			String maName = (ma != null) ? ma.getShortName() : "LBL";
-			System.out.printf("I: %s %s%n", name, maName);
+		Instruction instruction = instructionSet.get(name);
+		
+		if (instruction == null)
+		{
+			return;
+		}
+
+		String param = (parts.size() > 1) ? parts.get(1) : "";
+
+		boolean found = false;
+		for (MemoryAddressing ma : instruction.getMemoryAddressingModes())
+		{
+			Pattern p = instructionMemoryAddressingRegexes.get(ma);
 			
-			InstructionRecord record = new InstructionRecord(state.getLineNumber(), state.getProgramAddress(), name, param, ma);
-			instructions.add(record);
+			Matcher mam = p.matcher(param);
 			
-			int offset = 1;
-			if (ma != null)
+			if (!mam.find())
 			{
-				offset += ma.getOperandsBytesSize();
+				continue;
 			}
-			else if (relativeLabelAddressing.containsKey(name))
+			
+			boolean implicitValue = param.isEmpty();
+
+			String operandValue;
+			if (!implicitValue)
 			{
-				offset += relativeLabelAddressing.get(name).getOperandsBytesSize();
+				operandValue = mam.group(1);
+				
+				boolean finalized = false;
+				
+				String constant = constants.get(operandValue);
+				if (constant != null)
+				{
+					operandValue = constant;
+					finalized = true;
+				}
+				else
+				{
+					Integer variable = variables.get(operandValue);
+					if (variable != null)
+					{
+						operandValue = String.format("$%04X", variable);
+						finalized = true;
+					}
+					else
+					{
+						if (labels.containsKey(operandValue) && relativeLabelAddressing.containsKey(name))
+						{
+							finalized = false;
+						}
+						else
+						{
+							finalized = true;
+						}
+					}
+				}
+				
+				if (finalized)
+				{
+					int bytesCount = ma.getOperandsBytesSize();
+					
+					if (!validateHexaValue(operandValue, bytesCount))
+					{
+						continue;
+					}
+				}
 			}
 			else
 			{
-				throw new CodeProcessException(state.getLineNumber(), "Can't determine instruction length: " + name);
+				operandValue = null;
 			}
+			
+			int lineNumber = state.getLineNumber();
+			int address = state.getProgramAddress();
+			
+			InstructionRecord record = new InstructionRecord(lineNumber, address, instruction, operandValue, ma);
+			instructions.add(record);
 
+			found = true;
+			
+			int offset = 1 + ma.getOperandsBytesSize();
 			state.addToProgramAddress(offset);
+
+			System.out.printf("I: %s %s %s%n", name, ma.getShortName(), operandValue);
+			
+			break;
+		}
+		
+		if (!found)
+		{
+			throw new CodeProcessException(state.getLineNumber(), "Can't process instruction; no suitable memory addressing found for given param: " + param);
 		}
 	}
 	
 	private void processRecord(InstructionRecord record, AssemblerState state) throws CodeProcessException, IOException
-	{
-		String name = record.getName();
-		
-		Matcher nameMatcher = instructionNamePattern.matcher(name);
-		if (!nameMatcher.matches())
-		{
-			throw new CodeProcessException(record.getLine(), "Invalid instruction name: " + name);
-		}
-		
-		String param = record.getParam();
-		
-		Instruction ins = instructionSet.get(name);
+	{		
+		Instruction ins = record.getInstruction();
+				
+		String name = ins.getName();
+		String parameter = record.getOperandRawValue();
 		
 		MemoryAddressing ma = record.getMemoryAddressing();
-		String debugParamValue = param;
-		if (ma == null && relativeLabelAddressing.containsKey(name))
+		
+		byte operandValue[] = new byte[ma.getOperandsBytesSize()];
+
+		if (parameter != null)
 		{
-			if (!labels.containsKey(param))
+			if (constants.containsKey(parameter))
 			{
-				throw new CodeProcessException(record.getLine(), "Trying to use non-existing label: " + param);
+				parameter = constants.get(parameter);
 			}
 			
-			String labelName = param;
-			int address = labels.get(param);
-			
-			LabelType labelType = relativeLabelAddressing.get(name);
-			param = labelType.getOperandValue(address, record.getAddress() + labelType.getOperandsBytesSize() + 1);
-
-			ma = detectMemoryAddressing(param, ins);
-
-			debugParamValue = param + " (" + labelName + ")";
+			if (variables.containsKey(parameter))
+			{
+				endianness.valueToBytes(variables.get(parameter), operandValue);
+			}
+			else if (labels.containsKey(parameter) && relativeLabelAddressing.containsKey(name))
+			{
+				Integer labelValue = labels.get(parameter);
+				if (labelValue == null)
+				{
+					throw new CodeProcessException(record.getLine(), "Label " + parameter + " doesn't exists.");
+				}
+				
+				LabelType labelType = relativeLabelAddressing.get(name);
+				
+				int labelAddress = labelValue.intValue();
+				int programCounterAddress = state.getProgramAddress() + ins.getBytesSize(ma);
+				
+				try
+				{
+					int address = labelType.getOperandValue(labelAddress, programCounterAddress);
+					endianness.valueToBytes(address, operandValue);
+				}
+				catch (IllegalArgumentException e)
+				{
+					throw new CodeProcessException(record.getLine(), e.getMessage());
+				}
+			}
+			else if (parameter.charAt(0) == '$' && validateHexaValue(parameter, ma.getOperandsBytesSize()))
+			{
+				decodeHexValue(parameter.substring(1), operandValue);
+			}
+			else
+			{
+				throw new CodeProcessException(state.getLineNumber(), "Invalid operand value: " + parameter);
+			}
 		}
 		
-		Matcher m = instructionMemoryAddressingRegexes.get(ma).matcher(param);
-		
-		if (!m.find())
-		{
-			throw new CodeProcessException(record.getLine(), "Can't process parameter: " + record.getName() + " " + param + " " + record.getMemoryAddressing());
-		}
+		int offset = 1 + ma.getOperandsBytesSize();
+		state.addToProgramAddress(offset);
 		
 		DataOutput output = state.getProgramOutput();
-		ins.getParser().parse(ins, ma, m, output);
 		
-		System.out.printf("%04X %s --> %02X %s%n", record.getAddress(), record.getName(), ins.getCode(ma), debugParamValue);
-	}
-	
-	private MemoryAddressing detectMemoryAddressing(String param, Instruction ins)
-	{
-		MemoryAddressing matchedMemoryAddressing = null;
-		for (MemoryAddressing ma : ins.getMemoryAddressingModes())
-		{
-			Pattern p = instructionMemoryAddressingRegexes.get(ma);
-			
-			Matcher m = p.matcher(param);
-			if (m.find())
-			{
-				matchedMemoryAddressing = ma;
-				break;
-			}
-		}
+		byte opcode = (byte)ins.getCode(ma);
+		output.write(opcode);
+		output.write(operandValue);
 		
-		return matchedMemoryAddressing;
+		System.out.printf("%04X %s -> %02X %s%n", record.getAddress(), ins.getName(), opcode, Util.byteArrayToString(operandValue));
 	}
 	
 	@Override
@@ -460,10 +593,11 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		}
 		
 		@Override
-		public void reset()
+		public void rewind()
 		{
-			programAddress = 0;
-			super.reset();
+			programAddress = programStartAddress;
+			dataAddress = dataStartAddress;
+			super.rewind();
 		}
 	}
 	
@@ -471,16 +605,16 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 	{
 		private final int line;
 		private final int address;
-		private final String name;
-		private final String param;
+		private final Instruction instruction;
+		private final String operandRawValue;
 		private final MemoryAddressing memoryAddressing;
 
-		public InstructionRecord(int line, int address, String name, String param, MemoryAddressing memoryAddressing)
+		public InstructionRecord(int line, int address, Instruction instruction, String operandRawValue, MemoryAddressing memoryAddressing)
 		{
 			this.line = line;
 			this.address = address;
-			this.name = name;
-			this.param = param;
+			this.instruction = instruction;
+			this.operandRawValue = operandRawValue;
 			this.memoryAddressing = memoryAddressing;
 		}
 		
@@ -494,25 +628,32 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 			return address;
 		}
 		
-		public String getName()
+		public Instruction getInstruction()
 		{
-			return name;
+			return instruction;
 		}
 		
-		public String getParam()
+		public String getOperandRawValue()
 		{
-			return param;
+			return operandRawValue;
 		}
 		
 		public MemoryAddressing getMemoryAddressing()
 		{
 			return memoryAddressing;
 		}
+		
+		@Override
+		public String toString()
+		{
+			String name = instruction.getName();
+			return String.format("%04X %s %s %s", address, name, operandRawValue, memoryAddressing.getShortName());
+		}
 	}
 	
 	protected interface LabelType
 	{
 		int getOperandsBytesSize();
-		String getOperandValue(int labelAddress, int actualPCAddress);
+		int getOperandValue(int labelAddress, int programCounterAddress);
 	}
 }

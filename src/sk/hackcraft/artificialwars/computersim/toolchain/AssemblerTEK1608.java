@@ -2,8 +2,10 @@ package sk.hackcraft.artificialwars.computersim.toolchain;
 
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import sk.hackcraft.artificialwars.computersim.Endianness;
 import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608;
 import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608.TEK1608MemoryAddressing;
 
@@ -43,22 +45,22 @@ zpg,Y		....	zeropage, Y-indexed	 	OPC $LL,Y	 	operand is address incremented by 
 	
 	public AssemblerTEK1608()
 	{
-		super(new ProcessorTEK1608().getInstructionSet(), "^([A-Z]{3})$");
+		super(new ProcessorTEK1608().getInstructionSet(), Endianness.LITTLE);
 		
 		// TODO modify regexes, so they will be split to parameter extraction and parameter validation parts, because of variables
-		addRegex(TEK1608MemoryAddressing.ACCUMULATOR, "A");
-		addRegex(TEK1608MemoryAddressing.ABSOLUTE, "\\$([0-9A-F]{2})([0-9A-F]{2})");
-		addRegex(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, "\\$([0-9A-F]{2})([0-9A-F]{2}),X");
-		addRegex(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, "\\$([0-9A-F]{2})([0-9A-F]{2}),Y");
-		addRegex(TEK1608MemoryAddressing.IMMEDIATE, "#\\$([0-9A-F]{2})");
-		addRegex(TEK1608MemoryAddressing.IMPLIED, "");
-		addRegex(TEK1608MemoryAddressing.INDIRECT, "\\(\\$([0-9A-F]{2})([0-9A-F]{2})\\)");
-		addRegex(TEK1608MemoryAddressing.X_INDEXED_INDIRECT, "\\(\\$([0-9A-F]{2}),X\\)");
-		addRegex(TEK1608MemoryAddressing.INDIRECT_Y_INDEXED, "\\(\\$([0-9A-F]{2})\\),Y");
-		addRegex(TEK1608MemoryAddressing.RELATIVE, "\\$([0-9A-F]{2})");
-		addRegex(TEK1608MemoryAddressing.ZEROPAGE, "\\$([0-9A-F]{2})");
-		addRegex(TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, "\\$([0-9A-F]{2}),X");
-		addRegex(TEK1608MemoryAddressing.ZEROPAGE_Y_INDEXED, "\\$([0-9A-F]{2}),Y");
+		addMemoryAddressingFormat(TEK1608MemoryAddressing.ACCUMULATOR, "A");
+		addMemoryAddressingFormat(TEK1608MemoryAddressing.ABSOLUTE, "%");
+		addMemoryAddressingFormat(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, "%,X");
+		addMemoryAddressingFormat(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, "%,Y");
+		addMemoryAddressingFormat(TEK1608MemoryAddressing.IMMEDIATE, "#%");
+		addMemoryAddressingFormat(TEK1608MemoryAddressing.IMPLIED, "");
+		addMemoryAddressingFormat(TEK1608MemoryAddressing.INDIRECT, "(%)");
+		addMemoryAddressingFormat(TEK1608MemoryAddressing.X_INDEXED_INDIRECT, "(%,X)");
+		addMemoryAddressingFormat(TEK1608MemoryAddressing.INDIRECT_Y_INDEXED, "(%),Y");
+		addMemoryAddressingFormat(TEK1608MemoryAddressing.RELATIVE, "%");
+		addMemoryAddressingFormat(TEK1608MemoryAddressing.ZEROPAGE, "%");
+		addMemoryAddressingFormat(TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, "%,X");
+		addMemoryAddressingFormat(TEK1608MemoryAddressing.ZEROPAGE_Y_INDEXED, "%,Y");
 
 		enableLabels("BCC", TEK1608LabelType.RELATIVE);
 		enableLabels("BCS", TEK1608LabelType.RELATIVE);
@@ -80,7 +82,7 @@ zpg,Y		....	zeropage, Y-indexed	 	OPC $LL,Y	 	operand is address incremented by 
 		RELATIVE(1)
 		{
 			@Override
-			public String getOperandValue(int labelAddress, int actualPCAddress)
+			public int getOperandValue(int labelAddress, int actualPCAddress)
 			{
 				int offset = labelAddress - actualPCAddress;
 				
@@ -89,15 +91,19 @@ zpg,Y		....	zeropage, Y-indexed	 	OPC $LL,Y	 	operand is address incremented by 
 					throw new IllegalArgumentException("Offset size is bigger than <-128, 128> limit.");
 				}
 				
-				return String.format("$%02X", (byte)offset);
+				return offset;
 			}
 		},
 		ABSOLUTE(2)
 		{
 			@Override
-			public String getOperandValue(int labelAddress, int actualPCAddress)
+			public int getOperandValue(int labelAddress, int actualPCAddress)
 			{
-				return String.format("$%04X", labelAddress);
+				if (labelAddress < 0 || labelAddress > 0xFFFF)
+				{
+					throw new IllegalArgumentException("Out of address space: " + labelAddress);
+				}
+				return labelAddress;
 			}
 		};
 		

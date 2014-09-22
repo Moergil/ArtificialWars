@@ -43,14 +43,7 @@ public class InstructionSet
 
 	public Instruction get(String name)
 	{
-		Instruction instruction = instructionsByName.get(name);
-		
-		if (instruction == null)
-		{
-			throw new NoSuchElementException("Instruction " + name + " is not available.");
-		}
-		
-		return instruction;
+		return instructionsByName.get(name);
 	}
 	
 	public String getName(int code)
@@ -65,7 +58,7 @@ public class InstructionSet
 		String getName();
 		Set<MemoryAddressing> getMemoryAddressingModes();
 		boolean hasMemoryAddressing(MemoryAddressing MemoryAddressing);
-		InstructionCompiler getParser();
+		InstructionCompiler getCompiler();
 	}
 	
 	public interface MemoryAddressing
@@ -77,7 +70,7 @@ public class InstructionSet
 	@FunctionalInterface
 	public interface InstructionCompiler
 	{
-		void parse(Instruction ins, MemoryAddressing ma, Matcher m, DataOutput o) throws IOException;
+		void compile(Instruction ins, MemoryAddressing ma, byte operand[], DataOutput output) throws IOException;
 	}
 	
 	private class InstructionRecord implements Instruction
@@ -128,7 +121,7 @@ public class InstructionSet
 		}
 		
 		@Override
-		public InstructionCompiler getParser()
+		public InstructionCompiler getCompiler()
 		{
 			return parser;
 		}

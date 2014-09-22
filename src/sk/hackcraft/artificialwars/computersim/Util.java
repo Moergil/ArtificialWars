@@ -7,8 +7,40 @@ public class Util
 		return value >= fromInc && value < toExc;
 	}
 	
-	public static int byteToUnsignedInt(int b)
+	public static byte[] valueToLittleEndianBytes(int value, byte array[])
 	{
-		return b & 0xff;
+		int to = Math.min(array.length, Integer.BYTES);
+		for (int i = 0; i < to; i++)
+		{
+			array[i] = (byte)value;
+			value >>>= 8;
+		}
+		
+		return array;
+	}
+	
+	public static byte[] valueToBigEndianBytes(int value, byte array[])
+	{
+		int from = Math.min(array.length, Integer.BYTES);
+		for (int i = from - 1; i >= 0; i--)
+		{
+			array[i] = (byte)value;
+			value >>>= 8;
+		}
+		
+		return array;
+	}
+	
+	public static String byteArrayToString(byte array[])
+	{
+		String format = "%02X ";
+		StringBuilder builder = new StringBuilder();
+		
+		for (byte b : array)
+		{
+			builder.append(String.format(format, b));
+		}
+		
+		return builder.toString();
 	}
 }

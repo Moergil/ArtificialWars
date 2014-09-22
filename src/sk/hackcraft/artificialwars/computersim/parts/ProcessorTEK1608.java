@@ -1,5 +1,6 @@
 package sk.hackcraft.artificialwars.computersim.parts;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -569,19 +570,12 @@ public class ProcessorTEK1608 implements Device
 
 	private void setInitialInstruction(String name, int code, TEK1608MemoryAddressing memoryAddressing, OperationCreator creator)
 	{
-		InstructionCompiler parser = (ins, ma, m, o) -> {
-			ins.getCode(ma);
-			o.writeByte(ins.getCode(ma));
-			
-			for (int i = m.groupCount(); i > 0; i--)
-			{
-				String rawOperand = m.group(i);
-				int operand = Integer.decode("0x" + rawOperand);
-				o.writeByte(operand);
-			}
+		InstructionCompiler instructionCompiler = (ins, ma, operand, output) -> {
+			output.writeByte(ins.getCode(ma));
+			output.write(operand);
 		};
 		
-		instructionSet.add(name, code, memoryAddressing, parser);
+		instructionSet.add(name, code, memoryAddressing, instructionCompiler);
 
 		operations[code] = creator.create(memoryAddressing);
 	}
@@ -721,13 +715,13 @@ public class ProcessorTEK1608 implements Device
 	
 	private void setCarryFlagByValue(int value)
 	{
-		value = Util.byteToUnsignedInt(value);
+		value = Byte.toUnsignedInt((byte)value);
 		setFlag(Flag.OVERFLOW, value < 0 || value > 255);
 	}
 	
 	private void setOverflowFlagByValue(int value)
 	{
-		value = Util.byteToUnsignedInt(value);
+		value = Byte.toUnsignedInt((byte)value);
 
 		setFlag(Flag.OVERFLOW, value > 255);
 	}
@@ -908,7 +902,7 @@ public class ProcessorTEK1608 implements Device
 			Operation nextOperation;
 			if (currentOperation instanceof LoadInstruction)
 			{
-				int index = Util.byteToUnsignedInt(ir); 
+				int index = Byte.toUnsignedInt((byte)ir);
 				nextOperation = operations[index];
 				
 				// TODO handle illegal instruction

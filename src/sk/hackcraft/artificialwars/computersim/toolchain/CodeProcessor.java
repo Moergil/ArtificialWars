@@ -45,5 +45,11 @@ public abstract class CodeProcessor<S extends CodeProcessorState>
 		{
 			return lineNumber;
 		}
+		
+		@Override
+		public String getMessage()
+		{
+			return "Line " + lineNumber + ": " + super.getMessage();
+		}
 	}
 }

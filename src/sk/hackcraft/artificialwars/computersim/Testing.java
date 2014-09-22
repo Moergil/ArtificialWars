@@ -71,7 +71,7 @@ public class Testing
 		Preprocessor preprocessor = new Preprocessor(";");
 		AssemblerTEK1608 assembler = new AssemblerTEK1608();
 		
-		byte assembly[] = Files.readAllBytes(new File("test.asm").toPath());
+		byte assembly[] = Files.readAllBytes(new File("fibonacci.asm").toPath());
 		byte preprocessedAssembly[] = preprocessor.process(assembly);
 		byte objectCode[] = assembler.process(preprocessedAssembly);
 		
@@ -105,25 +105,25 @@ public class Testing
 		
 		bus.connectDevice(memory2, memory2Pinout);
 
-		processorProbe.getRegister("PC").setValue("10");
+		processorProbe.getRegister("PC").setValue("0x0200");
 		
 		for (int i = 0; i < 1000; i++)
 		{
 			computer.tick();
 			System.out.println("Cycle " + i);
 			System.out.println(processorProbe);
-			printMemory(memory1.getMemory(), 32);
+			printMemory(memory1.getMemory(), 0, 32);
 			System.out.println();
 		}
 		
 		System.out.println("End");
 	}
 	
-	private static void printMemory(byte data[], int count)
+	private static void printMemory(byte data[], int offset, int len)
 	{
-		for (int i = 0; i < count; i++)
+		for (int i = 0; i < len; i++)
 		{
-			System.out.print((int)(data[i] & 0xff) + " ");
+			System.out.print((int)(data[i + offset] & 0xff) + " ");
 		}
 		System.out.println();
 	}

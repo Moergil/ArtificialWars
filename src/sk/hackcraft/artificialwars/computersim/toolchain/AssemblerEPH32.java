@@ -5,14 +5,15 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import sk.epholl.artificialwars.entities.instructionsets.EPH32InstructionSet.EPH32MemoryAddressing;
+import sk.hackcraft.artificialwars.computersim.Endianness;
 
 public class AssemblerEPH32 extends Assembler
 {
 	public AssemblerEPH32(InstructionSet instructionSet)
 	{
-		super(instructionSet, "^([A-Za-z]{3,})$");
+		super(instructionSet, Endianness.LITTLE);
 		
-		addRegex(EPH32MemoryAddressing.IMPLIED, "");
-		addRegex(EPH32MemoryAddressing.IMMEDIATE, "([0-9]+)");
+		addMemoryAddressingFormat(EPH32MemoryAddressing.IMPLIED, "");
+		addMemoryAddressingFormat(EPH32MemoryAddressing.IMMEDIATE, "%");
 	}
 }

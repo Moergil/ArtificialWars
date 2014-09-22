@@ -6,11 +6,9 @@ public class EPH32InstructionSet extends InstructionSet
 {
 	public EPH32InstructionSet()
 	{
-		InstructionCompiler compiler = (ins, ma, m, o) -> {
-			o.writeInt(ins.getCode(ma));
-			
-			int parameter = (m.groupCount() > 0) ? Integer.decode(m.group(1)) : 0;
-			o.writeInt(parameter);
+		InstructionCompiler compiler = (ins, ma, operandBytes, output) -> {
+			output.writeInt(ins.getCode(ma));
+			output.write(operandBytes);
 		};
 
 		add("wait", 0, EPH32MemoryAddressing.IMPLIED, compiler);

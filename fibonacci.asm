@@ -1,23 +1,34 @@
+.SEG PRG $0200
+.SEG DAT $0300
+
+OP1 = $00
+OP2 = $01
+RES = $02
+
+COUNT = $0A
+
+DISPLAY_ADDR = $0410
+
 ; load X to value 10, used in loop
-LDX #$0A
+LDX #COUNT
 LDA #$01
-STA $00
-STA $01
+STA OP1
+STA OP2
 
 FIBONACCI:
 ; setting value 1 to memory 0x0000 and 0x0001
-LDA $00
-ADC $01
-STA $02
+LDA OP1
+ADC OP2
+STA RES
 
 ; algorithm
 ; loading value from 0x0000 to A
 ; adding with value from 0x0001
 ; storing result to 0x0002
-LDA $01
-STA $00
-LDA $02
-STA $01
+LDA OP2
+STA OP1
+LDA RES
+STA OP2
 
 ; decrementing X
 DEX
@@ -28,9 +39,9 @@ DEX
 BNE FIBONACCI
 
 ; loading result to A
-LDA $02
-STA $0410
+LDA RES
+STA DISPLAY_ADDR
 
 ; infinite loop
-CLC
-BCC $FD
+END:
+JMP END

@@ -12,7 +12,7 @@ public class CodeProcessorState
 		this.pass = 0;
 	}
 	
-	public void reset()
+	public void rewind()
 	{
 		lineNumber = 0;
 	}
