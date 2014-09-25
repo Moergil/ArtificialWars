@@ -1,6 +1,10 @@
+.SEG PRG 0
+.SEG DAT 64
+
+loop:
 scan
 lock
 fire
 fire
 fire
-jmp 0
+jmp loop

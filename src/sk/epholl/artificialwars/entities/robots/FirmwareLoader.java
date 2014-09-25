@@ -30,11 +30,11 @@ public class FirmwareLoader
 			assembler.process(assemblerInput, output);
 			
 			byte objectCode[] = output.toByteArray();
-			robot.loadFirmware(objectCode, 10);
+			robot.loadFirmware(objectCode, 0);
 		}
 		catch (IOException | CodeProcessException e)
 		{
-			throw new ProgrammingException(e.getMessage());
+			throw new ProgrammingException("Can't load firmware:", e);
 		}
 	}
 	
@@ -57,7 +57,7 @@ public class FirmwareLoader
 		}
 		catch (IOException | CodeProcessException e)
 		{
-			throw new ProgrammingException(e.getMessage());
+			throw new ProgrammingException("Can't load firmware:", e);
 		}
 	}
 	
@@ -66,6 +66,11 @@ public class FirmwareLoader
 		public ProgrammingException(String message)
 		{
 			super(message);
+		}
+		
+		public ProgrammingException(String message, Throwable cause)
+		{
+			super(message, cause);
 		}
 	}
 }

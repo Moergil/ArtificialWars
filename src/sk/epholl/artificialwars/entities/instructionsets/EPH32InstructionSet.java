@@ -4,6 +4,19 @@ import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 
 public class EPH32InstructionSet extends InstructionSet
 {
+	private OpcodeCompiler compiler = (opcode, operands, output) -> {
+		output.writeInt(opcode.toInt());
+		
+		if (operands.length == 0)
+		{
+			output.writeInt(0);
+		}
+		else
+		{
+			output.write(operands);
+		}
+	};
+	
 	public EPH32InstructionSet()
 	{
 		add(0, "wait", EPH32MemoryAddressing.IMPLIED);
@@ -33,6 +46,11 @@ public class EPH32InstructionSet extends InstructionSet
 		add(52, "jmpc", EPH32MemoryAddressing.IMMEDIATE);
 		add(53, "jmpm", EPH32MemoryAddressing.IMMEDIATE);
 		add(54, "jmpl", EPH32MemoryAddressing.IMMEDIATE);
+	}
+	
+	private void add(int code, String name, EPH32MemoryAddressing ma)
+	{
+		add(code, name, ma, compiler);
 	}
 
 	@Override

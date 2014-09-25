@@ -1,5 +1,7 @@
 package sk.hackcraft.artificialwars.computersim.toolchain;
 
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -9,12 +11,12 @@ public abstract class InstructionSet
 	private final Map<Integer, Opcode> opcodes = new HashMap<>();
 	private final Map<String, InstructionRecord> instructions = new HashMap<>();
 
-	public void add(int code, Object name, MemoryAddressing memoryAddressing)
+	public void add(int code, Object name, MemoryAddressing memoryAddressing, OpcodeCompiler compiler)
 	{
-		add(code, name.toString(), memoryAddressing);
+		add(code, name.toString(), memoryAddressing, compiler);
 	}
 	
-	public void add(int code, String name, MemoryAddressing memoryAddressing)
+	public void add(int code, String name, MemoryAddressing memoryAddressing, OpcodeCompiler compiler)
 	{
 		if (opcodes.containsKey(code))
 		{
@@ -23,7 +25,7 @@ public abstract class InstructionSet
 		
 		int bytesSize = calculateBytesSize(code, memoryAddressing);
 		
-		Opcode opcode = new OpcodeRecord(code, name.toString(), memoryAddressing, bytesSize);
+		Opcode opcode = new OpcodeRecord(code, name.toString(), memoryAddressing, bytesSize, compiler);
 		
 		InstructionRecord instruction = instructions.get(name);
 		if (instruction == null)
@@ -59,6 +61,14 @@ public abstract class InstructionSet
 		
 		String getInstructionName();
 		MemoryAddressing getMemoryAddressing();
+		
+		void compile(byte operands[], DataOutput output) throws IOException;
+	}
+	
+	@FunctionalInterface
+	public interface OpcodeCompiler
+	{
+		void compile(Opcode opcode, byte data[], DataOutput output) throws IOException;
 	}
 	
 	public interface Instruction
@@ -125,14 +135,16 @@ public abstract class InstructionSet
 		private final MemoryAddressing memoryAddressing;
 		
 		private final int bytesSize;
+		private final OpcodeCompiler compiler;
 		
-		public OpcodeRecord(int opcode, String name, MemoryAddressing memoryAddressing, int bytesSize)
+		public OpcodeRecord(int opcode, String name, MemoryAddressing memoryAddressing, int bytesSize, OpcodeCompiler compiler)
 		{
 			this.opcode = opcode;
 			this.name = name;
 			this.memoryAddressing = memoryAddressing;
 			
 			this.bytesSize = bytesSize;
+			this.compiler = compiler;
 		}
 
 		@Override
@@ -157,6 +169,12 @@ public abstract class InstructionSet
 		public int getBytesSize()
 		{
 			return bytesSize;
+		}
+		
+		@Override
+		public void compile(byte data[], DataOutput output) throws IOException
+		{
+			compiler.compile(this, data, output);
 		}
 		
 		@Override

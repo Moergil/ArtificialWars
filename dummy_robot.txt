@@ -1,0 +1,2 @@
+.SEG PRG 0
+.SEG DAT 64

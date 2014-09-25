@@ -1,3 +1,6 @@
+.SEG PRG 0
+.SEG DAT 256
+
 rnd 200
 swp
 posx

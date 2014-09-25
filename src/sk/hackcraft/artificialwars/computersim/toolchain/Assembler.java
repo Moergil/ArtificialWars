@@ -12,9 +12,11 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,6 +43,8 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 	
 	private final Map<String, LabelType> relativeLabelAddressing = new HashMap<>();
 	
+	private final Set<ValueParser> valueParsers = new HashSet<>();
+	
 	public Assembler(InstructionSet instructionSet, Endianness endianness)
 	{
 		this.instructionSet = instructionSet;
@@ -53,7 +57,8 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 	{
 		String quoted = Pattern.quote(memoryAddressingFormat);
 		
-		String patternText = quoted.replaceAll("([%])", "\\\\E([\\$A-Z][A-Z0-9_]*)\\\\Q");
+		// TODO assembler specific
+		String patternText = quoted.replaceAll("([%])", "\\\\E([\\$A-Za-z0-9_]+)\\\\Q");
 		patternText = patternText.replaceAll("\\\\Q\\\\E", "");
 
 		Pattern pattern = Pattern.compile("^" + patternText + "$");
@@ -70,6 +75,11 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 	{
 		variableTypes.put(name, bytesSize);
 	}
+	
+	protected void addValueParser(ValueParser numberParser)
+	{
+		valueParsers.add(numberParser);
+	}
 
 	@Override
 	protected AssemblerState started()
@@ -79,35 +89,37 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		return new AssemblerState();
 	}
 	
-	private int decodeHexValue(String value)
+	private int parseValue(String value)
 	{
-		return Integer.decode("0x" + value.substring(1));
+		for (ValueParser parser : valueParsers)
+		{
+			if (parser.validate(value))
+			{
+				return parser.parse(value);
+			}
+		}
+		
+		throw new NumberFormatException("Can't parse " + value);
 	}
 	
-	private void decodeHexValue(String value, byte output[])
+	private void decodeValue(String value, byte output[])
 	{
-		int binaryValue = decodeHexValue(value);
+		int binaryValue = parseValue(value);
 		endianness.valueToBytes(binaryValue, output);
 	}
 	
-	private boolean validateHexaValue(String value, int bytesCount)
+	private boolean validateValue(String value, int bytesCount)
 	{
-		value = value.substring(1);
-		
-		if (value.length() != bytesCount * 2)
+		// TODO bytes count
+		for (ValueParser parser : valueParsers)
 		{
-			return false;
+			if (parser.validate(value))
+			{
+				return true;
+			}
 		}
 		
-		try
-		{
-			Integer.decode("0x" + value);
-			return true;
-		}
-		catch (NumberFormatException e)
-		{
-			return false;
-		}
+		return false;
 	}
 	
 	@Override
@@ -215,7 +227,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 			if (firstPart.equals(".SEG"))
 			{
 				String segment = parts.get(1);
-				int offset = decodeHexValue(parts.get(2));
+				int offset = parseValue(parts.get(2));
 				
 				switch (segment)
 				{
@@ -371,7 +383,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 					Integer variable = variables.get(operandValue);
 					if (variable != null)
 					{
-						operandValue = String.format("$%04X", variable);
+						operandValue = Integer.toString(variable);
 						finalized = true;
 					}
 					else
@@ -391,7 +403,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 				{
 					int bytesCount = ma.getOperandsBytesSize();
 					
-					if (!validateHexaValue(operandValue, bytesCount))
+					if (!validateValue(operandValue, bytesCount))
 					{
 						continue;
 					}
@@ -470,9 +482,9 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 					throw new CodeProcessException(record.getLine(), e.getMessage());
 				}
 			}
-			else if (parameter.charAt(0) == '$' && validateHexaValue(parameter, ma.getOperandsBytesSize()))
+			else if (validateValue(parameter, ma.getOperandsBytesSize()))
 			{
-				decodeHexValue(parameter.substring(1), operandValue);
+				decodeValue(parameter, operandValue);
 			}
 			else
 			{
@@ -485,11 +497,9 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		
 		DataOutput output = state.getProgramOutput();
 		
-		byte code = (byte)opcode.toInt();
-		output.write(code);
-		output.write(operandValue);
+		opcode.compile(operandValue, output);
 		
-		System.out.printf("%04X %s -> %02X %s%n", record.getAddress(), opcode.getInstructionName(), code, Util.byteArrayToString(operandValue));
+		System.out.printf("%04X %s -> %02X %s%n", record.getAddress(), opcode.getInstructionName(), opcode.toInt(), Util.byteArrayToString(operandValue));
 	}
 	
 	@Override
@@ -647,5 +657,24 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 	{
 		int getOperandsBytesSize();
 		int getOperandValue(int labelAddress, int programCounterAddress);
+	}
+
+	@FunctionalInterface
+	protected interface ValueParser
+	{
+		default boolean validate(String value)
+		{
+			try
+			{
+				parse(value);
+				return true;
+			}
+			catch (NumberFormatException e)
+			{
+				return false;
+			}
+		}
+		
+		int parse(String value);
 	}
 }

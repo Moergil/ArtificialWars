@@ -278,6 +278,22 @@ public class TEK1608InstructionSet extends InstructionSet
 		add(0x98, Name.TYA, TEK1608MemoryAddressing.IMPLIED);
 	}
 	
+	private void add(int code, Name name, TEK1608MemoryAddressing ma)
+	{
+		OpcodeCompiler compiler = (opcode, data, output) -> {
+			output.writeByte((byte)opcode.toInt());
+			
+			if (data.length != opcode.getMemoryAddressing().getOperandsBytesSize())
+			{
+				throw new IllegalArgumentException("Illegal data length.");
+			}
+			
+			output.write(data);
+		};
+		
+		add(code, name, ma, compiler);
+	}
+	
 	@Override
 	protected int calculateBytesSize(int code, MemoryAddressing memoryAddressing)
 	{

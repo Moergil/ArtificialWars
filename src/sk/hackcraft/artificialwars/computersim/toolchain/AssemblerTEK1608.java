@@ -71,6 +71,17 @@ zpg,Y		....	zeropage, Y-indexed	 	OPC $LL,Y	 	operand is address incremented by 
 		
 		addVariableType("BYTE", 1);
 		addVariableType("WORD", 2);
+		
+		addValueParser((value) -> {
+			if (value.charAt(0) != '$')
+			{
+				throw new NumberFormatException("$ missing.");
+			}
+			
+			value = value.substring(1);
+			
+			return Integer.decode("0x" + value);
+		});
 	}
 	
 	private enum TEK1608LabelType implements LabelType
