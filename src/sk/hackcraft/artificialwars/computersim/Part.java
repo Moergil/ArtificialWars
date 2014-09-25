@@ -2,7 +2,7 @@ package sk.hackcraft.artificialwars.computersim;
 
 public interface Part
 {
-	default String getName() { return "Unknown"; }
+	String getName();
 	
-	default void update() {}
+	void update();
 }

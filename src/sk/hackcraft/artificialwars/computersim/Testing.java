@@ -1,14 +1,12 @@
 package sk.hackcraft.artificialwars.computersim;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 import sk.hackcraft.artificialwars.computersim.parts.BusProbe;
 import sk.hackcraft.artificialwars.computersim.parts.MemChip1024;
 import sk.hackcraft.artificialwars.computersim.parts.ProcessorProbe;
 import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608;
-import sk.hackcraft.artificialwars.computersim.parts.SegmentDisplay4b8;
 import sk.hackcraft.artificialwars.computersim.toolchain.AssemblerTEK1608;
 import sk.hackcraft.artificialwars.computersim.toolchain.Preprocessor;
 
@@ -61,7 +59,7 @@ public class Testing
 		ProcessorTEK1608 processor = new ProcessorTEK1608();
 		computer.addPart(processor);
 		
-		processor.setInstructionListener((pc, opcode) -> System.out.println("INS: " + pc + " " + opcode + " " + processor.getInstructionSet().getName(opcode)));
+		processor.setInstructionListener((pc, opcode) -> System.out.printf("INS: %d %d %s%n", pc, opcode, TEK1608InstructionSet.getInstance().getOpcode(opcode).getInstructionName()));
 		
 		int processorPinout[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25};
 		bus.connectDevice(processor, processorPinout);

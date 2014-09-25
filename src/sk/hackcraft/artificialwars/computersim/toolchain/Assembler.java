@@ -11,21 +11,18 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import sk.hackcraft.artificialwars.computersim.Endianness;
 import sk.hackcraft.artificialwars.computersim.Util;
-import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.CodeProcessException;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.Instruction;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.MemoryAddressing;
+import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.Opcode;
 
 public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 {
@@ -333,7 +330,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 			return;
 		}
 
-		Instruction instruction = instructionSet.get(name);
+		Instruction instruction = instructionSet.getInstruction(name);
 		
 		if (instruction == null)
 		{
@@ -343,7 +340,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		String param = (parts.size() > 1) ? parts.get(1) : "";
 
 		boolean found = false;
-		for (MemoryAddressing ma : instruction.getMemoryAddressingModes())
+		for (MemoryAddressing ma : instruction.getMemoryAddressings())
 		{
 			Pattern p = instructionMemoryAddressingRegexes.get(ma);
 			
@@ -408,7 +405,8 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 			int lineNumber = state.getLineNumber();
 			int address = state.getProgramAddress();
 			
-			InstructionRecord record = new InstructionRecord(lineNumber, address, instruction, operandValue, ma);
+			Opcode opcode = instruction.getOpcode(ma);
+			InstructionRecord record = new InstructionRecord(lineNumber, address, opcode, operandValue);
 			instructions.add(record);
 
 			found = true;
@@ -429,12 +427,12 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 	
 	private void processRecord(InstructionRecord record, AssemblerState state) throws CodeProcessException, IOException
 	{		
-		Instruction ins = record.getInstruction();
+		Opcode opcode = record.getOpcode();
 				
-		String name = ins.getName();
+		String name = opcode.getInstructionName();
 		String parameter = record.getOperandRawValue();
 		
-		MemoryAddressing ma = record.getMemoryAddressing();
+		MemoryAddressing ma = opcode.getMemoryAddressing();
 		
 		byte operandValue[] = new byte[ma.getOperandsBytesSize()];
 
@@ -460,7 +458,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 				LabelType labelType = relativeLabelAddressing.get(name);
 				
 				int labelAddress = labelValue.intValue();
-				int programCounterAddress = state.getProgramAddress() + ins.getBytesSize(ma);
+				int programCounterAddress = state.getProgramAddress() + opcode.getBytesSize();
 				
 				try
 				{
@@ -487,11 +485,11 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		
 		DataOutput output = state.getProgramOutput();
 		
-		byte opcode = (byte)ins.getCode(ma);
-		output.write(opcode);
+		byte code = (byte)opcode.toInt();
+		output.write(code);
 		output.write(operandValue);
 		
-		System.out.printf("%04X %s -> %02X %s%n", record.getAddress(), ins.getName(), opcode, Util.byteArrayToString(operandValue));
+		System.out.printf("%04X %s -> %02X %s%n", record.getAddress(), opcode.getInstructionName(), code, Util.byteArrayToString(operandValue));
 	}
 	
 	@Override
@@ -605,17 +603,15 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 	{
 		private final int line;
 		private final int address;
-		private final Instruction instruction;
+		private final Opcode opcode;
 		private final String operandRawValue;
-		private final MemoryAddressing memoryAddressing;
 
-		public InstructionRecord(int line, int address, Instruction instruction, String operandRawValue, MemoryAddressing memoryAddressing)
+		public InstructionRecord(int line, int address, Opcode opcode, String operandRawValue)
 		{
 			this.line = line;
 			this.address = address;
-			this.instruction = instruction;
+			this.opcode = opcode;
 			this.operandRawValue = operandRawValue;
-			this.memoryAddressing = memoryAddressing;
 		}
 		
 		public int getLine()
@@ -628,9 +624,9 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 			return address;
 		}
 		
-		public Instruction getInstruction()
+		public Opcode getOpcode()
 		{
-			return instruction;
+			return opcode;
 		}
 		
 		public String getOperandRawValue()
@@ -638,16 +634,12 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 			return operandRawValue;
 		}
 		
-		public MemoryAddressing getMemoryAddressing()
-		{
-			return memoryAddressing;
-		}
-		
 		@Override
 		public String toString()
 		{
-			String name = instruction.getName();
-			return String.format("%04X %s %s %s", address, name, operandRawValue, memoryAddressing.getShortName());
+			String name = opcode.getInstructionName();
+			String memoryAddressingShortName = opcode.getMemoryAddressing().getShortName();
+			return String.format("%04X %s %s %s", address, name, operandRawValue, memoryAddressingShortName);
 		}
 	}
 	

@@ -1,11 +1,7 @@
 package sk.hackcraft.artificialwars.computersim.toolchain;
 
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import sk.hackcraft.artificialwars.computersim.Endianness;
+import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet;
 import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608;
 import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608.TEK1608MemoryAddressing;
 
@@ -45,7 +41,7 @@ zpg,Y		....	zeropage, Y-indexed	 	OPC $LL,Y	 	operand is address incremented by 
 	
 	public AssemblerTEK1608()
 	{
-		super(new ProcessorTEK1608().getInstructionSet(), Endianness.LITTLE);
+		super(TEK1608InstructionSet.getInstance(), Endianness.LITTLE);
 		
 		// TODO modify regexes, so they will be split to parameter extraction and parameter validation parts, because of variables
 		addMemoryAddressingFormat(TEK1608MemoryAddressing.ACCUMULATOR, "A");

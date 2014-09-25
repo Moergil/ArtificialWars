@@ -1,13 +1,9 @@
 package sk.hackcraft.artificialwars.computersim.toolchain;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutput;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 
 public abstract class CodeProcessor<S extends CodeProcessorState>

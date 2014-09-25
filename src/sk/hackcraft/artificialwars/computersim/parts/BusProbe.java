@@ -1,7 +1,6 @@
 package sk.hackcraft.artificialwars.computersim.parts;
 
 import sk.hackcraft.artificialwars.computersim.Device;
-import sk.hackcraft.artificialwars.computersim.Part;
 import sk.hackcraft.artificialwars.computersim.PinUtil;
 import sk.hackcraft.artificialwars.computersim.Pins;
 
@@ -22,6 +21,12 @@ public class BusProbe implements Device
 	{
 		this.pinsCount = pinsCount;
 		this.formatter = formatter;
+	}
+	
+	@Override
+	public String getName()
+	{
+		return "BusProbe";
 	}
 	
 	@Override
@@ -57,14 +62,14 @@ public class BusProbe implements Device
 	@Override
 	public void update()
 	{
-		System.out.println(this);
 	}
 	
 	@Override
 	public String toString()
 	{
-		boolean[] values = new boolean[pinsCount];
-		pins.readPins(values);
+		int indexes[] = PinUtil.createSequenceIndexes(0, pinsCount);
+		boolean values[] = new boolean[pinsCount];
+		pins.readPins(indexes, values);
 
 		StringBuilder builder = new StringBuilder();
 		formatter.format(builder, values);

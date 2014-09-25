@@ -8,9 +8,9 @@ import sk.epholl.artificialwars.entities.Doodad;
 import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Projectile;
 import sk.epholl.artificialwars.logic.GameLogic;
-import sk.epholl.artificialwars.main.main;
 import sk.hackcraft.artificialwars.computersim.Bus;
 import sk.hackcraft.artificialwars.computersim.Computer;
+import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet;
 import sk.hackcraft.artificialwars.computersim.parts.BusProbe;
 import sk.hackcraft.artificialwars.computersim.parts.MEXTIOChip;
 import sk.hackcraft.artificialwars.computersim.parts.MemChip1024;
@@ -20,23 +20,18 @@ import sk.hackcraft.artificialwars.computersim.parts.SegmentDisplay4b8;
 
 public class Exterminator extends Entity
 {
-	public static void main(String[] args)
+	public static void main(String[] args) throws Exception
 	{
 		Exterminator e = new Exterminator(Color.BLACK, 0, 10, 15, null, 0);
 		
-		try
-		{
-			FirmwareLoader.loadFirmwareExterminator("ext1.asm", e);
-		}
-		catch (Exception exc)
-		{
-			exc.printStackTrace();
-		}
+		FirmwareLoader.loadFirmwareExterminator("fibonacci.asm", e);
 		
 		for (int i = 0; i < 1000; i++)
 		{
 			e.turn();
 		}
+		
+		System.out.println("end.");
 	}
 	
 	private final Random random;
@@ -51,8 +46,10 @@ public class Exterminator extends Entity
 	private MemChip1024 programMemchip;
 	private MEXTIOChip ioChip;
 	private SegmentDisplay4b8 display;
+	private BusProbe busProbe;
+	private ProcessorProbe procProbe;
 	
-	private final int PROGRAM_OFFSET = 0x0100;
+	private final int PROGRAM_OFFSET = 0x0200;
 	
 	public Exterminator(Color color, int player, int posX, int posY, GameLogic game, long seed)
 	{
@@ -66,7 +63,7 @@ public class Exterminator extends Entity
 		int
 			DATA_RANGE = 8,
 			ADDRESS_RANGE = 16,
-			CONTROL_RANGE = 2,
+			CONTROL_RANGE = 1,
 			CHIP_SELECT_RANGE = 3;
 
 		int
@@ -94,11 +91,10 @@ public class Exterminator extends Entity
 		A13 = 21,
 		A14 = 22,
 		A15 = 23,
-		R = 24,
-		W = 25,
-		CS0 = 26,
-		CS1 = 27,
-		CS2 = 28;
+		RW = 24,
+		CS0 = 25,
+		CS1 = 26,
+		CS2 = 27;
 
 		int busPinsCount = DATA_RANGE + ADDRESS_RANGE + CONTROL_RANGE;
 		int allPinsCount = busPinsCount + CHIP_SELECT_RANGE;
@@ -119,13 +115,9 @@ public class Exterminator extends Entity
 				{
 					builder.append(" A");
 				}
-				else if (i == R)
+				else if (i == RW)
 				{
-					builder.append(" R");
-				}
-				else if (i == W)
-				{
-					builder.append(" W");
+					builder.append(" RW");
 				}
 				else if (i == CS2)
 				{
@@ -136,31 +128,33 @@ public class Exterminator extends Entity
 			}
 		});
 
-		// data(0-7), address(0-15), read, write, chipSelect(0-2)
-		bus.connectDevice(probe, new int[]{D0, D1, D2, D3, D4, D5, D6, D7, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, R, W, CS0, CS1, CS2});
+		// data(0-7), address(0-15), readwrite, chipSelect(0-2)
+		bus.connectDevice(probe, new int[]{D0, D1, D2, D3, D4, D5, D6, D7, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, RW, CS0, CS1, CS2});
 		
 		ProcessorTEK1608 processor = new ProcessorTEK1608();
 		
 		// TODO debug
-		processor.setInstructionListener((pc, opcode) -> System.out.println("INS: " + pc + " " + opcode + " " + processor.getInstructionSet().getName(opcode)));
+		processor.setInstructionListener((pc, opcode) -> System.out.printf("INS: %d %d %s%n", pc, opcode, TEK1608InstructionSet.getInstance().getOpcode(opcode).getInstructionName()));
 		
-		// write, read, address(0-15), data(0-7)
-		bus.connectDevice(processor, new int[]{W, R, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, D0, D1, D2, D3, D4, D5, D6, D7});
+		ProcessorProbe processorProbe = new ProcessorProbe(processor.getRegisterViews());
+		
+		// readwrite, address(0-15), data(0-7)
+		bus.connectDevice(processor, new int[]{RW, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, D0, D1, D2, D3, D4, D5, D6, D7});
 		
 		MemChip1024 memory = new MemChip1024();
 		
-		// read, write, chipSelect, address(0-9), data(0-7)
-		bus.connectDevice(memory, new int[]{R, W, CS0, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, D0, D1, D2, D3, D4, D5, D6, D7});
+		// readwrite, chipSelect, address(0-9), data(0-7)
+		bus.connectDevice(memory, new int[]{RW, CS0, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, D0, D1, D2, D3, D4, D5, D6, D7});
 		
 		MEXTIOChip io = new MEXTIOChip(new Random().nextLong());
 		
-		// data(0-7), address(8-11), read, write, chipSelect
-		bus.connectDevice(io, new int[]{D0, D1, D2, D3, D4, D5, D6, D7, A0, A1, A2, A3, R, W, CS1});
+		// data(0-7), address(8-11), readwrite, chipSelect
+		bus.connectDevice(io, new int[]{D0, D1, D2, D3, D4, D5, D6, D7, A0, A1, A2, A3, RW, CS1});
 		
 		SegmentDisplay4b8 display = new SegmentDisplay4b8();
 		
-		// write, address, data(0-7), chipSelect
-		bus.connectDevice(display, new int[]{W, A0, D0, D1, D2, D3, D4, D5, D6, D7, CS2});
+		// readwrite, address, data(0-7), chipSelect
+		bus.connectDevice(display, new int[]{RW, A0, D0, D1, D2, D3, D4, D5, D6, D7, CS2});
 		
 		Computer computer = new Computer(bus);
 		
@@ -168,20 +162,31 @@ public class Exterminator extends Entity
 		computer.addPart(memory);
 		computer.addPart(io);
 		
-		//computer.addPart(display);
-		//computer.addPart(probe);
+		computer.addPart(display);
+		computer.addPart(probe);
 		
 		this.computer = computer;
 		this.programMemchip = memory;
 		this.ioChip = io;
 		this.display = display;
+		this.busProbe = probe;
+		this.procProbe = processorProbe;
 		
 		processor.setPC(PROGRAM_OFFSET);
 	}
 	
 	public void loadFirmware(byte firmware[])
 	{
-		programMemchip.writeData(firmware, PROGRAM_OFFSET);
+		programMemchip.writeData(firmware, 0);
+	}
+	
+	private static void printMemory(byte data[], int offset, int len)
+	{
+		for (int i = 0; i < len; i++)
+		{
+			System.out.print((int)(data[i + offset] & 0xff) + " ");
+		}
+		System.out.println();
 	}
 	
 	@Override
@@ -189,44 +194,48 @@ public class Exterminator extends Entity
 	{
 		for (int i = 0; i < computerFrequency; i++)
 		{
+			System.out.println(busProbe);
+			System.out.println(procProbe);
+			printMemory(programMemchip.getMemory(), 0, 10);
 			computer.tick();
 		}
 
-		ioChip.setPosX((byte)(getPosX() / 32));
+		// TODO
+		/*ioChip.setPosX((byte)(getPosX() / 32));
 		ioChip.setPosY((byte)(getPosY() / 32));
 		
-		if (ioChip.isSet(MEXTIOChip.Flag.MOVE))
+		if (ioChip.areSet(MEXTIOChip.Flag.MOVE))
 		{
 			setDestination(ioChip.getTargetX() * 32, ioChip.getTargetY() * 32);
 		}
 		
-		if (ioChip.isSet(MEXTIOChip.Flag.LOCK))
+		if (ioChip.areSet(MEXTIOChip.Flag.LOCK))
 		{
 			Entity target = findTarget();
 			
 			ioChip.setEnemyX((byte)(target.getPosX() / 32));
 			ioChip.setEnemyY((byte)(target.getPosY() / 32));
 			
-			ioChip.setFlag(MEXTIOChip.Flag.LOCK, false);
+			ioChip.setFlags(MEXTIOChip.Flag.LOCK, false);
 		}
 
-		ioChip.setFlag(MEXTIOChip.Flag.GUN_READY, isGunReady());
+		ioChip.setFlags(MEXTIOChip.Flag.GUN_READY, isGunReady());
 		
-		if (ioChip.isSet(MEXTIOChip.Flag.SHOT) && isGunReady())
+		if (ioChip.areSet(MEXTIOChip.Flag.SHOT) && isGunReady())
 		{
 			int x = ioChip.getEnemyX() * 32;
 			int y = ioChip.getEnemyY() * 32;
 			fire(x, y);
-			ioChip.setFlag(MEXTIOChip.Flag.SHOT, false);
+			ioChip.setFlags(MEXTIOChip.Flag.SHOT, false);
 			actualGunCooldown = GUN_COOLDOWN_TIME;
-		}
+		}*/
 		
 		if (actualGunCooldown > 0)
 		{
 			actualGunCooldown--;
 		}
 		
-		//System.out.println(display);
+		System.out.println(display);
 	}
 	
 	private boolean isGunReady()

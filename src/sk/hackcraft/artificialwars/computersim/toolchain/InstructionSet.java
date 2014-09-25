@@ -1,64 +1,74 @@
 package sk.hackcraft.artificialwars.computersim.toolchain;
 
-import java.io.DataOutput;
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.regex.Matcher;
 
-public class InstructionSet
+public abstract class InstructionSet
 {
-	private final Map<String, InstructionRecord> instructionsByName = new HashMap<>();
-	private final Map<Integer, String> instructionNames = new HashMap<>();
-	
-	public void add(String name, final int code, MemoryAddressing memoryAddressing, InstructionCompiler compiler)
+	private final Map<Integer, Opcode> opcodes = new HashMap<>();
+	private final Map<String, InstructionRecord> instructions = new HashMap<>();
+
+	public void add(int code, Object name, MemoryAddressing memoryAddressing)
 	{
-		if (instructionNames.containsKey(code))
+		add(code, name.toString(), memoryAddressing);
+	}
+	
+	public void add(int code, String name, MemoryAddressing memoryAddressing)
+	{
+		if (opcodes.containsKey(code))
 		{
 			throw new IllegalArgumentException(String.format("Code %d already used."));
 		}
 		
-		instructionNames.put(code, name);
+		int bytesSize = calculateBytesSize(code, memoryAddressing);
 		
-		if (!instructionsByName.containsKey(name))
+		Opcode opcode = new OpcodeRecord(code, name.toString(), memoryAddressing, bytesSize);
+		
+		InstructionRecord instruction = instructions.get(name);
+		if (instruction == null)
 		{
-			instructionsByName.put(name, new InstructionRecord(name, compiler));
+			instruction = new InstructionRecord(name);
+			instructions.put(name, instruction);
+		}
+		else if (instruction.hasMemoryAddressing(memoryAddressing))
+		{
+			throw new IllegalArgumentException(String.format("Memory addressing %s already defined for instruction %s", memoryAddressing, name));
 		}
 		
-		InstructionRecord instructionRecord = instructionsByName.get(name);
-		
-		if (instructionRecord.hasMemoryAddressing(memoryAddressing))
-		{
-			String addressing = memoryAddressing.toString();
-			int storedCode = instructionRecord.getCode(memoryAddressing);
-			String message = String.format("Memory addressing %s for instruction %s (%d) already defined for code %d.", addressing, name, code, storedCode);
-			throw new IllegalArgumentException(message);
-		}
-		
-		instructionRecord.addCode(memoryAddressing, code);
-	}
-
-	public Instruction get(String name)
-	{
-		return instructionsByName.get(name);
+		opcodes.put(code, opcode);
+		instruction.addOpcode(memoryAddressing, opcode);
 	}
 	
-	public String getName(int code)
+	protected abstract int calculateBytesSize(int code, MemoryAddressing memoryAddressing);
+
+	public Instruction getInstruction(String name)
 	{
-		return instructionNames.get(code);
+		return instructions.get(name);
+	}
+	
+	public Opcode getOpcode(int code)
+	{
+		return opcodes.get(code);
+	}
+	
+	public interface Opcode
+	{
+		int toInt();		
+		int getBytesSize();
+		
+		String getInstructionName();
+		MemoryAddressing getMemoryAddressing();
 	}
 	
 	public interface Instruction
 	{
-		int getCode(MemoryAddressing MemoryAddressing);
-		int getBytesSize(MemoryAddressing MemoryAddressing);
+		Opcode getOpcode(MemoryAddressing memoryAddressing);
 		String getName();
-		Set<MemoryAddressing> getMemoryAddressingModes();
-		boolean hasMemoryAddressing(MemoryAddressing MemoryAddressing);
-		InstructionCompiler getCompiler();
+		
+		boolean hasMemoryAddressing(MemoryAddressing memoryAddressing);
+		
+		Set<MemoryAddressing> getMemoryAddressings();
 	}
 	
 	public interface MemoryAddressing
@@ -67,22 +77,26 @@ public class InstructionSet
 		String getShortName();
 	}
 	
-	@FunctionalInterface
-	public interface InstructionCompiler
+	private static class InstructionRecord implements Instruction
 	{
-		void compile(Instruction ins, MemoryAddressing ma, byte operand[], DataOutput output) throws IOException;
-	}
-	
-	private class InstructionRecord implements Instruction
-	{
-		private final Map<MemoryAddressing, Integer> codes = new HashMap<>();
 		private final String name;
-		private final InstructionCompiler parser;
 		
-		public InstructionRecord(String name, InstructionCompiler parser)
+		private final Map<MemoryAddressing, Opcode> opcodes = new HashMap<>();
+		
+		public InstructionRecord(String name)
 		{
 			this.name = name;
-			this.parser = parser;
+		}
+		
+		public void addOpcode(MemoryAddressing memoryAddressing, Opcode opcode)
+		{
+			this.opcodes.put(memoryAddressing, opcode);
+		}
+		
+		@Override
+		public Opcode getOpcode(MemoryAddressing memoryAddressing)
+		{
+			return opcodes.get(memoryAddressing);
 		}
 
 		@Override
@@ -92,44 +106,63 @@ public class InstructionSet
 		}
 		
 		@Override
-		public Set<MemoryAddressing> getMemoryAddressingModes()
+		public boolean hasMemoryAddressing(MemoryAddressing memoryAddressing)
 		{
-			return codes.keySet();
+			return opcodes.containsKey(memoryAddressing);
 		}
-		
+
 		@Override
-		public int getCode(MemoryAddressing MemoryAddressing)
+		public Set<MemoryAddressing> getMemoryAddressings()
 		{
-			return codes.get(MemoryAddressing);
+			return opcodes.keySet();
 		}
+	}
+	
+	private class OpcodeRecord implements Opcode
+	{
+		private final int opcode;
+		private final String name;
+		private final MemoryAddressing memoryAddressing;
 		
+		private final int bytesSize;
+		
+		public OpcodeRecord(int opcode, String name, MemoryAddressing memoryAddressing, int bytesSize)
+		{
+			this.opcode = opcode;
+			this.name = name;
+			this.memoryAddressing = memoryAddressing;
+			
+			this.bytesSize = bytesSize;
+		}
+
 		@Override
-		public int getBytesSize(MemoryAddressing MemoryAddressing)
+		public int toInt()
 		{
-			return MemoryAddressing.getOperandsBytesSize() + 1;
+			return opcode;
 		}
-		
+
 		@Override
-		public boolean hasMemoryAddressing(MemoryAddressing MemoryAddressing)
+		public String getInstructionName()
 		{
-			return codes.containsKey(MemoryAddressing);
+			return name;
 		}
-		
-		public void addCode(MemoryAddressing MemoryAddressing, int code)
-		{
-			codes.put(MemoryAddressing, code);
-		}
-		
+
 		@Override
-		public InstructionCompiler getCompiler()
+		public MemoryAddressing getMemoryAddressing()
 		{
-			return parser;
+			return memoryAddressing;
+		}
+
+		@Override
+		public int getBytesSize()
+		{
+			return bytesSize;
 		}
 		
 		@Override
 		public String toString()
 		{
-			return name;
+			return String.format("%s %s (%d)", name, memoryAddressing, opcode); 
 		}
 	}
 }

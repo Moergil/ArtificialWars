@@ -4,7 +4,7 @@ public interface Device extends Part
 {
 	default String getPinName(int index)
 	{
-		return "unknown";
+		return "P" + index;
 	}
 	
 	int getPinsCount();

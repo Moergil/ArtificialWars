@@ -7,11 +7,9 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import sk.epholl.artificialwars.entities.instructionsets.EPH32InstructionSet;
-import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608;
 import sk.hackcraft.artificialwars.computersim.toolchain.AssemblerEPH32;
 import sk.hackcraft.artificialwars.computersim.toolchain.AssemblerTEK1608;
 import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.CodeProcessException;
-import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 import sk.hackcraft.artificialwars.computersim.toolchain.Preprocessor;
 
 public class FirmwareLoader

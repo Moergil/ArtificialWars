@@ -51,7 +51,10 @@
 ;;STA $0405
 ;;;; end moving ;;;;
 
+.SEG PRG $0200
+.SEG DAT $0300
+
 LDA #$06	; set SHOT & LOCK flag
 STA $0405	; save to IO
 
-JMP $0100	; repeat
+JMP $0200	; repeat

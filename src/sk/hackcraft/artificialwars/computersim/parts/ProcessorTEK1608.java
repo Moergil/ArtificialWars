@@ -1,6 +1,5 @@
 package sk.hackcraft.artificialwars.computersim.parts;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -12,19 +11,13 @@ import java.util.Set;
 import sk.hackcraft.artificialwars.computersim.Device;
 import sk.hackcraft.artificialwars.computersim.PinUtil;
 import sk.hackcraft.artificialwars.computersim.Pins;
-import sk.hackcraft.artificialwars.computersim.Util;
+import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
-import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.InstructionCompiler;
+import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.MemoryAddressing;
+import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.Opcode;
 
 
 /**
- * <pre>
- * WRITE     0
- * READ    1
- * ADDRESS  2-17
- * DATA     18-25
- * </pre>
- * 
  * LittleEndian (16bit = low byte, high byte)
  * 
  * TODO implement interrupt and bcd, or decide to throw them away
@@ -34,12 +27,13 @@ import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.Instruct
 public class ProcessorTEK1608 implements Device
 {
 	private static final int
-		WRITE_PIN = 0,
-		READ_PIN = 1,
-		ADDRESS_PINS_START = 2,
+		READWRITE_PIN = 0,
+		ADDRESS_PINS_START = READWRITE_PIN + 1,
 		ADDRESS_PINS_COUNT = 16,
 		DATA_PINS_START = ADDRESS_PINS_START + ADDRESS_PINS_COUNT,
 		DATA_PINS_COUNT = 8;
+	
+	private static final Runnable NOP = () -> {};
 	
 	private byte a, x, y, sp = (byte)0xff, sr;
 	private short pc;
@@ -47,24 +41,13 @@ public class ProcessorTEK1608 implements Device
 
 	private int address;
 	
-	private interface Reg
-	{
-		static final int
-			A = 1,
-			X = 2,
-			Y = 4,
-			SP = 8,
-			PC = 16,
-			SR = 32;
-	}
-	
 	private interface Flag
 	{
 		static final int
 			CARRY = 1,
 			ZERO = 2,
 			INTERRUPT = 4,
-			DECIMAL= 8,
+			// DECIMAL MODE NOT SUPPORTED
 			BREAK = 16,
 			// 32 is ignored
 			OVERFLOW = 64,
@@ -151,14 +134,18 @@ public class ProcessorTEK1608 implements Device
 			setter.set(Integer.decode(newValue));
 		}
 	}
-	
+
 	private Map<TEK1608MemoryAddressing, Runnable[]> memoryAddressingSetups = new EnumMap<>(TEK1608MemoryAddressing.class);
 	
 	private Pins pins = Pins.DUMMY;
 	
-	private final boolean[]
-			addressBits = new boolean[ADDRESS_PINS_COUNT],
-			dataBits = new boolean[DATA_PINS_COUNT];
+	private final boolean
+			addressBits[] = new boolean[ADDRESS_PINS_COUNT],
+			dataBits[] = new boolean[DATA_PINS_COUNT];
+	
+	private final int
+		addressIndexes[] = PinUtil.createSequenceIndexes(ADDRESS_PINS_START, ADDRESS_PINS_COUNT),
+		dataIndexes[] = PinUtil.createSequenceIndexes(DATA_PINS_START, DATA_PINS_COUNT);
 
 	private final InstructionSet instructionSet;
 	private final Set<RegisterView> registers = new HashSet<>();
@@ -172,8 +159,6 @@ public class ProcessorTEK1608 implements Device
 	
 	public ProcessorTEK1608()
 	{
-		instructionSet = new InstructionSet();
-		
 		prepareRegisters();
 		
 		setInitialOperandLoader(TEK1608MemoryAddressing.ACCUMULATOR, new Runnable[]{});
@@ -181,46 +166,40 @@ public class ProcessorTEK1608 implements Device
 			() -> {
 				address = readDataBus();
 				setAddressBus(pc - 1);
-				setReadBus(true);
 			},
-			() -> setReadBus(false),
+			NOP,
 			() -> 
 			{
 				address += readDataBus() << 8;
 				setAddressBus(address);
-				setReadBus(true);
 			},
-			() -> setReadBus(false)
+			NOP
 		});
 		setInitialOperandLoader(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, new Runnable[]{
 			() -> {
 				address = readDataBus();
 				setAddressBus(pc - 1);
-				setReadBus(true);
 			},
-			() -> setReadBus(false),
+			NOP,
 			() -> 
 			{
 				address += readDataBus() << 8;
 				setAddressBus(address + x);
-				setReadBus(true);
 			},
-			() -> setReadBus(false)
+			NOP
 		});
 		setInitialOperandLoader(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, new Runnable[]{
 			() -> {
 				address = readDataBus();
 				setAddressBus(pc - 1);
-				setReadBus(true);
 			},
-			() -> setReadBus(false),
+			NOP,
 			() -> 
 			{
 				address += (byte)(x + readDataBus() << 8);
 				setAddressBus(address + x);
-				setReadBus(true);
 			},
-			() -> setReadBus(false)
+			NOP
 		});
 		setInitialOperandLoader(TEK1608MemoryAddressing.IMMEDIATE, new Runnable[]{});
 		setInitialOperandLoader(TEK1608MemoryAddressing.IMPLIED, new Runnable[]{});
@@ -228,127 +207,120 @@ public class ProcessorTEK1608 implements Device
 			() -> {
 				address = readDataBus();
 				setAddressBus(address + x);
-				setReadBus(true);
 			},
 			() -> setAddressBus(address + x + 1),
 			() -> {
 				address = readDataBus();
-				setReadBus(false);
 			},
 			() -> {
 				address = readDataBus() << 8;
 				setAddressBus(address);
-				setReadBus(true);
 			},
-			() -> setReadBus(false)
+			NOP
 		});
 		setInitialOperandLoader(TEK1608MemoryAddressing.INDIRECT_Y_INDEXED, new Runnable[]{
 			() -> {
 				address = readDataBus();
 				setAddressBus(address);
-				setReadBus(true);
 			},
 			() -> setAddressBus(address + 1),
 			() -> {
 				address = readDataBus();
-				setReadBus(false);
 			},
 			() -> {
 				address = readDataBus() << 8;
 				int carry = ((sr & Flag.CARRY) != 0) ? 1 : 0;
 				setAddressBus(address + y + carry);
-				setReadBus(true);
 			},
-			() -> setReadBus(false)
+			NOP
 		});
 		setInitialOperandLoader(TEK1608MemoryAddressing.RELATIVE, new Runnable[]{});
 		setInitialOperandLoader(TEK1608MemoryAddressing.ZEROPAGE, new Runnable[]{
 			() -> {
 				int address = readDataBus();
 				setAddressBus(address);
-				setReadBus(true);
 			},
-			() -> setReadBus(false)
+			NOP
 		});
 		setInitialOperandLoader(TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, new Runnable[]{
 			() -> {
 				int address = readDataBus();
 				setAddressBus(address + x);
-				setReadBus(true);
 			},
-			() -> setReadBus(false)
+			NOP
 		});
 		setInitialOperandLoader(TEK1608MemoryAddressing.ZEROPAGE_Y_INDEXED, new Runnable[]{
 			() -> {
 				int address = readDataBus();
 				setAddressBus(address + y);
-				setReadBus(true);
 			},
-			() -> setReadBus(false)
+			NOP
 		});
 		
 		currentOperation = loadInstruction;
-
+		
+		instructionSet = TEK1608InstructionSet.getInstance();
+		
 		// ADC add with carry
-		setInitialInstruction("ADC", 0x69, TEK1608MemoryAddressing.IMMEDIATE, (ma) -> new ModifyRegisterWithValue(ma, this::add));
-		setInitialInstruction("ADC", 0x65, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyRegisterWithValue(ma, this::add));
-		setInitialInstruction("ADC", 0x75, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new ModifyRegisterWithValue(ma, this::add));
-		setInitialInstruction("ADC", 0x6D, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyRegisterWithValue(ma, this::add));
-		setInitialInstruction("ADC", 0x7D, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, (ma) -> new ModifyRegisterWithValue(ma, this::add));
-		setInitialInstruction("ADC", 0x79, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, (ma) -> new ModifyRegisterWithValue(ma, this::add));
-		setInitialInstruction("ADC", 0x61, TEK1608MemoryAddressing.X_INDEXED_INDIRECT, (ma) -> new ModifyRegisterWithValue(ma, this::add));
-		setInitialInstruction("ADC", 0x71, TEK1608MemoryAddressing.INDIRECT_Y_INDEXED, (ma) -> new ModifyRegisterWithValue(ma, this::add));
+		setInitialInstruction(0x69, (ma) -> new ModifyRegisterWithValue(ma, this::add));
+		setInitialInstruction(0x65, (ma) -> new ModifyRegisterWithValue(ma, this::add));
+		setInitialInstruction(0x75, (ma) -> new ModifyRegisterWithValue(ma, this::add));
+		setInitialInstruction(0x6D, (ma) -> new ModifyRegisterWithValue(ma, this::add));
+		setInitialInstruction(0x7D, (ma) -> new ModifyRegisterWithValue(ma, this::add));
+		setInitialInstruction(0x79, (ma) -> new ModifyRegisterWithValue(ma, this::add));
+		setInitialInstruction(0x61, (ma) -> new ModifyRegisterWithValue(ma, this::add));
+		setInitialInstruction(0x71, (ma) -> new ModifyRegisterWithValue(ma, this::add));
 		
 		// AND logical and
-		setInitialInstruction("AND", 0x29, TEK1608MemoryAddressing.IMMEDIATE, (ma) -> new ModifyRegisterWithValue(ma, this::and));
-		setInitialInstruction("AND", 0x25, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyRegisterWithValue(ma, this::and));
-		setInitialInstruction("AND", 0x35, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new ModifyRegisterWithValue(ma, this::and));
-		setInitialInstruction("AND", 0x2D, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyRegisterWithValue(ma, this::and));
-		setInitialInstruction("AND", 0x3D, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, (ma) -> new ModifyRegisterWithValue(ma, this::and));
-		setInitialInstruction("AND", 0x39, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, (ma) -> new ModifyRegisterWithValue(ma, this::and));
-		setInitialInstruction("AND", 0x21, TEK1608MemoryAddressing.X_INDEXED_INDIRECT, (ma) -> new ModifyRegisterWithValue(ma, this::and));
-		setInitialInstruction("AND", 0x31, TEK1608MemoryAddressing.INDIRECT_Y_INDEXED, (ma) -> new ModifyRegisterWithValue(ma, this::and));
+		setInitialInstruction(0x29, (ma) -> new ModifyRegisterWithValue(ma, this::and));
+		setInitialInstruction(0x25, (ma) -> new ModifyRegisterWithValue(ma, this::and));
+		setInitialInstruction(0x35, (ma) -> new ModifyRegisterWithValue(ma, this::and));
+		setInitialInstruction(0x2D, (ma) -> new ModifyRegisterWithValue(ma, this::and));
+		setInitialInstruction(0x3D, (ma) -> new ModifyRegisterWithValue(ma, this::and));
+		setInitialInstruction(0x39, (ma) -> new ModifyRegisterWithValue(ma, this::and));
+		setInitialInstruction(0x21, (ma) -> new ModifyRegisterWithValue(ma, this::and));
+		setInitialInstruction(0x31, (ma) -> new ModifyRegisterWithValue(ma, this::and));
 		
 		// ASL shift left one bit
-		setInitialInstruction("ASL", 0x0A, TEK1608MemoryAddressing.ACCUMULATOR, (ma) -> new ModifyRegister(this::shiftLeftAccumulator));
-		setInitialInstruction("ASL", 0x06, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyMemory(ma, this::shiftLeft));
-		setInitialInstruction("ASL", 0x16, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new ModifyMemory(ma, this::shiftLeft));
-		setInitialInstruction("ASL", 0x0E, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyMemory(ma, this::shiftLeft));
-		setInitialInstruction("ASL", 0x1E, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, (ma) -> new ModifyMemory(ma, this::shiftLeft));
+		setInitialInstruction(0x0A, (ma) -> new ModifyRegister(this::shiftLeftAccumulator));
+		setInitialInstruction(0x06, (ma) -> new ModifyMemory(ma, this::shiftLeft));
+		setInitialInstruction(0x16, (ma) -> new ModifyMemory(ma, this::shiftLeft));
+		setInitialInstruction(0x0E, (ma) -> new ModifyMemory(ma, this::shiftLeft));
+		setInitialInstruction(0x1E, (ma) -> new ModifyMemory(ma, this::shiftLeft));
 		
 		// BCC branch on carry clear
-		setInitialInstruction("BCC", 0x90, TEK1608MemoryAddressing.RELATIVE, (ma) -> new JumpWhen(Flag.CARRY, false));
+		setInitialInstruction(0x90, (ma) -> new JumpWhen(Flag.CARRY, false));
 		
 		// BCS branch on carry set
-		setInitialInstruction("BCS", 0xB0, TEK1608MemoryAddressing.RELATIVE, (ma) -> new JumpWhen(Flag.CARRY, true));
+		setInitialInstruction(0xB0, (ma) -> new JumpWhen(Flag.CARRY, true));
 		
 		// BEQ branch on result zero
-		setInitialInstruction("BEQ", 0xF0, TEK1608MemoryAddressing.RELATIVE, (ma) -> new JumpWhen(Flag.ZERO, true));
+		setInitialInstruction(0xF0, (ma) -> new JumpWhen(Flag.ZERO, true));
 		
 		// BIT test bits in memory with accumulator TODO
-		setInitialInstruction("BIT", 0x24, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyRegisterWithValue(ma, this::testBits));
-		setInitialInstruction("BIT", 0x2C, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyRegisterWithValue(ma, this::testBits));
+		setInitialInstruction(0x24, (ma) -> new ModifyRegisterWithValue(ma, this::testBits));
+		setInitialInstruction(0x2C, (ma) -> new ModifyRegisterWithValue(ma, this::testBits));
 		
 		// BMI branch on result minus
-		setInitialInstruction("BMI", 0x30, TEK1608MemoryAddressing.RELATIVE, (ma) -> new JumpWhen(Flag.NEGATIVE, true));
+		setInitialInstruction(0x30, (ma) -> new JumpWhen(Flag.NEGATIVE, true));
 		
 		// BNE branch on result not zero
-		setInitialInstruction("BNE", 0xD0, TEK1608MemoryAddressing.RELATIVE, (ma) -> new JumpWhen(Flag.ZERO, false));
+		setInitialInstruction(0xD0, (ma) -> new JumpWhen(Flag.ZERO, false));
 		
 		// BPL branch on result plus
-		setInitialInstruction("BPL", 0x10, TEK1608MemoryAddressing.RELATIVE, (ma) -> new JumpWhen(Flag.NEGATIVE, false));
+		setInitialInstruction(0x10, (ma) -> new JumpWhen(Flag.NEGATIVE, false));
 		
 		// BRK force break TODO
 		//null,
 		
 		// BVC branch on overflow clear
-		setInitialInstruction("BVC", 0x50, TEK1608MemoryAddressing.RELATIVE, (ma) -> new JumpWhen(Flag.OVERFLOW, false));
+		setInitialInstruction(0x50, (ma) -> new JumpWhen(Flag.OVERFLOW, false));
 		
 		// BVS branch on overflow set
-		setInitialInstruction("BVS", 0x70, TEK1608MemoryAddressing.RELATIVE, (ma) -> new JumpWhen(Flag.OVERFLOW, true));
+		setInitialInstruction(0x70, (ma) -> new JumpWhen(Flag.OVERFLOW, true));
 		
 		// CLC clear carry flag
-		setInitialInstruction("CLC", 0x18, TEK1608MemoryAddressing.IMPLIED, (ma) -> new ModifyStatusRegister(Flag.CARRY, false));
+		setInitialInstruction(0x18, (ma) -> new ModifyStatusRegister(Flag.CARRY, false));
 		
 		// CLD clear decimal mode
 		//null,
@@ -357,157 +329,157 @@ public class ProcessorTEK1608 implements Device
 		//null,
 		
 		// CLV clear overflow flag
-		setInitialInstruction("CLV", 0xB8, TEK1608MemoryAddressing.IMPLIED, (ma) -> new ModifyStatusRegister(Flag.OVERFLOW, false));
+		setInitialInstruction(0xB8, (ma) -> new ModifyStatusRegister(Flag.OVERFLOW, false));
 		
 		// CMP compare memory with accumulator
-		setInitialInstruction("CMP", 0xC9, TEK1608MemoryAddressing.IMMEDIATE, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
-		setInitialInstruction("CMP", 0xC5, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
-		setInitialInstruction("CMP", 0xD5, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
-		setInitialInstruction("CMP", 0xCD, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
-		setInitialInstruction("CMP", 0xDD, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
-		setInitialInstruction("CMP", 0xD9, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
-		setInitialInstruction("CMP", 0xC1, TEK1608MemoryAddressing.X_INDEXED_INDIRECT, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
-		setInitialInstruction("CMP", 0xD1, TEK1608MemoryAddressing.INDIRECT_Y_INDEXED, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
+		setInitialInstruction(0xC9, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
+		setInitialInstruction(0xC5, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
+		setInitialInstruction(0xD5, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
+		setInitialInstruction(0xCD, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
+		setInitialInstruction(0xDD, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
+		setInitialInstruction(0xD9, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
+		setInitialInstruction(0xC1, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
+		setInitialInstruction(0xD1, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
 		
 		// CPX compare memory and index X
-		setInitialInstruction("CPX", 0xE0, TEK1608MemoryAddressing.IMMEDIATE, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithX));
-		setInitialInstruction("CPX", 0xE4, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithX));
-		setInitialInstruction("CPX", 0xEC, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithX));
+		setInitialInstruction(0xE0, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithX));
+		setInitialInstruction(0xE4, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithX));
+		setInitialInstruction(0xEC, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithX));
 		
 		// CPY compare memory and index Y
-		setInitialInstruction("CPY", 0xC0, TEK1608MemoryAddressing.IMMEDIATE, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithY));
-		setInitialInstruction("CPY", 0xC4, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithY));
-		setInitialInstruction("CPY", 0xCC, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithY));
+		setInitialInstruction(0xC0, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithY));
+		setInitialInstruction(0xC4, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithY));
+		setInitialInstruction(0xCC, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithY));
 		
 		// DEC decrement memory by one
-		setInitialInstruction("DEC", 0xC6, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyMemory(ma, this::decrement));
-		setInitialInstruction("DEC", 0xD6, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new ModifyMemory(ma, this::decrement));
-		setInitialInstruction("DEC", 0xCE, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyMemory(ma, this::decrement));
-		setInitialInstruction("DEC", 0xDE, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, (ma) -> new ModifyMemory(ma, this::decrement));
+		setInitialInstruction(0xC6, (ma) -> new ModifyMemory(ma, this::decrement));
+		setInitialInstruction(0xD6, (ma) -> new ModifyMemory(ma, this::decrement));
+		setInitialInstruction(0xCE, (ma) -> new ModifyMemory(ma, this::decrement));
+		setInitialInstruction(0xDE, (ma) -> new ModifyMemory(ma, this::decrement));
 		
 		// DEX decrement index X by one
-		setInitialInstruction("DEX", 0xCA, TEK1608MemoryAddressing.IMPLIED, (ma) -> new ModifyRegister(this::decrementX));
+		setInitialInstruction(0xCA, (ma) -> new ModifyRegister(this::decrementX));
 		
 		// DEY decrement index Y by one
-		setInitialInstruction("DEY", 0x88, TEK1608MemoryAddressing.IMPLIED, (ma) -> new ModifyRegister(this::decrementY));
+		setInitialInstruction(0x88, (ma) -> new ModifyRegister(this::decrementY));
 		
 		// EOR xor memory with accumulator
-		setInitialInstruction("EOR", 0x49, TEK1608MemoryAddressing.IMMEDIATE, (ma) -> new ModifyMemory(ma, this::xor));
-		setInitialInstruction("EOR", 0x45, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyMemory(ma, this::xor));
-		setInitialInstruction("EOR", 0x55, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new ModifyMemory(ma, this::xor));
-		setInitialInstruction("EOR", 0x4D, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyMemory(ma, this::xor));
-		setInitialInstruction("EOR", 0x5D, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, (ma) -> new ModifyMemory(ma, this::xor));
-		setInitialInstruction("EOR", 0x59, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, (ma) -> new ModifyMemory(ma, this::xor));
-		setInitialInstruction("EOR", 0x41, TEK1608MemoryAddressing.X_INDEXED_INDIRECT, (ma) -> new ModifyMemory(ma, this::xor));
-		setInitialInstruction("EOR", 0x51, TEK1608MemoryAddressing.INDIRECT_Y_INDEXED, (ma) -> new ModifyMemory(ma, this::xor));
+		setInitialInstruction(0x49, (ma) -> new ModifyMemory(ma, this::xor));
+		setInitialInstruction(0x45, (ma) -> new ModifyMemory(ma, this::xor));
+		setInitialInstruction(0x55, (ma) -> new ModifyMemory(ma, this::xor));
+		setInitialInstruction(0x4D, (ma) -> new ModifyMemory(ma, this::xor));
+		setInitialInstruction(0x5D, (ma) -> new ModifyMemory(ma, this::xor));
+		setInitialInstruction(0x59, (ma) -> new ModifyMemory(ma, this::xor));
+		setInitialInstruction(0x41, (ma) -> new ModifyMemory(ma, this::xor));
+		setInitialInstruction(0x51, (ma) -> new ModifyMemory(ma, this::xor));
 		
 		// INC increment memory by one
-		setInitialInstruction("INC", 0xE6, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyMemory(ma, this::increment));
-		setInitialInstruction("INC", 0xF6, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new ModifyMemory(ma, this::increment));
-		setInitialInstruction("INC", 0xEE, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyMemory(ma, this::increment));
-		setInitialInstruction("INC", 0xFE, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, (ma) -> new ModifyMemory(ma, this::increment));
+		setInitialInstruction(0xE6, (ma) -> new ModifyMemory(ma, this::increment));
+		setInitialInstruction(0xF6, (ma) -> new ModifyMemory(ma, this::increment));
+		setInitialInstruction(0xEE, (ma) -> new ModifyMemory(ma, this::increment));
+		setInitialInstruction(0xFE, (ma) -> new ModifyMemory(ma, this::increment));
 		
 		// INX increment index X by one
-		setInitialInstruction("INX", 0xE8, TEK1608MemoryAddressing.IMPLIED, (ma) -> new ModifyRegister(this::incrementX));
+		setInitialInstruction(0xE8, (ma) -> new ModifyRegister(this::incrementX));
 		
 		// INY increment index Y by one
-		setInitialInstruction("INY", 0xC8, TEK1608MemoryAddressing.IMPLIED, (ma) -> new ModifyRegister(this::incrementY));
+		setInitialInstruction(0xC8, (ma) -> new ModifyRegister(this::incrementY));
 		
 		// JMP jump to setInstruction(0x, new location
-		setInitialInstruction("JMP", 0x4C, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new Jump(TEK1608MemoryAddressing.ABSOLUTE));
-		setInitialInstruction("JMP", 0x6C, TEK1608MemoryAddressing.INDIRECT, (ma) -> new Jump(TEK1608MemoryAddressing.INDIRECT));
+		setInitialInstruction(0x4C, (ma) -> new Jump(TEK1608MemoryAddressing.ABSOLUTE));
+		setInitialInstruction(0x6C, (ma) -> new Jump(TEK1608MemoryAddressing.INDIRECT));
 		
 		// JSR jump to setInstruction(0x, new location saving return address
-		setInitialInstruction("JSR", 0x20, TEK1608MemoryAddressing.IMPLIED, (ma) -> new Call());
+		setInitialInstruction(0x20, (ma) -> new Call());
 		
 		// LDA load accumulator with memory
-		setInitialInstruction("LDA", 0xA9, TEK1608MemoryAddressing.IMMEDIATE, (ma) -> new LoadRegister(ma, this::loadAccumulator));
-		setInitialInstruction("LDA", 0xA5, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new LoadRegister(ma, this::loadAccumulator));
-		setInitialInstruction("LDA", 0xB5, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new LoadRegister(ma, this::loadAccumulator));
-		setInitialInstruction("LDA", 0xAD, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new LoadRegister(ma, this::loadAccumulator));
-		setInitialInstruction("LDA", 0xBD, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, (ma) -> new LoadRegister(ma, this::loadAccumulator));
-		setInitialInstruction("LDA", 0xB9, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, (ma) -> new LoadRegister(ma, this::loadAccumulator));
-		setInitialInstruction("LDA", 0xA1, TEK1608MemoryAddressing.X_INDEXED_INDIRECT, (ma) -> new LoadRegister(ma, this::loadAccumulator));
-		setInitialInstruction("LDA", 0xB1, TEK1608MemoryAddressing.INDIRECT_Y_INDEXED, (ma) -> new LoadRegister(ma, this::loadAccumulator));
+		setInitialInstruction(0xA9, (ma) -> new LoadRegister(ma, this::loadAccumulator));
+		setInitialInstruction(0xA5, (ma) -> new LoadRegister(ma, this::loadAccumulator));
+		setInitialInstruction(0xB5, (ma) -> new LoadRegister(ma, this::loadAccumulator));
+		setInitialInstruction(0xAD, (ma) -> new LoadRegister(ma, this::loadAccumulator));
+		setInitialInstruction(0xBD, (ma) -> new LoadRegister(ma, this::loadAccumulator));
+		setInitialInstruction(0xB9, (ma) -> new LoadRegister(ma, this::loadAccumulator));
+		setInitialInstruction(0xA1, (ma) -> new LoadRegister(ma, this::loadAccumulator));
+		setInitialInstruction(0xB1, (ma) -> new LoadRegister(ma, this::loadAccumulator));
 		
 		// LDX load index X with memory
-		setInitialInstruction("LDX", 0xA2, TEK1608MemoryAddressing.IMMEDIATE, (ma) -> new LoadRegister(ma, this::loadX));
-		setInitialInstruction("LDX", 0xA6, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new LoadRegister(ma, this::loadX));
-		setInitialInstruction("LDX", 0xB6, TEK1608MemoryAddressing.ZEROPAGE_Y_INDEXED, (ma) -> new LoadRegister(ma, this::loadX));
-		setInitialInstruction("LDX", 0xAE, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new LoadRegister(ma, this::loadX));
-		setInitialInstruction("LDX", 0xBE, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, (ma) -> new LoadRegister(ma, this::loadX));
+		setInitialInstruction(0xA2, (ma) -> new LoadRegister(ma, this::loadX));
+		setInitialInstruction(0xA6, (ma) -> new LoadRegister(ma, this::loadX));
+		setInitialInstruction(0xB6, (ma) -> new LoadRegister(ma, this::loadX));
+		setInitialInstruction(0xAE, (ma) -> new LoadRegister(ma, this::loadX));
+		setInitialInstruction(0xBE, (ma) -> new LoadRegister(ma, this::loadX));
 		
 		// LDY load index Y with memory
-		setInitialInstruction("LDY", 0xA0, TEK1608MemoryAddressing.IMMEDIATE, (ma) -> new LoadRegister(ma, this::loadY));
-		setInitialInstruction("LDY", 0xA4, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new LoadRegister(ma, this::loadY));
-		setInitialInstruction("LDY", 0xB4, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new LoadRegister(ma, this::loadY));
-		setInitialInstruction("LDY", 0xAC, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new LoadRegister(ma, this::loadY));
-		setInitialInstruction("LDY", 0xBC, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, (ma) -> new LoadRegister(ma, this::loadY));
+		setInitialInstruction(0xA0, (ma) -> new LoadRegister(ma, this::loadY));
+		setInitialInstruction(0xA4, (ma) -> new LoadRegister(ma, this::loadY));
+		setInitialInstruction(0xB4, (ma) -> new LoadRegister(ma, this::loadY));
+		setInitialInstruction(0xAC, (ma) -> new LoadRegister(ma, this::loadY));
+		setInitialInstruction(0xBC, (ma) -> new LoadRegister(ma, this::loadY));
 		
 		// LSR shift one bit right
-		setInitialInstruction("LSR", 0x4A, TEK1608MemoryAddressing.ACCUMULATOR, (ma) -> new ModifyRegister(this::shiftRightAccumulator));
-		setInitialInstruction("LSR", 0x46, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyMemory(ma, this::shiftRight));
-		setInitialInstruction("LSR", 0x56, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new ModifyMemory(ma, this::shiftRight));
-		setInitialInstruction("LSR", 0x4E, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyMemory(ma, this::shiftRight));
-		setInitialInstruction("LSR", 0x5E, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, (ma) -> new ModifyMemory(ma, this::shiftRight));
+		setInitialInstruction(0x4A, (ma) -> new ModifyRegister(this::shiftRightAccumulator));
+		setInitialInstruction(0x46, (ma) -> new ModifyMemory(ma, this::shiftRight));
+		setInitialInstruction(0x56, (ma) -> new ModifyMemory(ma, this::shiftRight));
+		setInitialInstruction(0x4E, (ma) -> new ModifyMemory(ma, this::shiftRight));
+		setInitialInstruction(0x5E, (ma) -> new ModifyMemory(ma, this::shiftRight));
 		
 		// NOP
-		setInitialInstruction("", 0xEA, TEK1608MemoryAddressing.IMPLIED, (ma) -> new NoOperation());
+		setInitialInstruction(0xEA, (ma) -> new NoOperation());
 		
 		// ORA or memory with accumulator
-		setInitialInstruction("ORA", 0x09, TEK1608MemoryAddressing.IMMEDIATE, (ma) -> new ModifyMemory(ma, this::or));
-		setInitialInstruction("ORA", 0x05, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyMemory(ma, this::or));
-		setInitialInstruction("ORA", 0x15, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new ModifyMemory(ma, this::or));
-		setInitialInstruction("ORA", 0x0D, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyMemory(ma, this::or));
-		setInitialInstruction("ORA", 0x1D, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, (ma) -> new ModifyMemory(ma, this::or));
-		setInitialInstruction("ORA", 0x19, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, (ma) -> new ModifyMemory(ma, this::or));
-		setInitialInstruction("ORA", 0x01, TEK1608MemoryAddressing.X_INDEXED_INDIRECT, (ma) -> new ModifyMemory(ma, this::or));
-		setInitialInstruction("ORA", 0x11, TEK1608MemoryAddressing.INDIRECT_Y_INDEXED, (ma) -> new ModifyMemory(ma, this::or));
+		setInitialInstruction(0x09, (ma) -> new ModifyMemory(ma, this::or));
+		setInitialInstruction(0x05, (ma) -> new ModifyMemory(ma, this::or));
+		setInitialInstruction(0x15, (ma) -> new ModifyMemory(ma, this::or));
+		setInitialInstruction(0x0D, (ma) -> new ModifyMemory(ma, this::or));
+		setInitialInstruction(0x1D, (ma) -> new ModifyMemory(ma, this::or));
+		setInitialInstruction(0x19, (ma) -> new ModifyMemory(ma, this::or));
+		setInitialInstruction(0x01, (ma) -> new ModifyMemory(ma, this::or));
+		setInitialInstruction(0x11, (ma) -> new ModifyMemory(ma, this::or));
 		
 		// PHA push accumulator on stack
-		setInitialInstruction("PHA", 0x48, TEK1608MemoryAddressing.IMPLIED, (ma) -> new Push(() -> a));
+		setInitialInstruction(0x48, (ma) -> new Push(() -> a));
 		
 		// PHP push processor status on stack
-		setInitialInstruction("PHP", 0x08, TEK1608MemoryAddressing.IMPLIED, (ma) -> new Push(() -> sr));
+		setInitialInstruction(0x08, (ma) -> new Push(() -> sr));
 		
 		// PLA pull accumulator from stack
-		setInitialInstruction("PLA", 0x68, TEK1608MemoryAddressing.IMPLIED, (ma) -> new Pop((v) -> a = v));
+		setInitialInstruction(0x68, (ma) -> new Pop((v) -> a = v));
 		
 		// PLP pull processor status from stack
-		setInitialInstruction("PLP", 0x28, TEK1608MemoryAddressing.IMPLIED, (ma) -> new Pop((v) -> sr = v));
+		setInitialInstruction(0x28, (ma) -> new Pop((v) -> sr = v));
 		
 		// ROL rotate one bit left
-		setInitialInstruction("ROL", 0x2A, TEK1608MemoryAddressing.ACCUMULATOR, (ma) -> new ModifyRegister(this::rotateLeftAccumulator));
-		setInitialInstruction("ROL", 0x26, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyMemory(ma, this::rotateLeft));
-		setInitialInstruction("ROL", 0x36, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new ModifyMemory(ma, this::rotateLeft));
-		setInitialInstruction("ROL", 0x2E, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyMemory(ma, this::rotateLeft));
-		setInitialInstruction("ROL", 0x3E, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, (ma) -> new ModifyMemory(ma, this::rotateLeft));
+		setInitialInstruction(0x2A, (ma) -> new ModifyRegister(this::rotateLeftAccumulator));
+		setInitialInstruction(0x26, (ma) -> new ModifyMemory(ma, this::rotateLeft));
+		setInitialInstruction(0x36, (ma) -> new ModifyMemory(ma, this::rotateLeft));
+		setInitialInstruction(0x2E, (ma) -> new ModifyMemory(ma, this::rotateLeft));
+		setInitialInstruction(0x3E, (ma) -> new ModifyMemory(ma, this::rotateLeft));
 		
 		// ROR rotate one bit right
-		setInitialInstruction("ROR", 0x6A, TEK1608MemoryAddressing.ACCUMULATOR, (ma) -> new ModifyRegister(this::rotateRightAccumulator));
-		setInitialInstruction("ROR", 0x66, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyMemory(ma, this::rotateRight));
-		setInitialInstruction("ROR", 0x76, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new ModifyMemory(ma, this::rotateRight));
-		setInitialInstruction("ROR", 0x6E, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyMemory(ma, this::rotateRight));
-		setInitialInstruction("ROR", 0x7E, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, (ma) -> new ModifyMemory(ma, this::rotateRight));
+		setInitialInstruction(0x6A, (ma) -> new ModifyRegister(this::rotateRightAccumulator));
+		setInitialInstruction(0x66, (ma) -> new ModifyMemory(ma, this::rotateRight));
+		setInitialInstruction(0x76, (ma) -> new ModifyMemory(ma, this::rotateRight));
+		setInitialInstruction(0x6E, (ma) -> new ModifyMemory(ma, this::rotateRight));
+		setInitialInstruction(0x7E, (ma) -> new ModifyMemory(ma, this::rotateRight));
 		
 		// RTI return from interrupt
 		//null,
 		
 		// RTS return from subroutine
-		setInitialInstruction("RTS", 0x60, TEK1608MemoryAddressing.IMPLIED, (ma) -> new Return());
+		setInitialInstruction(0x60, (ma) -> new Return());
 		
 		// SBC subtract memory from accumulator with borrow
-		setInitialInstruction("SBC", 0xE9, TEK1608MemoryAddressing.IMMEDIATE, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
-		setInitialInstruction("SBC", 0xE5, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
-		setInitialInstruction("SBC", 0xF5, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
-		setInitialInstruction("SBC", 0xED, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
-		setInitialInstruction("SBC", 0xFD, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X,(ma) -> new ModifyRegisterWithValue(ma,  this::sub));
-		setInitialInstruction("SBC", 0xFA, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
-		setInitialInstruction("SBC", 0xE1, TEK1608MemoryAddressing.X_INDEXED_INDIRECT, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
-		setInitialInstruction("SBC", 0xF1, TEK1608MemoryAddressing.INDIRECT_Y_INDEXED, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
+		setInitialInstruction(0xE9, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
+		setInitialInstruction(0xE5, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
+		setInitialInstruction(0xF5, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
+		setInitialInstruction(0xED, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
+		setInitialInstruction(0xFD, (ma) -> new ModifyRegisterWithValue(ma,  this::sub));
+		setInitialInstruction(0xFA, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
+		setInitialInstruction(0xE1, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
+		setInitialInstruction(0xF1, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
 		
 		// SEC set carry flag
-		setInitialInstruction("SEC", 0x38, TEK1608MemoryAddressing.IMPLIED, (ma) -> new ModifyStatusRegister(Flag.CARRY, true));
+		setInitialInstruction(0x38, (ma) -> new ModifyStatusRegister(Flag.CARRY, true));
 		
 		// SED set decimal flag ***UNSUPPORTED***
 		//null,
@@ -516,41 +488,47 @@ public class ProcessorTEK1608 implements Device
 		//null,
 		
 		// STA store accumulator in memory
-		setInitialInstruction("STA", 0x85, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new StoreRegister(ma, this::storeAccumulator));
-		setInitialInstruction("STA", 0x95, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new StoreRegister(ma, this::storeAccumulator));
-		setInitialInstruction("STA", 0x8D, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new StoreRegister(ma, this::storeAccumulator));
-		setInitialInstruction("STA", 0x9D, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, (ma) -> new StoreRegister(ma, this::storeAccumulator));
-		setInitialInstruction("STA", 0x99, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, (ma) -> new StoreRegister(ma, this::storeAccumulator));
-		setInitialInstruction("STA", 0x81, TEK1608MemoryAddressing.X_INDEXED_INDIRECT, (ma) -> new StoreRegister(ma, this::storeAccumulator));
-		setInitialInstruction("STA", 0x91, TEK1608MemoryAddressing.INDIRECT_Y_INDEXED, (ma) -> new StoreRegister(ma, this::storeAccumulator));
+		setInitialInstruction(0x85, (ma) -> new StoreRegister(ma, this::storeAccumulator));
+		setInitialInstruction(0x95, (ma) -> new StoreRegister(ma, this::storeAccumulator));
+		setInitialInstruction(0x8D, (ma) -> new StoreRegister(ma, this::storeAccumulator));
+		setInitialInstruction(0x9D, (ma) -> new StoreRegister(ma, this::storeAccumulator));
+		setInitialInstruction(0x99, (ma) -> new StoreRegister(ma, this::storeAccumulator));
+		setInitialInstruction(0x81, (ma) -> new StoreRegister(ma, this::storeAccumulator));
+		setInitialInstruction(0x91, (ma) -> new StoreRegister(ma, this::storeAccumulator));
 		
 		// STX store index X in memory
-		setInitialInstruction("STX", 0x86, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new StoreRegister(ma, this::storeX));
-		setInitialInstruction("STX", 0x96, TEK1608MemoryAddressing.ZEROPAGE_Y_INDEXED, (ma) -> new StoreRegister(ma, this::storeX));
-		setInitialInstruction("STX", 0x8E, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new StoreRegister(ma, this::storeX));
+		setInitialInstruction(0x86, (ma) -> new StoreRegister(ma, this::storeX));
+		setInitialInstruction(0x96, (ma) -> new StoreRegister(ma, this::storeX));
+		setInitialInstruction(0x8E, (ma) -> new StoreRegister(ma, this::storeX));
 		
 		// STY store index Y in memory
-		setInitialInstruction("STY", 0x84, TEK1608MemoryAddressing.ZEROPAGE, (ma) -> new StoreRegister(ma, this::storeY));
-		setInitialInstruction("STY", 0x94, TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, (ma) -> new StoreRegister(ma, this::storeY));
-		setInitialInstruction("STY", 0x8C, TEK1608MemoryAddressing.ABSOLUTE, (ma) -> new StoreRegister(ma, this::storeY));
+		setInitialInstruction(0x84, (ma) -> new StoreRegister(ma, this::storeY));
+		setInitialInstruction(0x94, (ma) -> new StoreRegister(ma, this::storeY));
+		setInitialInstruction(0x8C, (ma) -> new StoreRegister(ma, this::storeY));
 		
 		// TAX transfer accumulator to index X
-		setInitialInstruction("TAX", 0xAA, TEK1608MemoryAddressing.IMPLIED, (ma) -> new TransferRegister(() -> x = a));
+		setInitialInstruction(0xAA, (ma) -> new TransferRegister(() -> x = a));
 		
 		// TAY transfer accumulator to index Y
-		setInitialInstruction("TAY", 0xA8, TEK1608MemoryAddressing.IMPLIED, (ma) -> new TransferRegister(() -> y = a));
+		setInitialInstruction(0xA8, (ma) -> new TransferRegister(() -> y = a));
 		
 		// TSX transfer stack register to index X
-		setInitialInstruction("TSX", 0xBA, TEK1608MemoryAddressing.IMPLIED, (ma) -> new TransferRegister(() -> x = sp));
+		setInitialInstruction(0xBA, (ma) -> new TransferRegister(() -> x = sp));
 		
 		// TXA transfer index X to accumulator
-		setInitialInstruction("TXA", 0x8A, TEK1608MemoryAddressing.IMPLIED, (ma) -> new TransferRegister(() -> a = x));
+		setInitialInstruction(0x8A, (ma) -> new TransferRegister(() -> a = x));
 		
 		// TXS transfer index X to stack register
-		setInitialInstruction("TXS", 0x9A, TEK1608MemoryAddressing.IMPLIED, (ma) -> new TransferRegister(() -> sp = x));
+		setInitialInstruction(0x9A, (ma) -> new TransferRegister(() -> sp = x));
 		
 		// TYA transfer index Y to accumulator
-		setInitialInstruction("TYA", 0x98, TEK1608MemoryAddressing.IMPLIED, (ma) -> new TransferRegister(() -> a = y));
+		setInitialInstruction(0x98, (ma) -> new TransferRegister(() -> a = y));
+	}
+	
+	@Override
+	public String getName()
+	{
+		return "Processor TEK1608";
 	}
 	
 	public void setInstructionListener(InstructionListener instructionListener)
@@ -568,33 +546,22 @@ public class ProcessorTEK1608 implements Device
 		registers.add(new RegisterViewControl("SR", Byte.BYTES, (v) -> sr = (byte)v, () -> sr));
 	}
 
-	private void setInitialInstruction(String name, int code, TEK1608MemoryAddressing memoryAddressing, OperationCreator creator)
+	private void setInitialInstruction(int code, OperationCreator creator)
 	{
-		InstructionCompiler instructionCompiler = (ins, ma, operand, output) -> {
-			output.writeByte(ins.getCode(ma));
-			output.write(operand);
-		};
+		Opcode opcode = instructionSet.getOpcode(code);
+		MemoryAddressing memoryAddressing = opcode.getMemoryAddressing();
 		
-		instructionSet.add(name, code, memoryAddressing, instructionCompiler);
-
 		operations[code] = creator.create(memoryAddressing);
 	}
 	
 	private interface OperationCreator
 	{
-		Operation create(TEK1608MemoryAddressing ma);
+		Operation create(MemoryAddressing ma);
 	}
 	
 	private void setInitialOperandLoader(TEK1608MemoryAddressing memoryAddressing, Runnable[] steps)
 	{
 		memoryAddressingSetups.put(memoryAddressing, steps);
-	}
-	
-	// TODO extract instruction set
-	@Deprecated
-	public InstructionSet getInstructionSet()
-	{
-		return instructionSet;
 	}
 	
 	public Set<RegisterView> getRegisterViews()
@@ -897,7 +864,7 @@ public class ProcessorTEK1608 implements Device
 	
 	private void tick()
 	{
-		if (currentOperation.isAlmostFinished())
+		if (currentOperation.isMemoryFinished())
 		{
 			Operation nextOperation;
 			if (currentOperation instanceof LoadInstruction)
@@ -950,15 +917,13 @@ public class ProcessorTEK1608 implements Device
 	private void setAddressBus(int address)
 	{
 		PinUtil.codeValue(address, addressBits);
-		
-		pins.setPins(addressBits, ADDRESS_PINS_START, addressBits.length);
+		pins.setPins(addressIndexes, addressBits);
 	}
 	
 	private void setDataBus(byte data)
 	{
 		PinUtil.codeValue(data, dataBits);
-		
-		pins.setPins(dataBits, DATA_PINS_START, dataBits.length);
+		pins.setPins(dataIndexes, dataBits);
 	}
 	
 	private void clearDataBus()
@@ -968,19 +933,13 @@ public class ProcessorTEK1608 implements Device
 	
 	private byte readDataBus()
 	{
-		pins.readPins(dataBits, DATA_PINS_START, dataBits.length);
-		
+		pins.readPins(dataIndexes, dataBits);
 		return (byte)PinUtil.decodeValue(dataBits);
 	}
 
-	private void setWriteBus(boolean write)
+	private void setWrite(boolean value)
 	{
-		pins.setPin(WRITE_PIN, write);
-	}
-	
-	private void setReadBus(boolean read)
-	{
-		pins.setPin(READ_PIN, read);
+		pins.setPin(READWRITE_PIN, value);
 	}
 	
 	private interface Operation extends Runnable
@@ -989,7 +948,7 @@ public class ProcessorTEK1608 implements Device
 		
 		void prepare();
 		
-		boolean isAlmostFinished();
+		boolean isMemoryFinished();
 		boolean isFinished();
 	}
 	
@@ -1005,7 +964,7 @@ public class ProcessorTEK1608 implements Device
 		
 		private int step = 0, offset = 0;
 		
-		public AbstractOperation(TEK1608MemoryAddressing memoryAddressing)
+		public AbstractOperation(MemoryAddressing memoryAddressing)
 		{
 			this.bytesSize = memoryAddressing.getOperandsBytesSize() + 1;
 			
@@ -1019,7 +978,6 @@ public class ProcessorTEK1608 implements Device
 			steps = addressSteps.length + executionSteps.length;
 			
 			prepareActiveSteps();
-			
 		}
 
 		public int getBytesSize()
@@ -1068,7 +1026,7 @@ public class ProcessorTEK1608 implements Device
 			activeSteps[step - offset].run();
 		}
 		
-		public boolean isAlmostFinished()
+		public boolean isMemoryFinished()
 		{
 			return step >= steps - 1;
 		}
@@ -1108,16 +1066,14 @@ public class ProcessorTEK1608 implements Device
 		private Runnable[] steps = {
 			() -> {
 				setAddressBus(pc);
-				setReadBus(true);
 			},
 			() -> {
 				setAddressBus(pc + 1);
 			},
 			() -> {
 				ir = readDataBus();
-				setReadBus(false);
 			},
-			() -> {}
+			NOP
 		};
 		
 		@Override
@@ -1139,7 +1095,7 @@ public class ProcessorTEK1608 implements Device
 		}
 
 		@Override
-		public boolean isAlmostFinished()
+		public boolean isMemoryFinished()
 		{
 			return step >= steps.length - 1;
 		}
@@ -1155,7 +1111,7 @@ public class ProcessorTEK1608 implements Device
 	{
 		private final RegisterValueSetter setter;
 		
-		public LoadRegister(TEK1608MemoryAddressing memoryAddressing, RegisterValueSetter setter)
+		public LoadRegister(MemoryAddressing memoryAddressing, RegisterValueSetter setter)
 		{
 			super(memoryAddressing);
 			this.setter = setter;
@@ -1178,7 +1134,7 @@ public class ProcessorTEK1608 implements Device
 	{		
 		private final RegisterValueGetter getter;
 		
-		public StoreRegister(TEK1608MemoryAddressing memoryAddressing, RegisterValueGetter getter)
+		public StoreRegister(MemoryAddressing memoryAddressing, RegisterValueGetter getter)
 		{
 			super(memoryAddressing);
 			this.getter = getter;
@@ -1190,10 +1146,11 @@ public class ProcessorTEK1608 implements Device
 			b
 			.add(() -> {
 				setDataBus(getter.get());
-				setWriteBus(true);
+				setWrite(true);
 			})
+			.add(NOP)
 			.add(() -> {
-				setWriteBus(false);
+				setWrite(false);
 				clearDataBus();
 			});
 		}
@@ -1222,7 +1179,7 @@ public class ProcessorTEK1608 implements Device
 		}
 
 		@Override
-		public boolean isAlmostFinished()
+		public boolean isMemoryFinished()
 		{
 			return true;
 		}
@@ -1307,7 +1264,7 @@ public class ProcessorTEK1608 implements Device
 	{
 		private final RegisterModifier modifier;
 		
-		public ModifyRegisterWithValue(TEK1608MemoryAddressing memoryAddressing, RegisterModifier modifier)
+		public ModifyRegisterWithValue(MemoryAddressing memoryAddressing, RegisterModifier modifier)
 		{
 			super(memoryAddressing);
 			this.modifier = modifier;
@@ -1330,7 +1287,7 @@ public class ProcessorTEK1608 implements Device
 	{
 		private final MemoryModifier modifier;
 		
-		public ModifyMemory(TEK1608MemoryAddressing memoryAddressing, MemoryModifier modifier)
+		public ModifyMemory(MemoryAddressing memoryAddressing, MemoryModifier modifier)
 		{
 			super(memoryAddressing);
 			this.modifier = modifier;
@@ -1344,10 +1301,11 @@ public class ProcessorTEK1608 implements Device
 				byte value = readDataBus();
 				value = modifier.modify(value);
 				setDataBus(value);
-				setWriteBus(true);
+				setWrite(true);
 			})
+			.add(NOP)
 			.add(() -> {
-				setWriteBus(false);
+				setWrite(false);
 				clearDataBus();
 			});
 		}
@@ -1394,7 +1352,7 @@ public class ProcessorTEK1608 implements Device
 		}
 
 		@Override
-		public boolean isAlmostFinished()
+		public boolean isMemoryFinished()
 		{
 			return true;
 		}
@@ -1413,7 +1371,7 @@ public class ProcessorTEK1608 implements Device
 		public Jump(TEK1608MemoryAddressing memoryAddressing)
 		{
 			this.bytesSize = memoryAddressing.getOperandsBytesSize() + 1;
-			
+
 			switch (memoryAddressing)
 			{
 				case ABSOLUTE:
@@ -1421,9 +1379,8 @@ public class ProcessorTEK1608 implements Device
 						() -> {
 							address = readDataBus();
 							setAddressBus(pc - 1);
-							setReadBus(true);
 						},
-						() -> setReadBus(false),
+						NOP,
 						() -> {
 							address |= readDataBus() << 8;
 							pc = (short)address;
@@ -1435,18 +1392,15 @@ public class ProcessorTEK1608 implements Device
 						() -> {
 							indirectAddress = readDataBus();
 							setAddressBus(pc - 1);
-							setReadBus(true);
 						},
-						() -> setReadBus(false),
+						NOP,
 						() -> {
 							indirectAddress |= readDataBus() << 8;
 							setAddressBus(indirectAddress);
-							setReadBus(true);
 						},
 						() -> setAddressBus(indirectAddress + 1),
 						() -> {
 							address = readDataBus();
-							setReadBus(false);
 						},
 						() -> {
 							address |= readDataBus() << 8;
@@ -1478,7 +1432,7 @@ public class ProcessorTEK1608 implements Device
 		}
 
 		@Override
-		public boolean isAlmostFinished()
+		public boolean isMemoryFinished()
 		{
 			return isFinished();
 		}
@@ -1513,10 +1467,11 @@ public class ProcessorTEK1608 implements Device
 			.add(() -> {
 				setAddressBus(sp--);
 				setDataBus(getter.get());
-				setWriteBus(true);
+				setWrite(true);
 			})
+			.add(NOP)
 			.add(() -> {
-				setWriteBus(false);
+				setWrite(false);
 				clearDataBus();
 			});
 		}
@@ -1538,9 +1493,8 @@ public class ProcessorTEK1608 implements Device
 			b
 			.add(() -> {
 				setAddressBus(sp++);
-				setReadBus(true);
 			})
-			.add(() -> setReadBus(false))
+			.add(NOP)
 			.add(() -> setter.set(readDataBus()));
 		}
 	}
@@ -1562,24 +1516,25 @@ public class ProcessorTEK1608 implements Device
 				address = readDataBus();
 				setAddressBus(pc - 1);
 			})
-			.add(() -> setReadBus(false))
+			.add(NOP)
 			.add(() -> {
 				address |= readDataBus() << 8;
 				
 				setAddressBus(sp--);
 				setDataBus((byte)pc);
-				setWriteBus(true);
+				setWrite(true);
 			})
+			.add(NOP)
 			.add(() -> {
 				setAddressBus(sp--);
 				setDataBus((byte)(pc >>= 8));
 			})
 			.add(() -> {
-				setWriteBus(false);
+				setWrite(false);
 				clearDataBus();
 				pc = (short)address;
 			})
-			.add(() -> {});
+			.add(NOP);
 		}
 	}
 	
@@ -1596,17 +1551,15 @@ public class ProcessorTEK1608 implements Device
 			b
 			.add(() -> {
 				setAddressBus(sp++);
-				setReadBus(true);
 			})
 			.add(() -> setAddressBus(sp++))
 			.add(() -> {
 				pc = (short)(readDataBus() << 8);
-				setReadBus(false);
 			})
 			.add(() -> {
 				pc |= readDataBus();
 			})
-			.add(() -> {});
+			.add(NOP);
 		}
 	}
 	

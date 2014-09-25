@@ -6,38 +6,39 @@ public class EPH32InstructionSet extends InstructionSet
 {
 	public EPH32InstructionSet()
 	{
-		InstructionCompiler compiler = (ins, ma, operandBytes, output) -> {
-			output.writeInt(ins.getCode(ma));
-			output.write(operandBytes);
-		};
+		add(0, "wait", EPH32MemoryAddressing.IMPLIED);
+		add(1, "add", EPH32MemoryAddressing.IMPLIED);
+		add(2, "sub", EPH32MemoryAddressing.IMPLIED);
+		add(3, "inc", EPH32MemoryAddressing.IMPLIED);
+		add(4, "dec", EPH32MemoryAddressing.IMPLIED);
+		add(5, "swp", EPH32MemoryAddressing.IMPLIED);
+		add(6, "setab", EPH32MemoryAddressing.IMPLIED);
+		add(8, "seta", EPH32MemoryAddressing.IMMEDIATE);
+		add(9, "setb", EPH32MemoryAddressing.IMMEDIATE);
+		add(10, "fire", EPH32MemoryAddressing.IMPLIED);
+		add(15, "scan", EPH32MemoryAddressing.IMPLIED);
+		add(16, "lock", EPH32MemoryAddressing.IMPLIED);
+		add(20, "rnd", EPH32MemoryAddressing.IMMEDIATE);
+		add(21, "rndb", EPH32MemoryAddressing.IMPLIED);
+		add(30, "posx", EPH32MemoryAddressing.IMPLIED);
+		add(31, "posy", EPH32MemoryAddressing.IMPLIED);
+		add(32, "move", EPH32MemoryAddressing.IMPLIED);
+		add(40, "setmp", EPH32MemoryAddressing.IMPLIED);
+		add(41, "incmp", EPH32MemoryAddressing.IMPLIED);
+		add(42, "decmp", EPH32MemoryAddressing.IMPLIED);
+		add(45, "memsave", EPH32MemoryAddressing.IMPLIED);
+		add(46, "memload", EPH32MemoryAddressing.IMPLIED);
+		add(50, "jmp", EPH32MemoryAddressing.IMMEDIATE);
+		add(51, "jmpz", EPH32MemoryAddressing.IMMEDIATE);
+		add(52, "jmpc", EPH32MemoryAddressing.IMMEDIATE);
+		add(53, "jmpm", EPH32MemoryAddressing.IMMEDIATE);
+		add(54, "jmpl", EPH32MemoryAddressing.IMMEDIATE);
+	}
 
-		add("wait", 0, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("add", 1, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("sub", 2, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("inc", 3, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("dec", 4, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("swp", 5, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("setab", 6, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("seta", 8, EPH32MemoryAddressing.IMMEDIATE, compiler);
-		add("setb", 9, EPH32MemoryAddressing.IMMEDIATE, compiler);
-		add("fire", 10, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("scan", 15, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("lock", 16, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("rnd", 20, EPH32MemoryAddressing.IMMEDIATE, compiler);
-		add("rndb", 21, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("posx", 30, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("posy", 31, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("move", 32, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("setmp", 40, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("incmp", 41, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("decmp", 42, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("memsave", 45, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("memload", 46, EPH32MemoryAddressing.IMPLIED, compiler);
-		add("jmp", 50, EPH32MemoryAddressing.IMMEDIATE, compiler);
-		add("jmpz", 51, EPH32MemoryAddressing.IMMEDIATE, compiler);
-		add("jmpc", 52, EPH32MemoryAddressing.IMMEDIATE, compiler);
-		add("jmpm", 53, EPH32MemoryAddressing.IMMEDIATE, compiler);
-		add("jmpl", 54, EPH32MemoryAddressing.IMMEDIATE, compiler);
+	@Override
+	protected int calculateBytesSize(int code, MemoryAddressing memoryAddressing)
+	{
+		return 8;
 	}
 	
 	public enum EPH32MemoryAddressing implements InstructionSet.MemoryAddressing

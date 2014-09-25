@@ -7,13 +7,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.CodeProcessException;
 
 // TODO support for constants and macros
 public class Preprocessor extends CodeProcessor<CodeProcessorState>
@@ -77,7 +74,7 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 		Matcher commentMatcher = lineCommentPattern.matcher(line);
 		
 		line = (commentMatcher.find()) ? commentMatcher.group(1) : line;
-		line.trim();
+		line = line.trim();
 		
 		if (line.isEmpty())
 		{

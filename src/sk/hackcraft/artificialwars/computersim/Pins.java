@@ -9,29 +9,32 @@ public interface Pins
 	
 	void setAllPins(boolean value);
 	
-	default void setPins(boolean[] values)
+	default void setPins(int indexes[], boolean values[])
 	{
-		setPins(values, 0, values.length);
-	}
-	
-	default void readPins(boolean[] readValues)
-	{
-		readPins(readValues, 0, readValues.length);
-	}
-	
-	default void setPins(boolean[] values, int offset, int len)
-	{
-		for (int i = 0; i < len; i++)
+		if (indexes.length != values.length)
 		{
-			setPin(i + offset, values[i]);
+			throw new IllegalArgumentException("Arrays have to be of equals length.");
+		}
+		
+		for (int i = 0; i < indexes.length; i++)
+		{
+			int pinIndex = indexes[i];
+			boolean value = values[i];
+			setPin(pinIndex, value);
 		}
 	}
 	
-	default void readPins(boolean[] readValues, int offset, int len)
+	default void readPins(int indexes[], boolean values[])
 	{
-		for (int i = 0; i < len; i++)
+		if (indexes.length != values.length)
 		{
-			readValues[i] = readPin(i + offset);
+			throw new IllegalArgumentException("Arrays have to be of equals length.");
+		}
+		
+		for (int i = 0; i < indexes.length; i++)
+		{
+			int pinIndex = indexes[i];
+			values[i] = readPin(pinIndex);
 		}
 	}
 	

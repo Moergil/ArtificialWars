@@ -4,20 +4,18 @@ import java.util.Arrays;
 
 public class PinUtil
 {
-	public static void main(String[] args)
+	public static int[] createSequenceIndexes(int offset, int len)
 	{
-		boolean bits[] = new boolean[8];
+		int indexes[] = new int[len];
 		
-		// -91 165
+		for (int i = 0; i < indexes.length; i++)
+		{
+			indexes[i] = i + offset;
+		}
 		
-		codeValue(-91, bits);
-		
-		System.out.println(bitsToString(bits));
-		
-		long v = decodeValue(bits);
-		
-		System.out.println(v);
+		return indexes;
 	}
+	
 	public static String bitsToString(boolean[] bits)
 	{
 		StringBuilder builder = new StringBuilder(bits.length);

@@ -1,7 +1,6 @@
 package sk.hackcraft.artificialwars.computersim.parts;
 
 import sk.hackcraft.artificialwars.computersim.Device;
-import sk.hackcraft.artificialwars.computersim.Part;
 import sk.hackcraft.artificialwars.computersim.PinUtil;
 import sk.hackcraft.artificialwars.computersim.Pins;
 
@@ -25,6 +24,7 @@ public class SegmentDisplay4b8 implements Device
 	private byte dataBuffer[] = new byte[2];
 	
 	private boolean dataBits[] = new boolean[DATA_LEN];
+	private int dataIndexes[] = PinUtil.createSequenceIndexes(DATA_START, DATA_LEN);
 
 	@Override
 	public String getName()
@@ -55,7 +55,7 @@ public class SegmentDisplay4b8 implements Device
 	
 	private void writeToBuffer()
 	{
-		pins.readPins(dataBits, DATA_START, DATA_LEN);
+		pins.readPins(dataIndexes, dataBits);
 		byte value = (byte)PinUtil.decodeValue(dataBits);
 		
 		int index = pins.readPin(ADDRESS_PIN) ? 1 : 0;

@@ -16,28 +16,39 @@ import sk.hackcraft.artificialwars.computersim.Pins;
  * DATA     13-20
  * </pre>
  */
-public class MemChip1024 implements Device
+public class MemChip1024 extends MemoryChip
 {
 	private static final int
-		READ_PIN = 0,
-		WRITE_PIN = 1,
-		CHIP_SELECT_PIN = 2,
-		ADDRESS_START = 3,
+		READWRITE_PIN = 0,
+		CHIP_SELECT_PIN = READWRITE_PIN + 1,
+		ADDRESS_START = CHIP_SELECT_PIN + 1,
 		ADDRESS_LEN = 10,
 		DATA_START = ADDRESS_START + ADDRESS_LEN,
 		DATA_LEN = 8;
 	
 	private final byte[] memory;
 	
-	private final int addressWidth = 10, dataWidth = 8;
-	
-	private Pins pins = Pins.DUMMY;
-	private boolean dataBits[] = new boolean[DATA_LEN];
-	private boolean addressBits[] = new boolean[ADDRESS_LEN];
-	
 	public MemChip1024()
 	{
 		memory = new byte[1024];
+	}
+	
+	@Override
+	protected int[] createDataIndexes()
+	{
+		return PinUtil.createSequenceIndexes(DATA_START, DATA_LEN);
+	}
+
+	@Override
+	protected int[] createAddressIndexes()
+	{
+		return PinUtil.createSequenceIndexes(ADDRESS_START, ADDRESS_LEN);
+	}
+	
+	@Override
+	public String getName()
+	{
+		return "MemChip1024";
 	}
 
 	public byte[] getMemory()
@@ -61,22 +72,18 @@ public class MemChip1024 implements Device
 		{
 			return "D" + (index - DATA_START);
 		}
-		else if (index == READ_PIN)
+		else if (index == READWRITE_PIN)
 		{
-			return "Read";
-		}
-		else if (index == WRITE_PIN)
-		{
-			return "Write";
+			return "R/W";
 		}
 
-		return Device.super.getPinName(index);
+		return super.getPinName(index);
 	}
 	
 	@Override
 	public int getPinsCount()
 	{
-		return addressWidth + dataWidth + 2;
+		return READWRITE_PIN + CHIP_SELECT_PIN + ADDRESS_LEN + DATA_LEN;
 	}
 	
 	@Override
@@ -84,74 +91,28 @@ public class MemChip1024 implements Device
 	{
 		this.pins = pins;
 	}
+	
+	@Override
+	protected boolean isSelected()
+	{
+		return pins.readPin(CHIP_SELECT_PIN);
+	}
 
 	@Override
-	public void update()
+	protected Mode getMode()
 	{
-		if (!pins.readPin(CHIP_SELECT_PIN))
-		{
-			pins.setAllPins(false);
-			return;
-		}
-
-		boolean write = pins.readPin(WRITE_PIN);
-		boolean read = pins.readPin(READ_PIN);
-		
-		byte dataValue = 0;
-		
-		if (write)
-		{
-			dataValue |= readDataBus();
-		}
-		
-		if (read)
-		{
-			dataValue |= readMemory();
-		}
-		
-		if (write)
-		{
-			int address = readAddressBus();
-			writeToMemory(address, dataValue);
-		}
-		
-		if (read)
-		{
-			writeToDataBus(dataValue);
-		}
-		else
-		{
-			pins.setAllPins(false);
-		}
+		return pins.readPin(READWRITE_PIN) ? Mode.WRITE : Mode.READ;
 	}
-
-	private byte readMemory()
+	
+	@Override
+	protected byte readFromChip(int address)
 	{
-		int address = readAddressBus();
-		
 		return memory[address];
 	}
-	
-	private void writeToDataBus(byte value)
-	{
-		PinUtil.codeValue(value, dataBits);
-		pins.setPins(dataBits, DATA_START, DATA_LEN);
-	}
-	
-	private byte readDataBus()
-	{
-		pins.readPins(dataBits, DATA_START, DATA_LEN);
-		return (byte)PinUtil.decodeValue(dataBits);
-	}
-	
-	private void writeToMemory(int address, byte value)
+
+	@Override
+	protected void writeToChip(int address, byte value)
 	{
 		memory[address] = value;
-	}
-	
-	private int readAddressBus()
-	{
-		pins.readPins(addressBits, ADDRESS_START, ADDRESS_LEN);
-		return (int)PinUtil.decodeValue(addressBits);
 	}
 }

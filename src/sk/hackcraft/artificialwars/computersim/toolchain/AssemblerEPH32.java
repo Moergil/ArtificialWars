@@ -1,9 +1,5 @@
 package sk.hackcraft.artificialwars.computersim.toolchain;
 
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import sk.epholl.artificialwars.entities.instructionsets.EPH32InstructionSet.EPH32MemoryAddressing;
 import sk.hackcraft.artificialwars.computersim.Endianness;
 

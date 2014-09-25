@@ -32,11 +32,6 @@ public class Bus
 	
 	public boolean readBusPin(int pin)
 	{
-		return bits[pin];
-	}
-	
-	private boolean readBusPin2(int pin)
-	{
 		if (pin >= 0 && pin < bits.length)
 		{
 			return bits[pin];
@@ -92,7 +87,7 @@ public class Bus
 			
 			if (busPin != Pins.UNCONNECTED)
 			{
-				return readBusPin2(busPin);
+				return readBusPin(busPin);
 			}
 			else
 			{
