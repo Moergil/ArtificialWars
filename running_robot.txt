@@ -1,5 +1,5 @@
-.SEG PRG 0
-.SEG DAT 256
+.segment program 0
+.segment data 256
 
 rnd 200
 swp

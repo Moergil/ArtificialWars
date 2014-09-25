@@ -41,7 +41,10 @@ zpg,Y		....	zeropage, Y-indexed	 	OPC $LL,Y	 	operand is address incremented by 
 	
 	public AssemblerTEK1608()
 	{
-		super(TEK1608InstructionSet.getInstance(), Endianness.LITTLE);
+		super(TEK1608InstructionSet.getInstance(), Endianness.LITTLE, ".SEG", "(.+):");
+		
+		addSegmentIdentifier(Segment.PROGRAM, "PRG");
+		addSegmentIdentifier(Segment.DATA, "DAT");
 		
 		// TODO modify regexes, so they will be split to parameter extraction and parameter validation parts, because of variables
 		addMemoryAddressingFormat(TEK1608MemoryAddressing.ACCUMULATOR, "A");
@@ -72,6 +75,7 @@ zpg,Y		....	zeropage, Y-indexed	 	OPC $LL,Y	 	operand is address incremented by 
 		addVariableType("BYTE", 1);
 		addVariableType("WORD", 2);
 		
+		// hexa
 		addValueParser((value) -> {
 			if (value.charAt(0) != '$')
 			{
@@ -80,7 +84,41 @@ zpg,Y		....	zeropage, Y-indexed	 	OPC $LL,Y	 	operand is address incremented by 
 			
 			value = value.substring(1);
 			
-			return Integer.decode("0x" + value);
+			return Integer.parseInt(value, 16);
+		});
+		
+		// binary
+		addValueParser((value) -> {
+			if (value.charAt(0) != '%')
+			{
+				throw new NumberFormatException("% missing.");
+			}
+			
+			value = value.substring(1);
+			
+			return Integer.parseInt(value, 2);
+		});
+		
+		// octal
+		addValueParser((value) -> {
+			if (value.charAt(0) != '0')
+			{
+				throw new NumberFormatException("0 missing.");
+			}
+			
+			value = value.substring(1);
+			
+			return Integer.parseInt(value, 8);
+		});
+		
+		// decimal
+		addValueParser((value) -> {
+			if (value.charAt(0) == '0')
+			{
+				throw new NumberFormatException("Can't start with 0.");
+			}
+			
+			return Integer.parseInt(value);
 		});
 	}
 	

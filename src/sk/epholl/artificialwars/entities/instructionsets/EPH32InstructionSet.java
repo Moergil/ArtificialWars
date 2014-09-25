@@ -61,8 +61,8 @@ public class EPH32InstructionSet extends InstructionSet
 	
 	public enum EPH32MemoryAddressing implements InstructionSet.MemoryAddressing
 	{
-		IMPLIED(0, "IMP"),
-		IMMEDIATE(4, "IMM");
+		IMPLIED(0, "imp"),
+		IMMEDIATE(4, "imm");
 		
 		private final int operandsBytesSize;
 		private final String shortName;

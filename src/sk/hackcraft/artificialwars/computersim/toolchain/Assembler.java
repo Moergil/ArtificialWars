@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -31,26 +32,25 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 	private final InstructionSet instructionSet;
 	private final Endianness endianness;
 	
-	private final Map<MemoryAddressing, Pattern> instructionMemoryAddressingRegexes = new HashMap<>();
+	private final Map<MemoryAddressing, Pattern> memoryAddressingFormats = new HashMap<>();
 	private final Pattern labelCatchPattern;
 	
 	private final Map<String, Integer> variableTypes = new HashMap<>();
-	
-	private final Map<String, Integer> labels = new HashMap<>();
-	private final Map<String, String> constants = new HashMap<>();
-	private final Map<String, Integer> variables = new HashMap<>();
-	private final List<InstructionRecord> instructions = new LinkedList<>();
 	
 	private final Map<String, LabelType> relativeLabelAddressing = new HashMap<>();
 	
 	private final Set<ValueParser> valueParsers = new HashSet<>();
 	
-	public Assembler(InstructionSet instructionSet, Endianness endianness)
+	private final String segmentPragma;
+	private final Map<String, Segment> segmentIdentifiers = new HashMap<>();
+	
+	public Assembler(InstructionSet instructionSet, Endianness endianness, String segmentPragma, String labelRegex)
 	{
 		this.instructionSet = instructionSet;
 		this.endianness = endianness;
 
-		this.labelCatchPattern = Pattern.compile("^(.+):");
+		this.labelCatchPattern = Pattern.compile("^" + labelRegex + "$");
+		this.segmentPragma = segmentPragma;
 	}
 
 	protected void addMemoryAddressingFormat(MemoryAddressing ma, String memoryAddressingFormat)
@@ -63,7 +63,12 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 
 		Pattern pattern = Pattern.compile("^" + patternText + "$");
 
-		instructionMemoryAddressingRegexes.put(ma, pattern);
+		memoryAddressingFormats.put(ma, pattern);
+	}
+	
+	protected void addSegmentIdentifier(Segment segment, String identifier)
+	{
+		segmentIdentifiers.put(identifier, segment);
 	}
 	
 	protected void enableLabels(String instructionName, LabelType type)
@@ -158,7 +163,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		// writes instructions to output, with resolving jump adresses
 		System.out.println("=== Pass 3 ===");
 		state.rewind();
-		for (InstructionRecord r : instructions)
+		for (InstructionRecord r : state.getInstructions())
 		{
 			processRecord(r, state);
 		}
@@ -166,11 +171,11 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		// write result
 		byte offset[];
 		
-		int programStartAddress = state.getProgramStartAddress();
-		byte program[] = state.getProgramBytes();
+		int programStartAddress = state.getSegmentStartAddress(Segment.PROGRAM);
+		byte program[] = state.getSegmentBytes(Segment.PROGRAM);
 		
-		int dataStartAddress = state.getDataStartAddress();
-		byte data[] = state.getDataBytes();
+		int dataStartAddress = state.getSegmentStartAddress(Segment.DATA);
+		byte data[] = state.getSegmentBytes(Segment.DATA);
 		
 		offset = new byte[programStartAddress];
 		
@@ -224,21 +229,26 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		String firstPart = parts.get(0);
 		if (firstPart.charAt(0) == '.')
 		{
-			if (firstPart.equals(".SEG"))
+			if (firstPart.equals(segmentPragma))
 			{
-				String segment = parts.get(1);
+				String readSegmentIdentifier = parts.get(1);
 				int offset = parseValue(parts.get(2));
-				
-				switch (segment)
+
+				Segment segment = segmentIdentifiers.get(readSegmentIdentifier);
+
+				if (segment != null)
 				{
-					case "PRG":
-						System.out.printf("S: PRG -> %04X%n", offset);
-						state.setProgramStartAddress(offset);
-						break;
-					case "DAT":
-						System.out.printf("S: DAT -> %04X%n", offset);
-						state.setDataStartAddress(offset);
-						break;
+					switch (segment)
+					{
+						case PROGRAM:
+							System.out.printf("S: PRG -> %04X%n", offset);
+							state.setSegmentStartAddress(Segment.PROGRAM, offset);
+							break;
+						case DATA:
+							System.out.printf("S: DAT -> %04X%n", offset);
+							state.setSegmentStartAddress(Segment.DATA, offset);
+							break;
+					}
 				}
 			}
 			
@@ -272,35 +282,25 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 						dataChunks[i] = dataChunks[i].trim();
 					}
 
+					byte chunkBuffer[] = new byte[size];
 					ByteBuffer buf = ByteBuffer.allocate(size * dataChunks.length);
-					
+
 					for (String dataChunk : dataChunks)
 					{
-						int value = Integer.decode("0x" + dataChunk.substring(1));
-		
-						switch (size)
-						{
-							case 1:
-								buf.put((byte)value);
-								break;
-							case 2:
-								buf.putShort((short)value);
-								break;
-							default:
-								throw new CodeProcessException(state.getLineNumber(), "Incorrect bytes size while writing number value: " + size);
-						}
+						decodeValue(dataChunk, chunkBuffer);
+						buf.put(chunkBuffer);
 					}
 					
 					binaryData = buf.array();
 				}
 			}
 			
-			state.getDataOutput().write(binaryData);
+			state.getSegmentOutput(Segment.DATA).write(binaryData);
 			
 			System.out.printf("V: %s -> %s%n", name, data);
-			variables.put(name, state.getDataAddress());
+			state.getVariables().put(name, state.getSegmentActualAddress(Segment.DATA));
 			
-			state.addToDataAddress(binaryData.length);
+			state.addToSegmentActualAddress(Segment.DATA, binaryData.length);
 			return;
 		}
 		
@@ -311,7 +311,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 			String value = parts.get(2);
 			
 			System.out.printf("C: %s -> %s%n", name, value);
-			constants.put(name, value);
+			state.getConstants().put(name, value);
 			return;
 		}
 		
@@ -321,7 +321,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		{
 			String name = labelMatcher.group(1);
 			
-			labels.put(name, null);
+			state.getLabels().put(name, null);
 			
 			System.out.printf("L: %s%n", name);
 			return;
@@ -337,8 +337,8 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		if (labelMatcher.find())
 		{
 			String labelName = labelMatcher.group(1);
-			int address = state.getProgramAddress();
-			labels.put(labelName, address);
+			int address = state.getSegmentActualAddress(Segment.PROGRAM);
+			state.getLabels().put(labelName, address);
 			return;
 		}
 
@@ -354,7 +354,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		boolean found = false;
 		for (MemoryAddressing ma : instruction.getMemoryAddressings())
 		{
-			Pattern p = instructionMemoryAddressingRegexes.get(ma);
+			Pattern p = memoryAddressingFormats.get(ma);
 			
 			Matcher mam = p.matcher(param);
 			
@@ -372,7 +372,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 				
 				boolean finalized = false;
 				
-				String constant = constants.get(operandValue);
+				String constant = state.getConstants().get(operandValue);
 				if (constant != null)
 				{
 					operandValue = constant;
@@ -380,7 +380,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 				}
 				else
 				{
-					Integer variable = variables.get(operandValue);
+					Integer variable = state.getVariables().get(operandValue);
 					if (variable != null)
 					{
 						operandValue = Integer.toString(variable);
@@ -388,7 +388,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 					}
 					else
 					{
-						if (labels.containsKey(operandValue) && relativeLabelAddressing.containsKey(name))
+						if (state.getLabels().containsKey(operandValue) && relativeLabelAddressing.containsKey(name))
 						{
 							finalized = false;
 						}
@@ -415,16 +415,16 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 			}
 			
 			int lineNumber = state.getLineNumber();
-			int address = state.getProgramAddress();
+			int address = state.getSegmentActualAddress(Segment.PROGRAM);
 			
 			Opcode opcode = instruction.getOpcode(ma);
 			InstructionRecord record = new InstructionRecord(lineNumber, address, opcode, operandValue);
-			instructions.add(record);
+			state.getInstructions().add(record);
 
 			found = true;
 			
 			int offset = 1 + ma.getOperandsBytesSize();
-			state.addToProgramAddress(offset);
+			state.addToSegmentActualAddress(Segment.PROGRAM, offset);
 
 			System.out.printf("I: %s %s %s%n", name, ma.getShortName(), operandValue);
 			
@@ -450,18 +450,18 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 
 		if (parameter != null)
 		{
-			if (constants.containsKey(parameter))
+			if (state.getConstants().containsKey(parameter))
 			{
-				parameter = constants.get(parameter);
+				parameter = state.getConstants().get(parameter);
 			}
 			
-			if (variables.containsKey(parameter))
+			if (state.getVariables().containsKey(parameter))
 			{
-				endianness.valueToBytes(variables.get(parameter), operandValue);
+				endianness.valueToBytes(state.getVariables().get(parameter), operandValue);
 			}
-			else if (labels.containsKey(parameter) && relativeLabelAddressing.containsKey(name))
+			else if (state.getLabels().containsKey(parameter) && relativeLabelAddressing.containsKey(name))
 			{
-				Integer labelValue = labels.get(parameter);
+				Integer labelValue = state.getLabels().get(parameter);
 				if (labelValue == null)
 				{
 					throw new CodeProcessException(record.getLine(), "Label " + parameter + " doesn't exists.");
@@ -470,7 +470,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 				LabelType labelType = relativeLabelAddressing.get(name);
 				
 				int labelAddress = labelValue.intValue();
-				int programCounterAddress = state.getProgramAddress() + opcode.getBytesSize();
+				int programCounterAddress = state.getSegmentActualAddress(Segment.PROGRAM) + opcode.getBytesSize();
 				
 				try
 				{
@@ -493,9 +493,9 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		}
 		
 		int offset = 1 + ma.getOperandsBytesSize();
-		state.addToProgramAddress(offset);
+		state.addToSegmentActualAddress(Segment.PROGRAM, offset);
 		
-		DataOutput output = state.getProgramOutput();
+		DataOutput output = state.getSegmentOutput(Segment.PROGRAM);
 		
 		opcode.compile(operandValue, output);
 		
@@ -509,102 +509,104 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		System.out.println("Processed " + stateObject.getLineNumber() + " lines.");
 	}
 	
+	public enum Segment
+	{
+		PROGRAM,
+		DATA;
+	}
+	
 	protected static class AssemblerState extends CodeProcessorState
 	{
-		private int programStartAddress, dataStartAddress;
-		private int programAddress, dataAddress;
+		private static final int SIZE = Segment.values().length;
 		
-		private ByteArrayOutputStream programOutput, dataOutput;
-		private DataOutputStream programDataOutput, dataDataOutput;
+		private int segmentStartAddress[] = new int[SIZE];
+		private int segmentActualAddress[] = new int[SIZE];
+		
+		private ByteArrayOutputStream segmentOutput[] = new ByteArrayOutputStream[SIZE];
+		private DataOutput segmentDataOutput[] = new DataOutput[SIZE];
+		
+		private final Map<String, Integer> labels = new HashMap<>();
+		private final Map<String, String> constants = new HashMap<>();
+		private final Map<String, Integer> variables = new HashMap<>();
+		private final List<InstructionRecord> instructions = new LinkedList<>();
 		
 		public AssemblerState()
 		{
 			super(2);
 			
-			programOutput = new ByteArrayOutputStream();
-			dataOutput = new ByteArrayOutputStream();
-			
-			programDataOutput = new DataOutputStream(programOutput);
-			dataDataOutput = new DataOutputStream(dataOutput);
+			for (Segment segment : Segment.values())
+			{
+				int index = segment.ordinal();
+				
+				segmentOutput[index] = new ByteArrayOutputStream();
+				segmentDataOutput[index] = new DataOutputStream(segmentOutput[index]);
+			}
 		}
 		
-		public void setProgramStartAddress(int address)
+		public Map<String, Integer> getLabels()
 		{
-			programStartAddress = address;
-			programAddress = address;
+			return labels;
 		}
 		
-		public int getProgramStartAddress()
+		public Map<String, String> getConstants()
 		{
-			return programStartAddress;
+			return constants;
 		}
 		
-		public void setDataStartAddress(int address)
+		public Map<String, Integer> getVariables()
 		{
-			dataStartAddress = address;
-			dataAddress = address;
+			return variables;
 		}
 		
-		public int getDataStartAddress()
+		public List<InstructionRecord> getInstructions()
 		{
-			return dataStartAddress;
+			return instructions;
 		}
 		
-		public void addToProgramAddress(int value)
+		public void setSegmentStartAddress(Segment segment, int address)
 		{
-			this.programAddress += value;
+			segmentStartAddress[segment.ordinal()] = address;
+			segmentActualAddress[segment.ordinal()] = address;
 		}
 		
-		public int getProgramAddress()
+		public int getSegmentStartAddress(Segment segment)
 		{
-			return programAddress;
+			return segmentStartAddress[segment.ordinal()];
 		}
 		
-		public void setProgramAddress(int address)
+		public void addToSegmentActualAddress(Segment segment, int value)
 		{
-			this.programAddress = address;
+			segmentActualAddress[segment.ordinal()] += value;
 		}
 		
-		public void addToDataAddress(int value)
+		public void setSegmentActualAddress(Segment segment, int address)
 		{
-			this.dataAddress += value;
+			segmentActualAddress[segment.ordinal()] = address;
 		}
 		
-		public int getDataAddress()
+		public int getSegmentActualAddress(Segment segment)
 		{
-			return dataAddress;
+			return segmentActualAddress[segment.ordinal()];
 		}
 		
-		public void setDataAddress(int dataAddress)
+		public DataOutput getSegmentOutput(Segment segment)
 		{
-			this.dataAddress = dataAddress;
+			return segmentDataOutput[segment.ordinal()];
 		}
 		
-		public DataOutput getProgramOutput()
+		public byte[] getSegmentBytes(Segment segment)
 		{
-			return programDataOutput;
-		}
-		
-		public DataOutput getDataOutput()
-		{
-			return dataDataOutput;
-		}
-		
-		public byte[] getProgramBytes()
-		{
-			return programOutput.toByteArray();
-		}
-		
-		public byte[] getDataBytes()
-		{
-			return dataOutput.toByteArray();
+			return segmentOutput[segment.ordinal()].toByteArray();
 		}
 		
 		@Override
 		public void rewind()
 		{
-			programAddress = programStartAddress;
-			dataAddress = dataStartAddress;
+			for (Segment segment : Segment.values())
+			{
+				setSegmentActualAddress(segment, getSegmentStartAddress(segment));
+			}
+
 			super.rewind();
 		}
 	}

@@ -1,13 +1,23 @@
 .SEG PRG $0200
 .SEG DAT $0300
 
+BYTE T $10,%10,010,10
+
 OP1 = $00
 OP2 = $01
 RES = $02
 
 COUNT = $0A
 
+V1 = %00100000
+V2 = 010
+V3 = 10
+
 DISPLAY_ADDR = $0410
+
+LDA #V1
+LDA #V2
+LDA #V3
 
 ; load X to value 10, used in loop
 LDX #COUNT
