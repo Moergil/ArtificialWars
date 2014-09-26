@@ -1,6 +1,3 @@
-.segment program 0
-.segment data 128
-
 loop:
 scan
 lock

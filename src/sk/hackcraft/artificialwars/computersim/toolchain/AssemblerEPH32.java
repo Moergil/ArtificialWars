@@ -52,6 +52,6 @@ public class AssemblerEPH32 extends AbstractAssembler
 		state.setSegmentStartAddress(Segment.PROGRAM, programSegmentStart);
 		state.setSegmentStartAddress(Segment.DATA, dataSegmentStart);
 		
-		return super.started();
+		return state;
 	}
 }

@@ -1,2 +1,0 @@
-.segment program 0
-.segment data 64

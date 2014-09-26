@@ -88,7 +88,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 	@Override
 	protected AssemblerState started()
 	{
-		System.out.println("Assembling initiated...");
+		verboseOut.println("Assembling initiated...");
 		
 		return new AssemblerState();
 	}
@@ -142,7 +142,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 
 		// 1 pass - find segments, labels, variables and constants
 		// also writes data to data segments
-		System.out.println("=== Pass 1 ===");
+		verboseOut.println("=== Pass 1 ===");
 		List<String> parts;
 		for (String line : lines)
 		{
@@ -157,7 +157,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 
 		// 2 pass - find, preprocess and record instructions
 		// puts instructions to records with memory addressing and such
-		System.out.println("=== Pass 2 ===");
+		verboseOut.println("=== Pass 2 ===");
 		for (String line : codeLines)
 		{
 			state.incrementLineNumber();
@@ -168,7 +168,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 
 		// 3 pass - insert values, calculate labels and write instructions to output
 		// writes instructions to output, with resolving jump adresses
-		System.out.println("=== Pass 3 ===");
+		verboseOut.println("=== Pass 3 ===");
 		state.rewind();
 		for (InstructionRecord r : state.getInstructions())
 		{
@@ -224,11 +224,11 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 					switch (segment)
 					{
 						case PROGRAM:
-							System.out.printf("S: PRG -> %04X%n", offset);
+							verboseOut.printf("S: PRG -> %04X%n", offset);
 							state.setSegmentStartAddress(Segment.PROGRAM, offset);
 							return true;
 						case DATA:
-							System.out.printf("S: DAT -> %04X%n", offset);
+							verboseOut.printf("S: DAT -> %04X%n", offset);
 							state.setSegmentStartAddress(Segment.DATA, offset);
 							return true;
 						default:
@@ -282,7 +282,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			
 			state.getSegmentOutput(Segment.DATA).write(binaryData);
 			
-			System.out.printf("V: %s -> %s%n", name, data);
+			verboseOut.printf("V: %s -> %s%n", name, data);
 			state.getVariables().put(name, state.getSegmentActualAddress(Segment.DATA));
 			
 			state.addToSegmentActualAddress(Segment.DATA, binaryData.length);
@@ -295,7 +295,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			String name = parts.get(0);
 			String value = parts.get(2);
 			
-			System.out.printf("C: %s -> %s%n", name, value);
+			verboseOut.printf("C: %s -> %s%n", name, value);
 			state.getConstants().put(name, value);
 			return true;
 		}
@@ -308,7 +308,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			
 			state.getLabels().put(name, null);
 			
-			System.out.printf("L: %s%n", name);
+			verboseOut.printf("L: %s%n", name);
 			return false;
 		}
 		
@@ -413,7 +413,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			int offset = 1 + ma.getOperandsBytesSize();
 			state.addToSegmentActualAddress(Segment.PROGRAM, offset);
 
-			System.out.printf("I: %s %s %s%n", name, ma.getShortName(), operandValue);
+			verboseOut.printf("I: %s %s %s%n", name, ma.getShortName(), operandValue);
 			
 			break;
 		}
@@ -486,14 +486,14 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		
 		opcode.compile(operandValue, output);
 		
-		System.out.printf("%04X %s -> %02X %s%n", record.getAddress(), opcode.getInstructionName(), opcode.toInt(), Util.byteArrayToHexaString(operandValue));
+		verboseOut.printf("%04X %s -> %02X %s%n", record.getAddress(), opcode.getInstructionName(), opcode.toInt(), Util.byteArrayToHexaString(operandValue));
 	}
 	
 	@Override
 	protected void finished(AssemblerState stateObject)
 	{
-		System.out.println("Finished!");
-		System.out.println("Processed " + stateObject.getLineNumber() + " lines.");
+		verboseOut.println("Finished!");
+		verboseOut.println("Processed " + stateObject.getLineNumber() + " lines.");
 	}
 	
 	public enum Segment

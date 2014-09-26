@@ -20,7 +20,6 @@ import java.util.regex.Pattern;
 
 public class Preprocessor extends CodeProcessor<CodeProcessorState>
 {
-
 	private Pattern lineCommentPattern;
 	private String macroStart, macroEnd;
 
@@ -36,7 +35,7 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 	@Override
 	protected PreprocessorState started()
 	{
-		System.out.println("Preprocessor started.");
+		verboseOut.println("Preprocessor started.");
 		
 		return new PreprocessorState();
 	}
@@ -50,7 +49,7 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 		List<String> codeLines = new ArrayList<>();
 		
 		// remove mess (comments, empty lines) and find macros
-		System.out.println("*** pass 1 ***");
+		verboseOut.println("*** pass 1 ***");
 		for (String line : lines)
 		{
 			state.incrementLineNumber();
@@ -75,7 +74,7 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(output));
 		
 		// unroll macros
-		System.out.println("*** pass 2 ***");
+		verboseOut.println("*** pass 2 ***");
 		for (String line : codeLines)
 		{
 			state.incrementLineNumber();
@@ -123,7 +122,7 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 			operands.add(parts.get(i));
 		}
 		
-		System.out.printf("M: %s %s%n", name, operands.toString());
+		verboseOut.printf("M: %s %s%n", name, operands.toString());
 		
 		state.setParsingMacro(true);
 		
@@ -162,7 +161,7 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 		
 		if (macro == null)
 		{
-			System.out.println(line);
+			verboseOut.println(line);
 			
 			writer.write(line);
 			writer.newLine();
@@ -174,7 +173,7 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 
 			String assembly = macro.process(operandValues, state.getLineNumber());
 			
-			System.out.println(assembly);
+			verboseOut.println(assembly);
 			
 			writer.write(assembly);
 		}
@@ -183,8 +182,8 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 	@Override
 	protected void finished(CodeProcessorState stateObject)
 	{
-		System.out.println("Preprocessing finished.");
-		System.out.println("Processed " + stateObject.getLineNumber() + " lines.");
+		verboseOut.println("Preprocessing finished.");
+		verboseOut.println("Processed " + stateObject.getLineNumber() + " lines.");
 	}
 	
 	private class PreprocessorState extends CodeProcessorState

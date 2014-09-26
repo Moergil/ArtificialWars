@@ -2,6 +2,8 @@ package sk.hackcraft.artificialwars.computersim.toolchain;
 
 public class CodeProcessorState
 {
+	private boolean verbose;
+	
 	private final int passes;
 	private int pass;
 	private int lineNumber;
@@ -10,6 +12,16 @@ public class CodeProcessorState
 	{
 		this.passes = passes;
 		this.pass = 0;
+	}
+	
+	public void setVerbose(boolean verbose)
+	{
+		this.verbose = verbose;
+	}
+	
+	public boolean isVerbose()
+	{
+		return verbose;
 	}
 	
 	public void rewind()

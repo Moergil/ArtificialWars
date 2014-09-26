@@ -18,7 +18,8 @@ public class FirmwareLoader
 		Preprocessor preprocessor = new Preprocessor(";", "macro", "/macro");
 		
 		int programSegmentStartAddress = 0;
-		int dataSegmentStartAddress = 0;
+		// TODO hack, mapping data segment after instruction memory
+		int dataSegmentStartAddress = 64 * Integer.BYTES;
 		
 		AssemblerEPH32 assembler = new AssemblerEPH32(programSegmentStartAddress, dataSegmentStartAddress);
 		

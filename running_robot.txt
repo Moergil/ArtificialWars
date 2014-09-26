@@ -1,6 +1,3 @@
-.segment program 0
-.segment data 256
-
 rnd 200
 swp
 posx
