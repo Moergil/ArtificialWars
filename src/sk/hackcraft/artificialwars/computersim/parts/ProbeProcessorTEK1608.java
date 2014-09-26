@@ -3,19 +3,12 @@ package sk.hackcraft.artificialwars.computersim.parts;
 import java.util.EnumMap;
 import java.util.Map;
 
-import sk.hackcraft.artificialwars.computersim.Util;
 import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
 import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter.IntFormatter;
 
-public class ProbeProcessorTEK1608
-{
-	public interface Register
-	{
-		String getName();
-		int getBytesSize();
-	}
-	
-	public enum RegisterTEK1608 implements Register
+public class ProbeProcessorTEK1608 implements AbstractChipProbe<ProbeProcessorTEK1608.RegisterTEK1608>
+{	
+	public enum RegisterTEK1608 implements AbstractChipProbe.Register
 	{
 		A(1),
 		X(1),

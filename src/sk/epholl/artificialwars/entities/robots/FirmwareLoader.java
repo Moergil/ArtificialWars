@@ -6,7 +6,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import sk.epholl.artificialwars.entities.instructionsets.EPH32InstructionSet;
 import sk.hackcraft.artificialwars.computersim.toolchain.AssemblerEPH32;
 import sk.hackcraft.artificialwars.computersim.toolchain.AssemblerTEK1608;
 import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.CodeProcessException;
@@ -17,7 +16,11 @@ public class FirmwareLoader
 	public static void loadFirmwareRobot(String fileName, Robot robot) throws IOException, ProgrammingException
 	{
 		Preprocessor preprocessor = new Preprocessor(";");
-		AssemblerEPH32 assembler = new AssemblerEPH32();
+		
+		int programSegmentStartAddress = 0;
+		int dataSegmentStartAddress = 0;
+		
+		AssemblerEPH32 assembler = new AssemblerEPH32(programSegmentStartAddress, dataSegmentStartAddress);
 		
 		try (InputStream input = new FileInputStream(fileName);)
 		{

@@ -15,9 +15,9 @@ import sk.hackcraft.artificialwars.computersim.parts.BusProbe;
 import sk.hackcraft.artificialwars.computersim.parts.MEXTIOChip;
 import sk.hackcraft.artificialwars.computersim.parts.MemChip1024;
 import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608;
+import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608.RegisterTEK1608;
 import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608;
 import sk.hackcraft.artificialwars.computersim.parts.SegmentDisplay4b8;
-import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608.RegisterTEK1608;
 
 public class Exterminator extends Entity
 {
@@ -147,7 +147,7 @@ public class Exterminator extends Entity
 		// readwrite, chipSelect, address(0-9), data(0-7)
 		bus.connectDevice(memory, new int[]{RW, CS0, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, D0, D1, D2, D3, D4, D5, D6, D7});
 		
-		MEXTIOChip io = new MEXTIOChip(new Random().nextLong());
+		MEXTIOChip io = new MEXTIOChip();
 		
 		// data(0-7), address(8-11), readwrite, chipSelect
 		bus.connectDevice(io, new int[]{D0, D1, D2, D3, D4, D5, D6, D7, A0, A1, A2, A3, RW, CS1});

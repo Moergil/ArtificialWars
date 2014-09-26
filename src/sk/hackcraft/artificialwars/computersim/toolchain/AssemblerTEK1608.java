@@ -2,10 +2,9 @@ package sk.hackcraft.artificialwars.computersim.toolchain;
 
 import sk.hackcraft.artificialwars.computersim.Endianness;
 import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet;
-import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608;
 import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608.TEK1608MemoryAddressing;
 
-public class AssemblerTEK1608 extends Assembler
+public class AssemblerTEK1608 extends AbstractAssembler
 {	
 	public AssemblerTEK1608()
 	{

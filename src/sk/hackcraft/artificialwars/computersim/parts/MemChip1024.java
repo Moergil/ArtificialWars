@@ -1,6 +1,5 @@
 package sk.hackcraft.artificialwars.computersim.parts;
 
-import sk.hackcraft.artificialwars.computersim.Device;
 import sk.hackcraft.artificialwars.computersim.PinUtil;
 import sk.hackcraft.artificialwars.computersim.Pins;
 

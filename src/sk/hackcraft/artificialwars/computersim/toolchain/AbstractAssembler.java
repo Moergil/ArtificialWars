@@ -11,7 +11,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -27,7 +26,7 @@ import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.Instruct
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.MemoryAddressing;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.Opcode;
 
-public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
+public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.AssemblerState>
 {
 	private final InstructionSet instructionSet;
 	private final Endianness endianness;
@@ -44,7 +43,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 	private final String segmentPragma;
 	private final Map<String, Segment> segmentIdentifiers = new HashMap<>();
 	
-	public Assembler(InstructionSet instructionSet, Endianness endianness, String segmentPragma, String labelRegex)
+	public AbstractAssembler(InstructionSet instructionSet, Endianness endianness, String segmentPragma, String labelRegex)
 	{
 		this.instructionSet = instructionSet;
 		this.endianness = endianness;
@@ -229,7 +228,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		return list;
 	}
 
-	private void scanIdentifiers(String line, List<String> parts, AssemblerState state) throws CodeProcessException, IOException
+	protected void scanIdentifiers(String line, List<String> parts, AssemblerState state) throws CodeProcessException, IOException
 	{
 		// pragmas
 		String firstPart = parts.get(0);
@@ -335,7 +334,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		}
 	}
 	
-	private void scanCode(String line, List<String> parts, AssemblerState state) throws CodeProcessException, IOException
+	protected void scanCode(String line, List<String> parts, AssemblerState state) throws CodeProcessException, IOException
 	{
 		String name = parts.get(0);
 		
@@ -444,7 +443,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		}
 	}
 	
-	private void processRecord(InstructionRecord record, AssemblerState state) throws CodeProcessException, IOException
+	protected void processRecord(InstructionRecord record, AssemblerState state) throws CodeProcessException, IOException
 	{		
 		Opcode opcode = record.getOpcode();
 				

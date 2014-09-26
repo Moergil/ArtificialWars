@@ -1,8 +1,5 @@
 package sk.hackcraft.artificialwars.computersim.parts;
 
-import java.util.Random;
-
-import sk.hackcraft.artificialwars.computersim.Device;
 import sk.hackcraft.artificialwars.computersim.PinUtil;
 import sk.hackcraft.artificialwars.computersim.Pins;
 
@@ -26,7 +23,7 @@ public class MEXTIOChip extends MemoryChip
 			CHIP_SELECT = READWRITE + 1;
 	}
 	
-	private interface Address
+	public interface Address
 	{
 		public static final int
 			ROTATION_HI = 0,
@@ -49,15 +46,15 @@ public class MEXTIOChip extends MemoryChip
 			GUN_READY = 4, // gun can fire
 			DETECTION_SEGMENT = 8, // enemy detected on segments
 			DETECTION_GRADIENT = 16, // enemy detected on gradient
-			FIRE_ORDER = 32; // fire order. cleared after firing
+			FIRE_ORDER = 32, // fire order. cleared after firing
+			NOISE = 64; // if true, noise is regenerated, stays on the same value otherwise
 	}
 	
 	private static final byte flagsWriteMask = Flag.FIRE_ORDER;
-	
-	private Random random;
+
 	private Pins pins = Pins.DUMMY;
 	
-	private byte
+	protected byte
 		rotationHibyte,
 		rotationLobyte,
 		rotationOrderHibyte,
@@ -67,11 +64,6 @@ public class MEXTIOChip extends MemoryChip
 		noise,
 		detectionSegment,
 		detectionGradient;
-	
-	public MEXTIOChip(long seed)
-	{
-		this.random = new Random(seed);
-	}
 	
 	@Override
 	protected int[] createAddressIndexes()
@@ -109,12 +101,37 @@ public class MEXTIOChip extends MemoryChip
 		this.pins = pins;
 	}
 	
-	@Override
-	public void update()
+	public void setRotation(byte hibyte, byte lobyte)
 	{
-		super.update();
+		this.rotationHibyte = hibyte;
+		this.rotationLobyte = lobyte;
+	}
+	
+	public void travelled(int units)
+	{
+		int value = Byte.toUnsignedInt(moveOrderValue);
 		
-		noise = (byte)(random.nextInt() % 256);
+		value -= units;
+		
+		if (value < 0)
+		{
+			value = 0;
+		}
+	}
+	
+	public void setNoise(byte noise)
+	{
+		this.noise = noise;
+	}
+	
+	public void setDetectionSegment(byte detectionSegment)
+	{
+		this.detectionSegment = detectionSegment;
+	}
+	
+	public void setDetectionGradient(byte detectionGradient)
+	{
+		this.detectionGradient = detectionGradient;
 	}
 	
 	@Override
