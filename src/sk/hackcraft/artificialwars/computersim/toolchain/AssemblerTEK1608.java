@@ -6,47 +6,14 @@ import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608;
 import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608.TEK1608MemoryAddressing;
 
 public class AssemblerTEK1608 extends Assembler
-{
-	/*
-	
-A			....	Accumulator	 			OPC A	 		operand is AC
-abs			....	absolute	 			OPC $HHLL	 	operand is address $HHLL
-abs,X		....	absolute, X-indexed	 	OPC $HHLL,X	 	operand is address incremented by X with carry
-abs,Y		....	absolute, Y-indexed	 	OPC $HHLL,Y	 	operand is address incremented by Y with carry
-#			....	immediate	 			OPC #$BB	 	operand is byte (BB)
-impl		....	implied	 				OPC	 			operand implied
-ind			....	indirect	 			OPC ($HHLL)	 	operand is effective address; effective address is value of address
-X,ind		....	X-indexed, indirect	 	OPC ($BB,X)	 	operand is effective zeropage address; effective address is byte (BB) incremented by X without carry
-ind,Y		....	indirect, Y-indexed	 	OPC ($LL),Y	 	operand is effective address incremented by Y with carry; effective address is word at zeropage address
-rel			....	relative	 			OPC $BB	 		branch target is PC + offset (BB), bit 7 signifies negative offset
-zpg			....	zeropage	 			OPC $LL	 		operand is of address; address hibyte = zero ($00xx)
-zpg,X		....	zeropage, X-indexed	 	OPC $LL,X	 	operand is address incremented by X; address hibyte = zero ($00xx); no page transition
-zpg,Y		....	zeropage, Y-indexed	 	OPC $LL,Y	 	operand is address incremented by Y; address hibyte = zero ($00xx); no page transition
-    */
-	// TODO
-	public static String exampleAssembly1 = ""
-			+ "ASL A\n"
-			+ "ADC $0010\n"
-			+ "ADC $001A,X\n"
-			+ "LDX $001B,Y\n"
-			+ "ADC #$05\n"
-			+ "TYA\n"
-			+ "JMP ($001C)\n"
-			+ "ADC ($11,X)\n"
-			+ "ADC ($12),Y\n"
-			+ "BCS $03\n"
-			+ "ADC $05\n"
-			+ "ADC $05,X\n"
-			+ "LDX $05,Y";
-	
+{	
 	public AssemblerTEK1608()
 	{
 		super(TEK1608InstructionSet.getInstance(), Endianness.LITTLE, ".SEG", "(.+):");
 		
 		addSegmentIdentifier(Segment.PROGRAM, "PRG");
 		addSegmentIdentifier(Segment.DATA, "DAT");
-		
-		// TODO modify regexes, so they will be split to parameter extraction and parameter validation parts, because of variables
+
 		addMemoryAddressingFormat(TEK1608MemoryAddressing.ACCUMULATOR, "A");
 		addMemoryAddressingFormat(TEK1608MemoryAddressing.ABSOLUTE, "%");
 		addMemoryAddressingFormat(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, "%,X");
@@ -107,7 +74,7 @@ zpg,Y		....	zeropage, Y-indexed	 	OPC $LL,Y	 	operand is address incremented by 
 			}
 			
 			value = value.substring(1);
-			
+
 			return Integer.parseInt(value, 8);
 		});
 		

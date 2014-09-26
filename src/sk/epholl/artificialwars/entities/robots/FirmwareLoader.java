@@ -16,9 +16,8 @@ public class FirmwareLoader
 {
 	public static void loadFirmwareRobot(String fileName, Robot robot) throws IOException, ProgrammingException
 	{
-		EPH32InstructionSet instructionSet = new EPH32InstructionSet();
 		Preprocessor preprocessor = new Preprocessor(";");
-		AssemblerEPH32 assembler = new AssemblerEPH32(instructionSet);
+		AssemblerEPH32 assembler = new AssemblerEPH32();
 		
 		try (InputStream input = new FileInputStream(fileName);)
 		{

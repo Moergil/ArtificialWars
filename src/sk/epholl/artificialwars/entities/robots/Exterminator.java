@@ -14,9 +14,10 @@ import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet;
 import sk.hackcraft.artificialwars.computersim.parts.BusProbe;
 import sk.hackcraft.artificialwars.computersim.parts.MEXTIOChip;
 import sk.hackcraft.artificialwars.computersim.parts.MemChip1024;
-import sk.hackcraft.artificialwars.computersim.parts.ProcessorProbe;
+import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608;
 import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608;
 import sk.hackcraft.artificialwars.computersim.parts.SegmentDisplay4b8;
+import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608.RegisterTEK1608;
 
 public class Exterminator extends Entity
 {
@@ -47,7 +48,7 @@ public class Exterminator extends Entity
 	private MEXTIOChip ioChip;
 	private SegmentDisplay4b8 display;
 	private BusProbe busProbe;
-	private ProcessorProbe procProbe;
+	private ProbeProcessorTEK1608 procProbe;
 	
 	private final int PROGRAM_OFFSET = 0x0200;
 	
@@ -136,7 +137,7 @@ public class Exterminator extends Entity
 		// TODO debug
 		processor.setInstructionListener((pc, opcode) -> System.out.printf("INS: %d %d %s%n", pc, opcode, TEK1608InstructionSet.getInstance().getOpcode(opcode).getInstructionName()));
 		
-		ProcessorProbe processorProbe = new ProcessorProbe(processor.getRegisterViews());
+		ProbeProcessorTEK1608 processorProbe = new ProbeProcessorTEK1608(processor);
 		
 		// readwrite, address(0-15), data(0-7)
 		bus.connectDevice(processor, new int[]{RW, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, D0, D1, D2, D3, D4, D5, D6, D7});
@@ -172,7 +173,7 @@ public class Exterminator extends Entity
 		this.busProbe = probe;
 		this.procProbe = processorProbe;
 		
-		processor.setPC(PROGRAM_OFFSET);
+		processorProbe.setValue(RegisterTEK1608.PC, PROGRAM_OFFSET);
 	}
 	
 	public void loadFirmware(byte firmware[])

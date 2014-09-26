@@ -4,6 +4,13 @@ import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 
 public class EPH32InstructionSet extends InstructionSet
 {
+	private static final EPH32InstructionSet INSTANCE = new EPH32InstructionSet();
+	
+	public static EPH32InstructionSet getInstance()
+	{
+		return INSTANCE;
+	}
+	
 	private OpcodeCompiler compiler = (opcode, operands, output) -> {
 		output.writeInt(opcode.toInt());
 		
@@ -17,7 +24,7 @@ public class EPH32InstructionSet extends InstructionSet
 		}
 	};
 	
-	public EPH32InstructionSet()
+	private EPH32InstructionSet()
 	{
 		add(0, "wait", EPH32MemoryAddressing.IMPLIED);
 		add(1, "add", EPH32MemoryAddressing.IMPLIED);

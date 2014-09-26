@@ -2,11 +2,8 @@ package sk.hackcraft.artificialwars.computersim.parts;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import sk.hackcraft.artificialwars.computersim.Device;
 import sk.hackcraft.artificialwars.computersim.PinUtil;
@@ -15,7 +12,6 @@ import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.MemoryAddressing;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.Opcode;
-
 
 /**
  * LittleEndian (16bit = low byte, high byte)
@@ -35,11 +31,11 @@ public class ProcessorTEK1608 implements Device
 	
 	private static final Runnable NOP = () -> {};
 	
-	private byte a, x, y, sp = (byte)0xff, sr;
-	private short pc;
-	private byte ir;
+	protected byte a, x, y, sp = (byte)0xff, sr;
+	protected short pc;
+	protected byte ir;
 
-	private int address;
+	protected int mar;
 	
 	private interface Flag
 	{
@@ -54,85 +50,10 @@ public class ProcessorTEK1608 implements Device
 			NEGATIVE = 128;
 	}
 	
-	public interface RegisterView
-	{
-		int getBytesSize();
-		String getValue();
-		void setValue(String newValue);
-		String getName();
-		
-		@FunctionalInterface
-		public interface Setter
-		{
-			void set(int value);
-		}
-		
-		@FunctionalInterface
-		public interface Getter
-		{
-			int get();
-		}
-	}
-	
 	@FunctionalInterface
 	public interface InstructionListener
 	{
 		void instructionLoaded(int pc, int opcode);
-	}
-	
-	private static class RegisterViewControl implements RegisterView
-	{
-		private static final Map<Integer, String> zeroPatterns = new HashMap<>();
-		
-		static
-		{
-			zeroPatterns.put(1, "00");
-			zeroPatterns.put(2, "0000");
-		}
-		
-		private final String name;
-		private final int bytesSize;
-		private final String zeroPattern;
-		
-		private final Setter setter;
-		private final Getter getter;
-		
-		public RegisterViewControl(String name, int bytesSize, Setter setter, Getter getter)
-		{
-			this.name = name;
-			this.bytesSize = bytesSize;
-			
-			this.setter = setter;
-			this.getter = getter;
-			
-			zeroPattern = zeroPatterns.get(bytesSize);
-		}
-		
-		@Override
-		public String getName()
-		{
-			return name;
-		}
-		
-		@Override
-		public int getBytesSize()
-		{
-			return bytesSize;
-		}
-		
-		@Override
-		public String getValue()
-		{
-			String rawValue = Integer.toHexString(getter.get());
-			
-			return "0x" + (zeroPattern + rawValue).substring(rawValue.length()).toUpperCase();
-		}
-		
-		@Override
-		public void setValue(String newValue)
-		{
-			setter.set(Integer.decode(newValue));
-		}
 	}
 
 	private Map<TEK1608MemoryAddressing, Runnable[]> memoryAddressingSetups = new EnumMap<>(TEK1608MemoryAddressing.class);
@@ -148,7 +69,6 @@ public class ProcessorTEK1608 implements Device
 		dataIndexes[] = PinUtil.createSequenceIndexes(DATA_PINS_START, DATA_PINS_COUNT);
 
 	private final InstructionSet instructionSet;
-	private final Set<RegisterView> registers = new HashSet<>();
 	
 	private final Operation[] operations = new Operation[256];
 	private final Operation loadInstruction = new LoadInstruction();
@@ -159,45 +79,43 @@ public class ProcessorTEK1608 implements Device
 	
 	public ProcessorTEK1608()
 	{
-		prepareRegisters();
-		
 		setInitialOperandLoader(TEK1608MemoryAddressing.ACCUMULATOR, new Runnable[]{});
 		setInitialOperandLoader(TEK1608MemoryAddressing.ABSOLUTE, new Runnable[]{
 			() -> {
-				address = readDataBus();
+				mar = readDataBus();
 				setAddressBus(pc - 1);
 			},
 			NOP,
 			() -> 
 			{
-				address += readDataBus() << 8;
-				setAddressBus(address);
+				mar += readDataBus() << 8;
+				setAddressBus(mar);
 			},
 			NOP
 		});
 		setInitialOperandLoader(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, new Runnable[]{
 			() -> {
-				address = readDataBus();
+				mar = readDataBus();
 				setAddressBus(pc - 1);
 			},
 			NOP,
 			() -> 
 			{
-				address += readDataBus() << 8;
-				setAddressBus(address + x);
+				mar += readDataBus() << 8;
+				setAddressBus(mar + x);
 			},
 			NOP
 		});
 		setInitialOperandLoader(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, new Runnable[]{
 			() -> {
-				address = readDataBus();
+				mar = readDataBus();
 				setAddressBus(pc - 1);
 			},
 			NOP,
 			() -> 
 			{
-				address += (byte)(x + readDataBus() << 8);
-				setAddressBus(address + x);
+				mar += (byte)(x + readDataBus() << 8);
+				setAddressBus(mar + x);
 			},
 			NOP
 		});
@@ -205,54 +123,54 @@ public class ProcessorTEK1608 implements Device
 		setInitialOperandLoader(TEK1608MemoryAddressing.IMPLIED, new Runnable[]{});
 		setInitialOperandLoader(TEK1608MemoryAddressing.X_INDEXED_INDIRECT, new Runnable[]{
 			() -> {
-				address = readDataBus();
-				setAddressBus(address + x);
+				mar = readDataBus();
+				setAddressBus(mar + x);
 			},
-			() -> setAddressBus(address + x + 1),
+			() -> setAddressBus(mar + x + 1),
 			() -> {
-				address = readDataBus();
+				mar = readDataBus();
 			},
 			() -> {
-				address = readDataBus() << 8;
-				setAddressBus(address);
+				mar = readDataBus() << 8;
+				setAddressBus(mar);
 			},
 			NOP
 		});
 		setInitialOperandLoader(TEK1608MemoryAddressing.INDIRECT_Y_INDEXED, new Runnable[]{
 			() -> {
-				address = readDataBus();
-				setAddressBus(address);
+				mar = readDataBus();
+				setAddressBus(mar);
 			},
-			() -> setAddressBus(address + 1),
+			() -> setAddressBus(mar + 1),
 			() -> {
-				address = readDataBus();
+				mar = readDataBus();
 			},
 			() -> {
-				address = readDataBus() << 8;
+				mar = readDataBus() << 8;
 				int carry = ((sr & Flag.CARRY) != 0) ? 1 : 0;
-				setAddressBus(address + y + carry);
+				setAddressBus(mar + y + carry);
 			},
 			NOP
 		});
 		setInitialOperandLoader(TEK1608MemoryAddressing.RELATIVE, new Runnable[]{});
 		setInitialOperandLoader(TEK1608MemoryAddressing.ZEROPAGE, new Runnable[]{
 			() -> {
-				int address = readDataBus();
-				setAddressBus(address);
+				mar = readDataBus();
+				setAddressBus(mar);
 			},
 			NOP
 		});
 		setInitialOperandLoader(TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, new Runnable[]{
 			() -> {
-				int address = readDataBus();
-				setAddressBus(address + x);
+				mar = readDataBus();
+				setAddressBus(mar + x);
 			},
 			NOP
 		});
 		setInitialOperandLoader(TEK1608MemoryAddressing.ZEROPAGE_Y_INDEXED, new Runnable[]{
 			() -> {
-				int address = readDataBus();
-				setAddressBus(address + y);
+				mar = readDataBus();
+				setAddressBus(mar + y);
 			},
 			NOP
 		});
@@ -535,16 +453,6 @@ public class ProcessorTEK1608 implements Device
 	{
 		this.instructionListener = instructionListener;
 	}
-	
-	private void prepareRegisters()
-	{
-		registers.add(new RegisterViewControl("A", Byte.BYTES, (v) -> a = (byte)v, () -> a));
-		registers.add(new RegisterViewControl("X", Byte.BYTES, (v) -> x = (byte)v, () -> x));
-		registers.add(new RegisterViewControl("Y", Byte.BYTES, (v) -> y = (byte)v, () -> y));
-		registers.add(new RegisterViewControl("SP", Byte.BYTES, (v) -> sp = (byte)v, () -> sp));
-		registers.add(new RegisterViewControl("PC", Short.BYTES, (v) -> pc = (short)v, () -> pc));
-		registers.add(new RegisterViewControl("SR", Byte.BYTES, (v) -> sr = (byte)v, () -> sr));
-	}
 
 	private void setInitialInstruction(int code, OperationCreator creator)
 	{
@@ -562,11 +470,6 @@ public class ProcessorTEK1608 implements Device
 	private void setInitialOperandLoader(TEK1608MemoryAddressing memoryAddressing, Runnable[] steps)
 	{
 		memoryAddressingSetups.put(memoryAddressing, steps);
-	}
-	
-	public Set<RegisterView> getRegisterViews()
-	{
-		return registers;
 	}
 
 	private void add(byte value)
@@ -940,6 +843,11 @@ public class ProcessorTEK1608 implements Device
 	private void setWrite(boolean value)
 	{
 		pins.setPin(READWRITE_PIN, value);
+	}
+	
+	private short getMemorySP()
+	{
+		return (short)(0x0100 + sp);
 	}
 	
 	private interface Operation extends Runnable
@@ -1366,8 +1274,6 @@ public class ProcessorTEK1608 implements Device
 
 		private int step;
 		
-		private int address, indirectAddress;
-		
 		public Jump(TEK1608MemoryAddressing memoryAddressing)
 		{
 			this.bytesSize = memoryAddressing.getOperandsBytesSize() + 1;
@@ -1377,34 +1283,34 @@ public class ProcessorTEK1608 implements Device
 				case ABSOLUTE:
 					steps = new Runnable[]{
 						() -> {
-							address = readDataBus();
+							mar = readDataBus();
 							setAddressBus(pc - 1);
 						},
 						NOP,
 						() -> {
-							address |= readDataBus() << 8;
-							pc = (short)address;
+							mar |= readDataBus() << 8;
+							pc = (short)mar;
 						}
 					};
 					break;
 				case INDIRECT:
 					steps = new Runnable[]{
 						() -> {
-							indirectAddress = readDataBus();
+							mar = readDataBus();
 							setAddressBus(pc - 1);
 						},
 						NOP,
 						() -> {
-							indirectAddress |= readDataBus() << 8;
-							setAddressBus(indirectAddress);
+							mar |= readDataBus() << 8;
+							setAddressBus(mar);
 						},
-						() -> setAddressBus(indirectAddress + 1),
+						() -> setAddressBus(mar + 1),
 						() -> {
-							address = readDataBus();
+							mar = readDataBus();
 						},
 						() -> {
-							address |= readDataBus() << 8;
-							pc = (short)address;
+							mar |= readDataBus() << 8;
+							pc = (short)mar;
 						}
 					};
 					break;
@@ -1465,7 +1371,8 @@ public class ProcessorTEK1608 implements Device
 		{
 			b
 			.add(() -> {
-				setAddressBus(sp--);
+				setAddressBus(getMemorySP());
+				sp++;
 				setDataBus(getter.get());
 				setWrite(true);
 			})
@@ -1492,7 +1399,8 @@ public class ProcessorTEK1608 implements Device
 		{
 			b
 			.add(() -> {
-				setAddressBus(sp++);
+				setAddressBus(getMemorySP());
+				sp++;
 			})
 			.add(NOP)
 			.add(() -> setter.set(readDataBus()));
@@ -1519,14 +1427,16 @@ public class ProcessorTEK1608 implements Device
 			.add(NOP)
 			.add(() -> {
 				address |= readDataBus() << 8;
-				
-				setAddressBus(sp--);
+	
+				setAddressBus(getMemorySP());
+				sp--;
 				setDataBus((byte)pc);
 				setWrite(true);
 			})
 			.add(NOP)
 			.add(() -> {
-				setAddressBus(sp--);
+				setAddressBus(getMemorySP());
+				sp--;
 				setDataBus((byte)(pc >>= 8));
 			})
 			.add(() -> {
@@ -1550,9 +1460,13 @@ public class ProcessorTEK1608 implements Device
 		{
 			b
 			.add(() -> {
-				setAddressBus(sp++);
+				setAddressBus(getMemorySP());
+				sp++;
 			})
-			.add(() -> setAddressBus(sp++))
+			.add(() -> {
+				setAddressBus(getMemorySP());
+				sp++;
+			})
 			.add(() -> {
 				pc = (short)(readDataBus() << 8);
 			})

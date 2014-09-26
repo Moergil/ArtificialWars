@@ -120,7 +120,13 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		{
 			if (parser.validate(value))
 			{
-				return true;
+				int numericValue = parser.parse(value);
+				
+				String testValue = Integer.toBinaryString(numericValue);
+				if (testValue.length() <= bytesCount * 8)
+				{
+					return true;
+				}
 			}
 		}
 		
@@ -231,6 +237,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		{
 			if (firstPart.equals(segmentPragma))
 			{
+				// TODO fix fixed bytes size
 				String readSegmentIdentifier = parts.get(1);
 				int offset = parseValue(parts.get(2));
 
@@ -499,7 +506,7 @@ public abstract class Assembler extends CodeProcessor<Assembler.AssemblerState>
 		
 		opcode.compile(operandValue, output);
 		
-		System.out.printf("%04X %s -> %02X %s%n", record.getAddress(), opcode.getInstructionName(), opcode.toInt(), Util.byteArrayToString(operandValue));
+		System.out.printf("%04X %s -> %02X %s%n", record.getAddress(), opcode.getInstructionName(), opcode.toInt(), Util.byteArrayToHexaString(operandValue));
 	}
 	
 	@Override

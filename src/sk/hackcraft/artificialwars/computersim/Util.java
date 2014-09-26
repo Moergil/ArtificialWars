@@ -31,7 +31,7 @@ public class Util
 		return array;
 	}
 	
-	public static String byteArrayToString(byte array[])
+	public static String byteArrayToHexaString(byte array[])
 	{
 		String format = "%02X ";
 		StringBuilder builder = new StringBuilder();

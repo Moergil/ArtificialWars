@@ -5,12 +5,11 @@ import java.nio.file.Files;
 
 import sk.hackcraft.artificialwars.computersim.parts.BusProbe;
 import sk.hackcraft.artificialwars.computersim.parts.MemChip1024;
-import sk.hackcraft.artificialwars.computersim.parts.ProcessorProbe;
+import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608;
+import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608.RegisterTEK1608;
 import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608;
 import sk.hackcraft.artificialwars.computersim.toolchain.AssemblerTEK1608;
 import sk.hackcraft.artificialwars.computersim.toolchain.Preprocessor;
-
-
 
 public class Testing
 {		
@@ -64,7 +63,7 @@ public class Testing
 		int processorPinout[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25};
 		bus.connectDevice(processor, processorPinout);
 
-		ProcessorProbe processorProbe = new ProcessorProbe(processor.getRegisterViews());
+		ProbeProcessorTEK1608 processorProbe = new ProbeProcessorTEK1608(processor);
 
 		Preprocessor preprocessor = new Preprocessor(";");
 		AssemblerTEK1608 assembler = new AssemblerTEK1608();
@@ -103,7 +102,7 @@ public class Testing
 		
 		bus.connectDevice(memory2, memory2Pinout);
 
-		processorProbe.getRegister("PC").setValue("0x0200");
+		processorProbe.setValue(RegisterTEK1608.PC, 0x0200);
 		
 		for (int i = 0; i < 1000; i++)
 		{
