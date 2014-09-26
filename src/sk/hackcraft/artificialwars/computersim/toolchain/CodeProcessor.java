@@ -1,10 +1,16 @@
 package sk.hackcraft.artificialwars.computersim.toolchain;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public abstract class CodeProcessor<S extends CodeProcessorState>
 {
@@ -24,6 +30,33 @@ public abstract class CodeProcessor<S extends CodeProcessorState>
 	
 	protected void finished(S stateObject)
 	{
+	}
+	
+	protected List<String> readLines(InputStream input) throws IOException
+	{
+		BufferedReader br = new BufferedReader(new InputStreamReader(input));
+
+		List<String> lines = new ArrayList<>();
+		String line;
+		while ((line = br.readLine()) != null)
+		{
+			lines.add(line);
+		}
+
+		return lines;
+	}
+	
+	protected List<String> splitLine(String line)
+	{
+		Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(line);
+		
+		ArrayList<String> list = new ArrayList<>();
+		while (m.find())
+		{
+			list.add(m.group(1).trim());
+		}
+		
+		return list;
 	}
 	
 	public static class CodeProcessException extends Exception

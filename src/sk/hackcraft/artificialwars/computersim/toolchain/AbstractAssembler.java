@@ -114,7 +114,6 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 	
 	private boolean validateValue(String value, int bytesCount)
 	{
-		// TODO bytes count
 		for (ValueParser parser : valueParsers)
 		{
 			if (parser.validate(value))
@@ -135,11 +134,11 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 	@Override
 	public void process(InputStream input, OutputStream output) throws CodeProcessException, IOException
 	{
-		BufferedReader br = new BufferedReader(new InputStreamReader(input));
-
+		// TODO add checks for errors when reusing constants, variables or labels
 		AssemblerState state = started();
 
-		List<String> lines = readLines(br);
+		List<String> lines = readLines(input);
+		List<String> codeLines = new ArrayList<>();
 
 		// 1 pass - find segments, labels, variables and constants
 		// also writes data to data segments
@@ -150,13 +149,16 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			state.incrementLineNumber();
 			
 			parts = splitLine(line);
-			scanIdentifiers(line, parts, state);
+			if (!scanIdentifiers(line, parts, state))
+			{
+				codeLines.add(line);
+			}
 		}
 
 		// 2 pass - find, preprocess and record instructions
 		// puts instructions to records with memory addressing and such
 		System.out.println("=== Pass 2 ===");
-		for (String line : lines)
+		for (String line : codeLines)
 		{
 			state.incrementLineNumber();
 			
@@ -203,32 +205,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		finished(state);
 	}
 
-	private List<String> readLines(BufferedReader br) throws IOException
-	{
-		List<String> lines = new ArrayList<>();
-		String line;
-		while ((line = br.readLine()) != null)
-		{
-			lines.add(line);
-		}
-
-		return lines;
-	}
-	
-	private List<String> splitLine(String line)
-	{
-		Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(line);
-		
-		ArrayList<String> list = new ArrayList<>();
-		while (m.find())
-		{
-			list.add(m.group(1).trim());
-		}
-		
-		return list;
-	}
-
-	protected void scanIdentifiers(String line, List<String> parts, AssemblerState state) throws CodeProcessException, IOException
+	protected boolean scanIdentifiers(String line, List<String> parts, AssemblerState state) throws CodeProcessException, IOException
 	{
 		// pragmas
 		String firstPart = parts.get(0);
@@ -249,16 +226,18 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 						case PROGRAM:
 							System.out.printf("S: PRG -> %04X%n", offset);
 							state.setSegmentStartAddress(Segment.PROGRAM, offset);
-							break;
+							return true;
 						case DATA:
 							System.out.printf("S: DAT -> %04X%n", offset);
 							state.setSegmentStartAddress(Segment.DATA, offset);
-							break;
+							return true;
+						default:
+							return false;
 					}
 				}
 			}
 			
-			return;
+			return false;
 		}
 		
 		// variables
@@ -307,7 +286,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			state.getVariables().put(name, state.getSegmentActualAddress(Segment.DATA));
 			
 			state.addToSegmentActualAddress(Segment.DATA, binaryData.length);
-			return;
+			return true;
 		}
 		
 		// constants definitions
@@ -318,7 +297,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			
 			System.out.printf("C: %s -> %s%n", name, value);
 			state.getConstants().put(name, value);
-			return;
+			return true;
 		}
 		
 		// labels
@@ -330,8 +309,10 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			state.getLabels().put(name, null);
 			
 			System.out.printf("L: %s%n", name);
-			return;
+			return false;
 		}
+		
+		return false;
 	}
 	
 	protected void scanCode(String line, List<String> parts, AssemblerState state) throws CodeProcessException, IOException
@@ -352,7 +333,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		
 		if (instruction == null)
 		{
-			return;
+			throw new CodeProcessException(state.getLineNumber(), "Can't parse line: " + line);
 		}
 
 		String param = (parts.size() > 1) ? parts.get(1) : "";

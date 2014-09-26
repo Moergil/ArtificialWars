@@ -65,7 +65,7 @@ public class Testing
 
 		ProbeProcessorTEK1608 processorProbe = new ProbeProcessorTEK1608(processor);
 
-		Preprocessor preprocessor = new Preprocessor(";");
+		Preprocessor preprocessor = new Preprocessor(";", "MACRO", "/MACRO");
 		AssemblerTEK1608 assembler = new AssemblerTEK1608();
 		
 		byte assembly[] = Files.readAllBytes(new File("fibonacci.asm").toPath());

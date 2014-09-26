@@ -15,7 +15,7 @@ public class FirmwareLoader
 {
 	public static void loadFirmwareRobot(String fileName, Robot robot) throws IOException, ProgrammingException
 	{
-		Preprocessor preprocessor = new Preprocessor(";");
+		Preprocessor preprocessor = new Preprocessor(";", "macro", "/macro");
 		
 		int programSegmentStartAddress = 0;
 		int dataSegmentStartAddress = 0;
@@ -42,7 +42,7 @@ public class FirmwareLoader
 	
 	public static void loadFirmwareExterminator(String firmwareFile, Exterminator exterminator) throws IOException, ProgrammingException
 	{
-		Preprocessor preprocessor = new Preprocessor(";");
+		Preprocessor preprocessor = new Preprocessor(";", "MACRO", "/MACRO");
 		AssemblerTEK1608 assembler = new AssemblerTEK1608();
 		
 		try (InputStream input = new FileInputStream(firmwareFile);)

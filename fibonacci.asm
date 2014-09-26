@@ -1,6 +1,11 @@
 .SEG PRG $0200
 .SEG DAT $0300
 
+MACRO PRINT_RES RES
+	LDA RES
+	STA DISPLAY_ADDR
+/MACRO
+
 BYTE T $10,%10,010,10
 
 OP1 = $00
@@ -48,9 +53,8 @@ FIBONACCI:
 	; BNE $EF if you need constant for this scenario
 	BNE FIBONACCI
 
-; loading result to A
-LDA RES
-STA DISPLAY_ADDR
+; print result
+PRINT_RES RES
 
 ; infinite loop
 END:
