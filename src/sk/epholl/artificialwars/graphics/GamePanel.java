@@ -3,6 +3,7 @@ package sk.epholl.artificialwars.graphics;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -20,19 +21,15 @@ public class GamePanel extends JPanel
 
 	private GameLogic logic;
 	private GamePanelInput input;
+	
+	private Point mousePointer;
 
 	public GamePanel()
 	{
 		this.setFocusable(true);
-		this.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mouseClicked(MouseEvent event)
-			{
-				if (event.getButton() == MouseEvent.BUTTON1 && input != null)
-					input.mouseClicked(event.getX(), event.getY());
-			}
-		});
+		MouseAdapter mouseAdapter = createMouseListener();
+		this.addMouseListener(mouseAdapter);
+		this.addMouseMotionListener(mouseAdapter);
 	}
 
 	public void setGameLogic(GameLogic logic, MainLogic mainLogic)
@@ -62,6 +59,8 @@ public class GamePanel extends JPanel
 
 			g2d.drawString("Time: " + logic.getCycleCount(), 20, 537);
 			g2d.drawString(logic.getOutputString(), 120, 537);
+			
+			g2d.drawString(formatMousePointer(), 520, 560);
 
 			for (GameButton button : input.getButtons())
 			{
@@ -71,5 +70,33 @@ public class GamePanel extends JPanel
 
 		Toolkit.getDefaultToolkit().sync();
 		g.dispose();
+	}
+	
+	private MouseAdapter createMouseListener()
+	{
+		return new MouseAdapter()
+		{
+			@Override
+			public void mouseClicked(MouseEvent event)
+			{
+				if (event.getButton() == MouseEvent.BUTTON1 && input != null)
+					input.mouseClicked(event.getX(), event.getY());
+			}
+			
+			@Override
+			public void mouseMoved(MouseEvent event)
+			{
+				mousePointer = new Point(event.getX(), event.getY());
+				repaint();
+			}
+		};
+	}
+	
+	private String formatMousePointer()
+	{
+		return (mousePointer != null)? 
+				"Current mouse pos: [ " + mousePointer.x + ", " + mousePointer.y + "]"
+				:
+				"";
 	}
 }

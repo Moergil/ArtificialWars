@@ -10,8 +10,9 @@ import java.util.ArrayList;
 
 import javax.swing.JPanel;
 
-import sk.epholl.artificialwars.entities.instructionsets.BasicInstructionSet;
+import sk.epholl.artificialwars.entities.instructionsets.EPH32InstructionSet;
 import sk.epholl.artificialwars.logic.MainLogic;
+import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 
 public class MenuPanel extends JPanel
 {
@@ -100,13 +101,14 @@ public class MenuPanel extends JPanel
 	{
 		g2d.setColor(Color.black);
 
-		String[] instructions = BasicInstructionSet.getAllInstructions();
-
+		InstructionSet instructions = EPH32InstructionSet.getInstance();
+		
+		//TODO instructions vypis
 		g2d.drawString("Use file player.txt to program your robot", 400, 240);
 		g2d.drawString("You can use // for comments and each instruction", 400, 260);
 		g2d.drawString("must have exactly one parameter.", 400, 280);
 
-		int j = 0;
+		/*int j = 0;
 		for (int i = 0; i < instructions.length; i++)
 		{
 			g2d.drawString(instructions[i], 400 + j, 300 + 20 * (i % 10));
@@ -114,6 +116,6 @@ public class MenuPanel extends JPanel
 			{
 				j += 100;
 			}
-		}
+		}*/
 	}
 }

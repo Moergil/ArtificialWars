@@ -1,7 +1,3 @@
-loop:
-scan
-lock
-fire
-fire
-fire
-jmp loop
+seta 10
+setb 10
+move

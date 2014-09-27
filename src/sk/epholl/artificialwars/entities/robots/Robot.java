@@ -11,9 +11,9 @@ import java.util.Random;
 import sk.epholl.artificialwars.entities.Doodad;
 import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Projectile;
-import sk.epholl.artificialwars.entities.instructionsets.BasicInstructionSetHandler;
-import sk.epholl.artificialwars.entities.instructionsets.InstructionSetHandler;
+import sk.epholl.artificialwars.entities.instructionsets.EPH32InstructionSet;
 import sk.epholl.artificialwars.logic.GameLogic;
+import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 
 /**
  * @author epholl
@@ -38,7 +38,7 @@ public class Robot extends Entity
 	private int instructionPointer;
 	private int instructionCooldown;
 
-	private InstructionSetHandler instructionSet;
+	private InstructionSet instructionSet;
 
 	private Entity aimLock;
 
@@ -58,7 +58,7 @@ public class Robot extends Entity
 
 		memory = new int[4];
 
-		instructionSet = new BasicInstructionSetHandler();
+		instructionSet = EPH32InstructionSet.getInstance();
 		aimLock = null;
 	}
 
@@ -88,7 +88,7 @@ public class Robot extends Entity
 		nextInstructionCooldownSwitch();
 	}
 
-	public InstructionSetHandler getInstructionSet()
+	public InstructionSet getInstructionSet()
 	{
 		return instructionSet;
 	}
@@ -285,6 +285,7 @@ public class Robot extends Entity
 					instructionPointer = parameter - 1;
 					decrementInstructionPointer();
 				}
+				break;
 			}
 			default:
 			{ // default instruction operation
