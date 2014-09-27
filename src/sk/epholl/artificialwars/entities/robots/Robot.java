@@ -11,8 +11,6 @@ import java.util.Random;
 import sk.epholl.artificialwars.entities.Doodad;
 import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Projectile;
-import sk.epholl.artificialwars.entities.instructionsets.BasicInstructionSetHandler;
-import sk.epholl.artificialwars.entities.instructionsets.InstructionSetHandler;
 import sk.epholl.artificialwars.logic.GameLogic;
 
 /**
@@ -38,8 +36,6 @@ public class Robot extends Entity
 	private int instructionPointer;
 	private int instructionCooldown;
 
-	private InstructionSetHandler instructionSet;
-
 	private Entity aimLock;
 
 	public Robot(Color color, int player, int posX, int posY, GameLogic game)
@@ -58,7 +54,6 @@ public class Robot extends Entity
 
 		memory = new int[4];
 
-		instructionSet = new BasicInstructionSetHandler();
 		aimLock = null;
 	}
 
@@ -86,11 +81,6 @@ public class Robot extends Entity
 		incrementInsturcionPointer();
 
 		nextInstructionCooldownSwitch();
-	}
-
-	public InstructionSetHandler getInstructionSet()
-	{
-		return instructionSet;
 	}
 
 	private void checkLocks()
