@@ -2,7 +2,7 @@ package sk.hackcraft.artificialwars.computersim.toolchain;
 
 public class CodeProcessorState
 {
-	private boolean verbose;
+	private boolean verbose = true;
 	
 	private final int passes;
 	private int pass;
