@@ -12,7 +12,7 @@ import sk.epholl.artificialwars.entities.Obstacle;
 import sk.epholl.artificialwars.entities.objectives.NumberOfUnitsObjective;
 import sk.epholl.artificialwars.entities.robots.Exterminator;
 import sk.epholl.artificialwars.entities.robots.FirmwareLoader;
-import sk.epholl.artificialwars.entities.robots.Robot;
+import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
 
 public class LevelLoader
 {
@@ -103,7 +103,7 @@ public class LevelLoader
 				}
 				else if (currentWord.equals("robot"))
 				{
-					Robot r;
+					Eph32BasicRobot r;
 
 					int red = Integer.parseInt(parser.nextToken());
 					int green = Integer.parseInt(parser.nextToken());
@@ -114,7 +114,7 @@ public class LevelLoader
 
 					String instructionFile = parser.nextToken();
 
-					r = new Robot(new Color(red, green, blue), player, posX, posY, logic);
+					r = new Eph32BasicRobot(new Color(red, green, blue), player, posX, posY, logic);
 					
 					try
 					{

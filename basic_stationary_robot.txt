@@ -2,5 +2,5 @@ scan
 lock
 fire
 fire
-wait
+wait 1
 jmp 1

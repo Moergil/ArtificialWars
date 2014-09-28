@@ -18,7 +18,8 @@ import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 /**
  * @author epholl
  */
-public class Robot extends Entity
+//TODO treba abstraktnu triedu Robot, ktora by reprezentovala entitu typu robot
+public class Eph32BasicRobot extends Entity
 {
 	public static final int DEFAULT_HITPOINTS = 5;
 	public static final int DEFAULT_INSTRUCTION_COOLDOWN_MULTIPLICATOR = 2;
@@ -42,7 +43,7 @@ public class Robot extends Entity
 
 	private Entity aimLock;
 
-	public Robot(Color color, int player, int posX, int posY, GameLogic game)
+	public Eph32BasicRobot(Color color, int player, int posX, int posY, GameLogic game)
 	{
 		super(posX, posY, game);
 		this.color = color;
@@ -65,9 +66,12 @@ public class Robot extends Entity
 	@Override
 	public void turn()
 	{
-		checkLocks();
+		refreshLocksState();
 
 		if (!instructionCooldownDone())
+			return;
+		
+		if (instructionPointer >= instructionMemory.length)
 			return;
 
 		try
@@ -93,7 +97,7 @@ public class Robot extends Entity
 		return instructionSet;
 	}
 
-	private void checkLocks()
+	private void refreshLocksState()
 	{
 		if (aimLock != null && aimLock.isEnded())
 			aimLock = null;
@@ -366,21 +370,13 @@ public class Robot extends Entity
 		ByteArrayInputStream bais = new ByteArrayInputStream(firmware);
 		DataInput input = new DataInputStream(bais);
 		
-		int programSize = input.readInt();
-		int dataSize = input.readInt();
-		
-		for (int i = 0; i < programSize / Integer.BYTES / 2; i++)
+		for (int i = 0; i < firmware.length / Integer.BYTES / 2; i++)
 		{
 			int instruction = input.readInt();
 			int parameter = input.readInt();
 			
 			instructionMemory[i + offset] = instruction;
 			parameterMemory[i + offset] = parameter;
-		}
-		
-		for (int i = 0; i < dataSize / Integer.BYTES; i++)
-		{
-			memory[i] = input.readInt();
 		}
 	}
 
@@ -483,7 +479,8 @@ public class Robot extends Entity
 
 	private void incrementInsturcionPointer()
 	{
-		instructionPointer = (instructionPointer + 1) % instructionMemory.length;
+		if (++instructionPointer >= instructionMemory.length)
+			instructionPointer--;
 	}
 
 	private void decrementInstructionPointer()
@@ -491,19 +488,19 @@ public class Robot extends Entity
 		instructionPointer--;
 		if (instructionPointer < 0)
 		{
-			instructionPointer = instructionMemory.length - 1;
+			instructionPointer = 0;
 		}
 	}
 
 	private void findEnemyRobot()
 	{
-		ArrayList<Robot> targets = new ArrayList<Robot>();
+		ArrayList<Eph32BasicRobot> targets = new ArrayList<Eph32BasicRobot>();
 
 		for (Entity e : game.getEntities())
 		{
-			if (e instanceof Robot)
+			if (e instanceof Eph32BasicRobot)
 			{
-				Robot r = (Robot) e;
+				Eph32BasicRobot r = (Eph32BasicRobot) e;
 				if (r.getPlayer() != getPlayer())
 				{
 					targets.add(r);

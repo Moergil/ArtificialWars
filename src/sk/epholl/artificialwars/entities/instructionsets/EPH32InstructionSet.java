@@ -30,7 +30,7 @@ public class EPH32InstructionSet extends InstructionSet
 	{
 		super(WORD_BYTES_SIZE);
 		
-		add(0, "wait", EPH32MemoryAddressing.IMPLIED);
+		add(0, "wait", EPH32MemoryAddressing.IMMEDIATE);
 		add(1, "add", EPH32MemoryAddressing.IMPLIED);
 		add(2, "sub", EPH32MemoryAddressing.IMPLIED);
 		add(3, "inc", EPH32MemoryAddressing.IMPLIED);

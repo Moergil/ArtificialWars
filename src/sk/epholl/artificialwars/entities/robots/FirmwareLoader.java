@@ -13,7 +13,7 @@ import sk.hackcraft.artificialwars.computersim.toolchain.Preprocessor;
 
 public class FirmwareLoader
 {
-	public static void loadFirmwareRobot(String fileName, Robot robot) throws IOException, ProgrammingException
+	public static void loadFirmwareRobot(String fileName, Eph32BasicRobot robot) throws IOException, ProgrammingException
 	{
 		Preprocessor preprocessor = new Preprocessor(";", "macro", "/macro");
 		
