@@ -65,15 +65,15 @@ public class EPH32InstructionSet extends InstructionSet
 	}
 
 	@Override
-	protected int calculateBytesSize(int code, MemoryAddressing memoryAddressing)
+	protected int calculateWordsSize(int code, MemoryAddressing memoryAddressing)
 	{
-		return getWordBytesSize() * 2;
+		return 1;
 	}
 	
 	public enum EPH32MemoryAddressing implements InstructionSet.MemoryAddressing
 	{
 		IMPLIED(0, "imp"),
-		IMMEDIATE(WORD_BYTES_SIZE, "imm");
+		IMMEDIATE(1, "imm");
 
 		private final int operandsBytesSize;
 		private final String shortName;
@@ -84,7 +84,7 @@ public class EPH32InstructionSet extends InstructionSet
 			this.shortName = shortName;
 		}
 		
-		public int getOperandsBytesSize()
+		public int getOperandsWordsSize()
 		{
 			return operandsBytesSize;
 		}

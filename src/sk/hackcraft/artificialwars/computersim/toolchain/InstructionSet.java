@@ -36,10 +36,10 @@ public abstract class InstructionSet
 		{
 			throw new IllegalArgumentException(String.format("Code %d already used."));
 		}
+
+		int wordsSize = calculateWordsSize(code, memoryAddressing);
 		
-		int bytesSize = calculateBytesSize(code, memoryAddressing);
-		
-		Opcode opcode = new OpcodeRecord(code, name.toString(), memoryAddressing, bytesSize, compiler);
+		Opcode opcode = new OpcodeRecord(code, name.toString(), memoryAddressing, wordsSize, compiler);
 		
 		InstructionRecord instruction = instructions.get(name);
 		if (instruction == null)
@@ -56,7 +56,7 @@ public abstract class InstructionSet
 		instruction.addOpcode(memoryAddressing, opcode);
 	}
 	
-	protected abstract int calculateBytesSize(int code, MemoryAddressing memoryAddressing);
+	protected abstract int calculateWordsSize(int code, MemoryAddressing memoryAddressing);
 
 	public Set<Instruction> getAllInstructions()
 	{
@@ -107,7 +107,7 @@ public abstract class InstructionSet
 	
 	public interface MemoryAddressing
 	{
-		int getOperandsBytesSize();
+		int getOperandsWordsSize();
 		String getShortName();
 	}
 	

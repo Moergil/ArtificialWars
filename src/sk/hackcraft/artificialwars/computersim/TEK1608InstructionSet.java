@@ -286,7 +286,7 @@ public class TEK1608InstructionSet extends InstructionSet
 		OpcodeCompiler compiler = (opcode, data, output) -> {
 			output.writeByte((byte)opcode.toInt());
 			
-			if (data.length != opcode.getMemoryAddressing().getOperandsBytesSize())
+			if (data.length != opcode.getMemoryAddressing().getOperandsWordsSize())
 			{
 				throw new IllegalArgumentException("Illegal data length.");
 			}
@@ -298,9 +298,9 @@ public class TEK1608InstructionSet extends InstructionSet
 	}
 	
 	@Override
-	protected int calculateBytesSize(int code, MemoryAddressing memoryAddressing)
+	protected int calculateWordsSize(int code, MemoryAddressing memoryAddressing)
 	{
-		return getWordBytesSize() + memoryAddressing.getOperandsBytesSize();
+		return 1 + memoryAddressing.getOperandsWordsSize();
 	}
 	
 	public enum TEK1608MemoryAddressing implements InstructionSet.MemoryAddressing
@@ -312,19 +312,19 @@ public class TEK1608InstructionSet extends InstructionSet
 		/**
 		 * Operand is address $HHLL.
 		 */
-		ABSOLUTE(WORD_BYTES_SIZE * 2, "ABS"),
+		ABSOLUTE(2, "ABS"),
 		/**
 		 * Operand is address incremented by X with carry.
 		 */
-		ABSOLUTE_INDEXED_X(WORD_BYTES_SIZE * 2, "ABX"),
+		ABSOLUTE_INDEXED_X(2, "ABX"),
 		/**
 		 * Operand is address incremented by Y with carry.
 		 */
-		ABSOLUTE_INDEXED_Y(WORD_BYTES_SIZE * 2, "ABY"),
+		ABSOLUTE_INDEXED_Y(2, "ABY"),
 		/**
 		 * Operand is byte (BB).
 		 */
-		IMMEDIATE(WORD_BYTES_SIZE, "IMM"),
+		IMMEDIATE(1, "IMM"),
 		/**
 		 * Operand implied.
 		 */
@@ -332,31 +332,31 @@ public class TEK1608InstructionSet extends InstructionSet
 		/**
 		 * Operand is effective address; effective address is value of address.
 		 */
-		INDIRECT(WORD_BYTES_SIZE * 2, "IND"),
+		INDIRECT(2, "IND"),
 		/**
 		 * Operand is effective zeropage address; effective address is byte (BB) incremented by X without carry.
 		 */
-		X_INDEXED_INDIRECT(WORD_BYTES_SIZE, "INX"),
+		X_INDEXED_INDIRECT(1, "INX"),
 		/**
 		 * Operand is effective address incremented by Y with carry; effective address is word at zeropage address.
 		 */
-		INDIRECT_Y_INDEXED(WORD_BYTES_SIZE, "INY"),
+		INDIRECT_Y_INDEXED(1, "INY"),
 		/**
 		 * Branch target is PC + offset (BB), bit 7 signifies negative offset.
 		 */
-		RELATIVE(WORD_BYTES_SIZE, "REL"),
+		RELATIVE(1, "REL"),
 		/**
 		 * Operand is of address; address hibyte = zero ($00xx).
 		 */
-		ZEROPAGE(WORD_BYTES_SIZE, "ZPG"),
+		ZEROPAGE(1, "ZPG"),
 		/**
 		 * Operand is address incremented by X; address hibyte = zero ($00xx); no page transition.
 		 */
-		ZEROPAGE_X_INDEXED(WORD_BYTES_SIZE, "ZPX"),
+		ZEROPAGE_X_INDEXED(1, "ZPX"),
 		/**
 		 * Operand is address incremented by Y; address hibyte = zero ($00xx); no page transition.
 		 */
-		ZEROPAGE_Y_INDEXED(WORD_BYTES_SIZE, "ZPY");
+		ZEROPAGE_Y_INDEXED(1, "ZPY");
 		
 		private final int operandsBytesSize;
 		private final String shortName;
@@ -368,7 +368,7 @@ public class TEK1608InstructionSet extends InstructionSet
 		}
 		
 		@Override
-		public int getOperandsBytesSize()
+		public int getOperandsWordsSize()
 		{
 			return operandsBytesSize;
 		}

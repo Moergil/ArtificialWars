@@ -267,10 +267,11 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			
 			state.getSegmentOutput(Segment.DATA).write(binaryData);
 			
-			verboseOut.printf("V: %s -> %s%n", name, data);
+			int address = state.getSegmentActualAddress(Segment.DATA);
+			verboseOut.printf("V: %04X %s -> %s%n", address, name, data);
 			state.getVariables().put(name, state.getSegmentActualAddress(Segment.DATA));
 			
-			state.addToSegmentActualAddress(Segment.DATA, binaryData.length);
+			state.addToSegmentActualAddress(Segment.DATA, binaryData.length / instructionSet.getWordBytesSize());
 			return true;
 		}
 		
@@ -373,7 +374,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 				
 				if (finalized)
 				{
-					int bytesCount = ma.getOperandsBytesSize();
+					int bytesCount = ma.getOperandsWordsSize();
 					
 					if (!validateValue(operandValue, bytesCount))
 					{
@@ -418,7 +419,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		
 		MemoryAddressing ma = opcode.getMemoryAddressing();
 		
-		byte operandValue[] = new byte[ma.getOperandsBytesSize()];
+		byte operandValue[] = new byte[ma.getOperandsWordsSize()];
 
 		if (parameter != null)
 		{
@@ -454,7 +455,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 					throw new CodeProcessException(record.getLine(), e.getMessage());
 				}
 			}
-			else if (validateValue(parameter, ma.getOperandsBytesSize()))
+			else if (validateValue(parameter, ma.getOperandsWordsSize()))
 			{
 				decodeValue(parameter, operandValue);
 			}
@@ -464,7 +465,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			}
 		}
 		
-		int offset = 1 + ma.getOperandsBytesSize();
+		int offset = 1 + ma.getOperandsWordsSize();
 		state.addToSegmentActualAddress(Segment.PROGRAM, offset);
 		
 		DataOutput output = state.getSegmentOutput(Segment.PROGRAM);

@@ -4,8 +4,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 int v1 30
-int v2
 int vv 010,0x10
+int v2
 
 ; pick random target and double fire on it
 scan

@@ -113,7 +113,7 @@ public class MenuPanel extends JPanel
 		for (Instruction instruction : instructions)
 		{
 			MemoryAddressing ma = instruction.getMemoryAddressings().iterator().next();
-			String param = ma.getOperandsBytesSize() != 0 ? "<int32>" : "";
+			String param = ma.getOperandsWordsSize() != 0 ? "<int32>" : "";
 			String text = instruction.getName() + " " + param;
 			
 			g2d.drawString(text, 400 + j, 300 + 20 * (i % 10));

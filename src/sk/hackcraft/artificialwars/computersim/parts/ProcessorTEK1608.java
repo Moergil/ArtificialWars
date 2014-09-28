@@ -875,7 +875,7 @@ public class ProcessorTEK1608 implements Device
 		
 		public AbstractOperation(MemoryAddressing memoryAddressing)
 		{
-			this.bytesSize = memoryAddressing.getOperandsBytesSize() + 1;
+			this.bytesSize = memoryAddressing.getOperandsWordsSize() + 1;
 			
 			this.addressSteps = memoryAddressingSetups.get(memoryAddressing);
 
@@ -1277,7 +1277,7 @@ public class ProcessorTEK1608 implements Device
 		
 		public Jump(TEK1608MemoryAddressing memoryAddressing)
 		{
-			this.bytesSize = memoryAddressing.getOperandsBytesSize() + 1;
+			this.bytesSize = memoryAddressing.getOperandsWordsSize() + 1;
 
 			switch (memoryAddressing)
 			{
