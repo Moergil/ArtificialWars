@@ -9,6 +9,7 @@ import sk.hackcraft.artificialwars.computersim.Device;
 import sk.hackcraft.artificialwars.computersim.PinUtil;
 import sk.hackcraft.artificialwars.computersim.Pins;
 import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet;
+import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet.TEK1608MemoryAddressing;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.MemoryAddressing;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.Opcode;
@@ -874,7 +875,7 @@ public class ProcessorTEK1608 implements Device
 		
 		public AbstractOperation(MemoryAddressing memoryAddressing)
 		{
-			this.bytesSize = memoryAddressing.getOperandsBytesSize() + 1;
+			this.bytesSize = memoryAddressing.getOperandsWordsSize() + 1;
 			
 			this.addressSteps = memoryAddressingSetups.get(memoryAddressing);
 
@@ -1276,7 +1277,7 @@ public class ProcessorTEK1608 implements Device
 		
 		public Jump(TEK1608MemoryAddressing memoryAddressing)
 		{
-			this.bytesSize = memoryAddressing.getOperandsBytesSize() + 1;
+			this.bytesSize = memoryAddressing.getOperandsWordsSize() + 1;
 
 			switch (memoryAddressing)
 			{
@@ -1483,82 +1484,6 @@ public class ProcessorTEK1608 implements Device
 		public int getBytesSize()
 		{
 			return 1;
-		}
-	}
-	
-	public enum TEK1608MemoryAddressing implements InstructionSet.MemoryAddressing
-	{
-		/**
-		 * Operand is AC.
-		 */
-		ACCUMULATOR(0, "ACC"),
-		/**
-		 * Operand is address $HHLL.
-		 */
-		ABSOLUTE(2, "ABS"),
-		/**
-		 * Operand is address incremented by X with carry.
-		 */
-		ABSOLUTE_INDEXED_X(2, "ABX"),
-		/**
-		 * Operand is address incremented by Y with carry.
-		 */
-		ABSOLUTE_INDEXED_Y(2, "ABY"),
-		/**
-		 * Operand is byte (BB).
-		 */
-		IMMEDIATE(1, "IMM"),
-		/**
-		 * Operand implied.
-		 */
-		IMPLIED(0, "IMP"),
-		/**
-		 * Operand is effective address; effective address is value of address.
-		 */
-		INDIRECT(2, "IND"),
-		/**
-		 * Operand is effective zeropage address; effective address is byte (BB) incremented by X without carry.
-		 */
-		X_INDEXED_INDIRECT(1, "INX"),
-		/**
-		 * Operand is effective address incremented by Y with carry; effective address is word at zeropage address.
-		 */
-		INDIRECT_Y_INDEXED(1, "INY"),
-		/**
-		 * Branch target is PC + offset (BB), bit 7 signifies negative offset.
-		 */
-		RELATIVE(1, "REL"),
-		/**
-		 * Operand is of address; address hibyte = zero ($00xx).
-		 */
-		ZEROPAGE(1, "ZPG"),
-		/**
-		 * Operand is address incremented by X; address hibyte = zero ($00xx); no page transition.
-		 */
-		ZEROPAGE_X_INDEXED(1, "ZPX"),
-		/**
-		 * Operand is address incremented by Y; address hibyte = zero ($00xx); no page transition.
-		 */
-		ZEROPAGE_Y_INDEXED(1, "ZPY");
-		
-		private final int operandsCount;
-		private final String shortName;
-		
-		private TEK1608MemoryAddressing(int operandsCount, String shortName)
-		{
-			this.operandsCount = operandsCount;
-			this.shortName = shortName;
-		}
-		
-		@Override
-		public int getOperandsBytesSize()
-		{
-			return operandsCount;
-		}
-		
-		public String getShortName()
-		{
-			return shortName;
 		}
 	}
 }

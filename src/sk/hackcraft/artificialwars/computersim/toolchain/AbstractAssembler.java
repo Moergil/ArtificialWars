@@ -88,9 +88,16 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 	@Override
 	protected AssemblerState started()
 	{
+		AssemblerState state = new AssemblerState();
+		
+		if (state.isVerbose())
+		{
+			verboseOut = System.out;
+		}
+		
 		verboseOut.println("Assembling initiated...");
 		
-		return new AssemblerState();
+		return state;
 	}
 	
 	private int parseValue(String value)
@@ -176,34 +183,12 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		}
 		
 		// write result
-		byte offset[];
-		
-		int programStartAddress = state.getSegmentStartAddress(Segment.PROGRAM);
-		byte program[] = state.getSegmentBytes(Segment.PROGRAM);
-		
-		int dataStartAddress = state.getSegmentStartAddress(Segment.DATA);
-		byte data[] = state.getSegmentBytes(Segment.DATA);
-		
-		offset = new byte[programStartAddress];
-		
-		output.write(offset);
-		output.write(program);
-
-		int programSegmentEnd = offset.length + program.length;
-		if (programSegmentEnd > dataStartAddress)
-		{
-			throw new CodeProcessException(-1, "Segments collision.");
-		}
-		
-		int gap = dataStartAddress - programSegmentEnd;
-		
-		offset = new byte[gap];
-		
-		output.write(offset);
-		output.write(data);
+		linkTogether(state, output);
 		
 		finished(state);
 	}
+	
+	protected abstract void linkTogether(AssemblerState state, OutputStream output) throws CodeProcessException, IOException;
 
 	protected boolean scanIdentifiers(String line, List<String> parts, AssemblerState state) throws CodeProcessException, IOException
 	{
@@ -282,10 +267,11 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			
 			state.getSegmentOutput(Segment.DATA).write(binaryData);
 			
-			verboseOut.printf("V: %s -> %s%n", name, data);
+			int address = state.getSegmentActualAddress(Segment.DATA);
+			verboseOut.printf("V: %04X %s -> %s%n", address, name, data);
 			state.getVariables().put(name, state.getSegmentActualAddress(Segment.DATA));
 			
-			state.addToSegmentActualAddress(Segment.DATA, binaryData.length);
+			state.addToSegmentActualAddress(Segment.DATA, binaryData.length / instructionSet.getWordBytesSize());
 			return true;
 		}
 		
@@ -388,7 +374,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 				
 				if (finalized)
 				{
-					int bytesCount = ma.getOperandsBytesSize();
+					int bytesCount = ma.getOperandsWordsSize();
 					
 					if (!validateValue(operandValue, bytesCount))
 					{
@@ -410,7 +396,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 
 			found = true;
 			
-			int offset = 1 + ma.getOperandsBytesSize();
+			int offset = opcode.getWordsSize();
 			state.addToSegmentActualAddress(Segment.PROGRAM, offset);
 
 			verboseOut.printf("I: %s %s %s%n", name, ma.getShortName(), operandValue);
@@ -433,7 +419,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		
 		MemoryAddressing ma = opcode.getMemoryAddressing();
 		
-		byte operandValue[] = new byte[ma.getOperandsBytesSize()];
+		byte operandValue[] = new byte[ma.getOperandsWordsSize()];
 
 		if (parameter != null)
 		{
@@ -457,7 +443,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 				LabelType labelType = relativeLabelAddressing.get(name);
 				
 				int labelAddress = labelValue.intValue();
-				int programCounterAddress = state.getSegmentActualAddress(Segment.PROGRAM) + opcode.getBytesSize();
+				int programCounterAddress = state.getSegmentActualAddress(Segment.PROGRAM) + opcode.getWordsSize();
 				
 				try
 				{
@@ -469,7 +455,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 					throw new CodeProcessException(record.getLine(), e.getMessage());
 				}
 			}
-			else if (validateValue(parameter, ma.getOperandsBytesSize()))
+			else if (validateValue(parameter, ma.getOperandsWordsSize()))
 			{
 				decodeValue(parameter, operandValue);
 			}
@@ -479,7 +465,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			}
 		}
 		
-		int offset = 1 + ma.getOperandsBytesSize();
+		int offset = 1 + ma.getOperandsWordsSize();
 		state.addToSegmentActualAddress(Segment.PROGRAM, offset);
 		
 		DataOutput output = state.getSegmentOutput(Segment.PROGRAM);
@@ -644,7 +630,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 	
 	protected interface LabelType
 	{
-		int getOperandsBytesSize();
+		int getOperandsBitsSize();
 		int getOperandValue(int labelAddress, int programCounterAddress);
 	}
 

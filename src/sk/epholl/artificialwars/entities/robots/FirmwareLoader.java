@@ -18,10 +18,12 @@ public class FirmwareLoader
 		Preprocessor preprocessor = new Preprocessor(";", "macro", "/macro");
 		
 		int programSegmentStartAddress = 0;
-		// TODO hack, mapping data segment after instruction memory
-		int dataSegmentStartAddress = 64 * Integer.BYTES * 2;
+		int programMemorySize = 64 * Integer.BYTES * 2;
 		
-		AssemblerEPH32 assembler = new AssemblerEPH32(programSegmentStartAddress, dataSegmentStartAddress);
+		int dataSegmentStartAddress = 0;
+		int dataMemorySize = 4 * Integer.BYTES;
+		
+		AssemblerEPH32 assembler = new AssemblerEPH32(programSegmentStartAddress, dataSegmentStartAddress, programMemorySize, dataMemorySize);
 		
 		try (InputStream input = new FileInputStream(fileName);)
 		{
@@ -32,8 +34,8 @@ public class FirmwareLoader
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
 			assembler.process(assemblerInput, output);
 			
-			byte objectCode[] = output.toByteArray();
-			robot.loadFirmware(objectCode, 0);
+			byte firmware[] = output.toByteArray();
+			robot.loadFirmware(firmware, 0);
 		}
 		catch (IOException | CodeProcessException e)
 		{

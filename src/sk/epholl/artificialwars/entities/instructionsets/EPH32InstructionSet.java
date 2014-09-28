@@ -4,6 +4,8 @@ import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 
 public class EPH32InstructionSet extends InstructionSet
 {
+	public static final int WORD_BYTES_SIZE = 4;
+	
 	private static final EPH32InstructionSet INSTANCE = new EPH32InstructionSet();
 	
 	public static EPH32InstructionSet getInstance()
@@ -26,6 +28,8 @@ public class EPH32InstructionSet extends InstructionSet
 	
 	private EPH32InstructionSet()
 	{
+		super(WORD_BYTES_SIZE);
+		
 		add(0, "wait", EPH32MemoryAddressing.IMMEDIATE);
 		add(1, "add", EPH32MemoryAddressing.IMPLIED);
 		add(2, "sub", EPH32MemoryAddressing.IMPLIED);
@@ -61,16 +65,16 @@ public class EPH32InstructionSet extends InstructionSet
 	}
 
 	@Override
-	protected int calculateBytesSize(int code, MemoryAddressing memoryAddressing)
+	protected int calculateWordsSize(int code, MemoryAddressing memoryAddressing)
 	{
-		return 8;
+		return 1;
 	}
 	
 	public enum EPH32MemoryAddressing implements InstructionSet.MemoryAddressing
 	{
 		IMPLIED(0, "imp"),
-		IMMEDIATE(4, "imm");
-		
+		IMMEDIATE(1, "imm");
+
 		private final int operandsBytesSize;
 		private final String shortName;
 		
@@ -80,7 +84,7 @@ public class EPH32InstructionSet extends InstructionSet
 			this.shortName = shortName;
 		}
 		
-		public int getOperandsBytesSize()
+		public int getOperandsWordsSize()
 		{
 			return operandsBytesSize;
 		}

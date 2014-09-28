@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.ArrayList;
@@ -16,20 +17,10 @@ import java.util.regex.Pattern;
 
 public abstract class CodeProcessor<S extends CodeProcessorState>
 {
-	protected PrintWriter verboseOut = new PrintWriter(new Writer()
+	protected PrintStream verboseOut = new PrintStream(new OutputStream()
 	{
 		@Override
-		public void write(char[] cbuf, int off, int len) throws IOException
-		{
-		}
-		
-		@Override
-		public void flush() throws IOException
-		{
-		}
-		
-		@Override
-		public void close() throws IOException
+		public void write(int b) throws IOException
 		{
 		}
 	});

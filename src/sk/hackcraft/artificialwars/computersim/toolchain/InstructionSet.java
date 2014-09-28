@@ -10,8 +10,20 @@ import java.util.TreeSet;
 
 public abstract class InstructionSet
 {
+	protected final int wordBytesSize;
+	
 	private final Map<Integer, Opcode> opcodes = new HashMap<>();
 	private final Map<String, InstructionRecord> instructions = new HashMap<>();
+	
+	public InstructionSet(int wordBytesSize)
+	{
+		this.wordBytesSize = wordBytesSize;
+	}
+	
+	public int getWordBytesSize()
+	{
+		return wordBytesSize;
+	}
 
 	public void add(int code, Object name, MemoryAddressing memoryAddressing, OpcodeCompiler compiler)
 	{
@@ -24,10 +36,10 @@ public abstract class InstructionSet
 		{
 			throw new IllegalArgumentException(String.format("Code %d already used."));
 		}
+
+		int wordsSize = calculateWordsSize(code, memoryAddressing);
 		
-		int bytesSize = calculateBytesSize(code, memoryAddressing);
-		
-		Opcode opcode = new OpcodeRecord(code, name.toString(), memoryAddressing, bytesSize, compiler);
+		Opcode opcode = new OpcodeRecord(code, name.toString(), memoryAddressing, wordsSize, compiler);
 		
 		InstructionRecord instruction = instructions.get(name);
 		if (instruction == null)
@@ -44,7 +56,7 @@ public abstract class InstructionSet
 		instruction.addOpcode(memoryAddressing, opcode);
 	}
 	
-	protected abstract int calculateBytesSize(int code, MemoryAddressing memoryAddressing);
+	protected abstract int calculateWordsSize(int code, MemoryAddressing memoryAddressing);
 
 	public Set<Instruction> getAllInstructions()
 	{
@@ -69,6 +81,7 @@ public abstract class InstructionSet
 	{
 		int toInt();		
 		int getBytesSize();
+		int getWordsSize();
 		
 		String getInstructionName();
 		MemoryAddressing getMemoryAddressing();
@@ -94,7 +107,7 @@ public abstract class InstructionSet
 	
 	public interface MemoryAddressing
 	{
-		int getOperandsBytesSize();
+		int getOperandsWordsSize();
 		String getShortName();
 	}
 	
@@ -145,16 +158,16 @@ public abstract class InstructionSet
 		private final String name;
 		private final MemoryAddressing memoryAddressing;
 		
-		private final int bytesSize;
+		private final int wordsSize;
 		private final OpcodeCompiler compiler;
 		
-		public OpcodeRecord(int opcode, String name, MemoryAddressing memoryAddressing, int bytesSize, OpcodeCompiler compiler)
+		public OpcodeRecord(int opcode, String name, MemoryAddressing memoryAddressing, int wordsSize, OpcodeCompiler compiler)
 		{
 			this.opcode = opcode;
 			this.name = name;
 			this.memoryAddressing = memoryAddressing;
 			
-			this.bytesSize = bytesSize;
+			this.wordsSize = wordsSize;
 			this.compiler = compiler;
 		}
 
@@ -177,9 +190,15 @@ public abstract class InstructionSet
 		}
 
 		@Override
+		public int getWordsSize()
+		{
+			return wordsSize;
+		}
+		
+		@Override
 		public int getBytesSize()
 		{
-			return bytesSize;
+			return wordsSize / getWordsSize();
 		}
 		
 		@Override
