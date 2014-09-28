@@ -6,6 +6,6 @@ swp
 posy
 swp
 move
-wait
+wait 1
 jmpm 9
 jmp 1

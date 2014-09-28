@@ -1,7 +1,7 @@
 package sk.epholl.artificialwars.entities.objectives;
 
 import sk.epholl.artificialwars.entities.Entity;
-import sk.epholl.artificialwars.entities.robots.Robot;
+import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
 import sk.epholl.artificialwars.logic.GameLogic;
 
 /**
@@ -27,9 +27,9 @@ public class NumberOfUnitsObjective extends Objective
 
 		for (Entity e : game.getEntities())
 		{
-			if (e instanceof Robot)
+			if (e instanceof Eph32BasicRobot)
 			{
-				Robot r = (Robot) e;
+				Eph32BasicRobot r = (Eph32BasicRobot) e;
 				if (e.getPlayer() == player && this.collidesWith(e))
 					unitsFoundCount++;
 			}

@@ -1,3 +1,4 @@
-seta 10
-setb 10
-move
+start:
+seta 600
+setb 300
+move 
