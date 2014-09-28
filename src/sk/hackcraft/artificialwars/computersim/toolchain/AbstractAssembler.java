@@ -88,9 +88,16 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 	@Override
 	protected AssemblerState started()
 	{
+		AssemblerState state = new AssemblerState();
+		
+		if (state.isVerbose())
+		{
+			verboseOut = System.out;
+		}
+		
 		verboseOut.println("Assembling initiated...");
 		
-		return new AssemblerState();
+		return state;
 	}
 	
 	private int parseValue(String value)
@@ -176,34 +183,12 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		}
 		
 		// write result
-		byte offset[];
-		
-		int programStartAddress = state.getSegmentStartAddress(Segment.PROGRAM);
-		byte program[] = state.getSegmentBytes(Segment.PROGRAM);
-		
-		int dataStartAddress = state.getSegmentStartAddress(Segment.DATA);
-		byte data[] = state.getSegmentBytes(Segment.DATA);
-		
-		offset = new byte[programStartAddress];
-		
-		output.write(offset);
-		output.write(program);
-
-		int programSegmentEnd = offset.length + program.length;
-		if (programSegmentEnd > dataStartAddress)
-		{
-			throw new CodeProcessException(-1, "Segments collision.");
-		}
-		
-		int gap = dataStartAddress - programSegmentEnd;
-		
-		offset = new byte[gap];
-		
-		output.write(offset);
-		output.write(data);
+		linkTogether(state, output);
 		
 		finished(state);
 	}
+	
+	protected abstract void linkTogether(AssemblerState state, OutputStream output) throws CodeProcessException, IOException;
 
 	protected boolean scanIdentifiers(String line, List<String> parts, AssemblerState state) throws CodeProcessException, IOException
 	{
@@ -410,7 +395,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 
 			found = true;
 			
-			int offset = 1 + ma.getOperandsBytesSize();
+			int offset = opcode.getWordsSize();
 			state.addToSegmentActualAddress(Segment.PROGRAM, offset);
 
 			verboseOut.printf("I: %s %s %s%n", name, ma.getShortName(), operandValue);
@@ -457,7 +442,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 				LabelType labelType = relativeLabelAddressing.get(name);
 				
 				int labelAddress = labelValue.intValue();
-				int programCounterAddress = state.getSegmentActualAddress(Segment.PROGRAM) + opcode.getBytesSize();
+				int programCounterAddress = state.getSegmentActualAddress(Segment.PROGRAM) + opcode.getWordsSize();
 				
 				try
 				{
@@ -644,7 +629,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 	
 	protected interface LabelType
 	{
-		int getOperandsBytesSize();
+		int getOperandsBitsSize();
 		int getOperandValue(int labelAddress, int programCounterAddress);
 	}
 

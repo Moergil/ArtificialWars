@@ -1,8 +1,11 @@
 package sk.hackcraft.artificialwars.computersim.toolchain;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 import sk.hackcraft.artificialwars.computersim.Endianness;
 import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet;
-import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608.TEK1608MemoryAddressing;
+import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet.TEK1608MemoryAddressing;
 
 public class AssemblerTEK1608 extends AbstractAssembler
 {	
@@ -38,8 +41,8 @@ public class AssemblerTEK1608 extends AbstractAssembler
 		enableLabels("JMP", TEK1608LabelType.ABSOLUTE);
 		enableLabels("JSR", TEK1608LabelType.ABSOLUTE);
 		
-		addVariableType("BYTE", 1);
-		addVariableType("WORD", 2);
+		addVariableType("BYTE", Byte.BYTES);
+		addVariableType("WORD", Short.BYTES);
 		
 		// hexa
 		addValueParser((value) -> {
@@ -88,9 +91,39 @@ public class AssemblerTEK1608 extends AbstractAssembler
 		});
 	}
 	
+	@Override
+	protected void linkTogether(AssemblerState state, OutputStream output) throws IOException, CodeProcessException
+	{
+		byte offset[];
+		
+		int programStartAddress = state.getSegmentStartAddress(Segment.PROGRAM);
+		byte program[] = state.getSegmentBytes(Segment.PROGRAM);
+		
+		int dataStartAddress = state.getSegmentStartAddress(Segment.DATA);
+		byte data[] = state.getSegmentBytes(Segment.DATA);
+		
+		offset = new byte[programStartAddress];
+		
+		output.write(offset);
+		output.write(program);
+
+		int programSegmentEnd = offset.length + program.length;
+		if (programSegmentEnd > dataStartAddress)
+		{
+			throw new CodeProcessException(-1, "Segments collision.");
+		}
+		
+		int gap = dataStartAddress - programSegmentEnd;
+		
+		offset = new byte[gap];
+		
+		output.write(offset);
+		output.write(data);
+	}
+	
 	private enum TEK1608LabelType implements LabelType
 	{
-		RELATIVE(1)
+		RELATIVE(TEK1608InstructionSet.WORD_BYTES_SIZE)
 		{
 			@Override
 			public int getOperandValue(int labelAddress, int actualPCAddress)
@@ -105,7 +138,7 @@ public class AssemblerTEK1608 extends AbstractAssembler
 				return offset;
 			}
 		},
-		ABSOLUTE(2)
+		ABSOLUTE(TEK1608InstructionSet.WORD_BYTES_SIZE * 2)
 		{
 			@Override
 			public int getOperandValue(int labelAddress, int actualPCAddress)
@@ -118,17 +151,17 @@ public class AssemblerTEK1608 extends AbstractAssembler
 			}
 		};
 		
-		private final int operandsBytesSize;
+		private final int operandsBitsSize;
 		
-		private TEK1608LabelType(int operandsBytesSize)
+		private TEK1608LabelType(int operandsBitsSize)
 		{
-			this.operandsBytesSize = operandsBytesSize;
+			this.operandsBitsSize = operandsBitsSize;
 		}
 
 		@Override
-		public int getOperandsBytesSize()
+		public int getOperandsBitsSize()
 		{
-			return operandsBytesSize;
+			return operandsBitsSize;
 		}
 	}
 }

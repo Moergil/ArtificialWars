@@ -355,13 +355,21 @@ public class Robot extends Entity
 		ByteArrayInputStream bais = new ByteArrayInputStream(firmware);
 		DataInput input = new DataInputStream(bais);
 		
-		for (int i = 0; i < firmware.length / Integer.BYTES / 2; i++)
+		int programSize = input.readInt();
+		int dataSize = input.readInt();
+		
+		for (int i = 0; i < programSize / Integer.BYTES / 2; i++)
 		{
 			int instruction = input.readInt();
 			int parameter = input.readInt();
 			
 			instructionMemory[i + offset] = instruction;
 			parameterMemory[i + offset] = parameter;
+		}
+		
+		for (int i = 0; i < dataSize / Integer.BYTES; i++)
+		{
+			memory[i] = input.readInt();
 		}
 	}
 

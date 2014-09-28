@@ -1,10 +1,11 @@
 package sk.hackcraft.artificialwars.computersim;
 
-import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608.TEK1608MemoryAddressing;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 
 public class TEK1608InstructionSet extends InstructionSet
 {
+	public static final int WORD_BYTES_SIZE = 1;
+	
 	private static final TEK1608InstructionSet INSTANCE = new TEK1608InstructionSet();
 	
 	public static TEK1608InstructionSet getInstance()
@@ -14,6 +15,8 @@ public class TEK1608InstructionSet extends InstructionSet
 
 	private TEK1608InstructionSet()
 	{
+		super(WORD_BYTES_SIZE);
+		
 		// ADC add with carry
 		add(0x69, Name.ADC, TEK1608MemoryAddressing.IMMEDIATE);
 		add(0x65, Name.ADC, TEK1608MemoryAddressing.ZEROPAGE);
@@ -297,7 +300,83 @@ public class TEK1608InstructionSet extends InstructionSet
 	@Override
 	protected int calculateBytesSize(int code, MemoryAddressing memoryAddressing)
 	{
-		return 1 + memoryAddressing.getOperandsBytesSize();
+		return getWordBytesSize() + memoryAddressing.getOperandsBytesSize();
+	}
+	
+	public enum TEK1608MemoryAddressing implements InstructionSet.MemoryAddressing
+	{
+		/**
+		 * Operand is AC.
+		 */
+		ACCUMULATOR(0, "ACC"),
+		/**
+		 * Operand is address $HHLL.
+		 */
+		ABSOLUTE(WORD_BYTES_SIZE * 2, "ABS"),
+		/**
+		 * Operand is address incremented by X with carry.
+		 */
+		ABSOLUTE_INDEXED_X(WORD_BYTES_SIZE * 2, "ABX"),
+		/**
+		 * Operand is address incremented by Y with carry.
+		 */
+		ABSOLUTE_INDEXED_Y(WORD_BYTES_SIZE * 2, "ABY"),
+		/**
+		 * Operand is byte (BB).
+		 */
+		IMMEDIATE(WORD_BYTES_SIZE, "IMM"),
+		/**
+		 * Operand implied.
+		 */
+		IMPLIED(0, "IMP"),
+		/**
+		 * Operand is effective address; effective address is value of address.
+		 */
+		INDIRECT(WORD_BYTES_SIZE * 2, "IND"),
+		/**
+		 * Operand is effective zeropage address; effective address is byte (BB) incremented by X without carry.
+		 */
+		X_INDEXED_INDIRECT(WORD_BYTES_SIZE, "INX"),
+		/**
+		 * Operand is effective address incremented by Y with carry; effective address is word at zeropage address.
+		 */
+		INDIRECT_Y_INDEXED(WORD_BYTES_SIZE, "INY"),
+		/**
+		 * Branch target is PC + offset (BB), bit 7 signifies negative offset.
+		 */
+		RELATIVE(WORD_BYTES_SIZE, "REL"),
+		/**
+		 * Operand is of address; address hibyte = zero ($00xx).
+		 */
+		ZEROPAGE(WORD_BYTES_SIZE, "ZPG"),
+		/**
+		 * Operand is address incremented by X; address hibyte = zero ($00xx); no page transition.
+		 */
+		ZEROPAGE_X_INDEXED(WORD_BYTES_SIZE, "ZPX"),
+		/**
+		 * Operand is address incremented by Y; address hibyte = zero ($00xx); no page transition.
+		 */
+		ZEROPAGE_Y_INDEXED(WORD_BYTES_SIZE, "ZPY");
+		
+		private final int operandsBytesSize;
+		private final String shortName;
+		
+		private TEK1608MemoryAddressing(int operandsBytesSize, String shortName)
+		{
+			this.operandsBytesSize = operandsBytesSize;
+			this.shortName = shortName;
+		}
+		
+		@Override
+		public int getOperandsBytesSize()
+		{
+			return operandsBytesSize;
+		}
+		
+		public String getShortName()
+		{
+			return shortName;
+		}
 	}
 	
 	public enum Name
