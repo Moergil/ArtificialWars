@@ -35,9 +35,16 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 	@Override
 	protected PreprocessorState started()
 	{
+		PreprocessorState state = new PreprocessorState();
+		
+		if (state.isVerbose())
+		{
+			verboseOut = System.out;
+		}
+		
 		verboseOut.println("Preprocessor started.");
 		
-		return new PreprocessorState();
+		return state;
 	}
 	
 	@Override
