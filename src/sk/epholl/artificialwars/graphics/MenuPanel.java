@@ -7,12 +7,14 @@ import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Set;
 
 import javax.swing.JPanel;
 
 import sk.epholl.artificialwars.entities.instructionsets.EPH32InstructionSet;
 import sk.epholl.artificialwars.logic.MainLogic;
-import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
+import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.Instruction;
+import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.MemoryAddressing;
 
 public class MenuPanel extends JPanel
 {
@@ -101,21 +103,26 @@ public class MenuPanel extends JPanel
 	{
 		g2d.setColor(Color.black);
 
-		InstructionSet instructions = EPH32InstructionSet.getInstance();
-		
-		//TODO instructions vypis
+		Set<Instruction> instructions = EPH32InstructionSet.getInstance().getAllInstructions();
+
 		g2d.drawString("Use file player.txt to program your robot", 400, 240);
 		g2d.drawString("You can use // for comments and each instruction", 400, 260);
 		g2d.drawString("must have exactly one parameter.", 400, 280);
 
-		/*int j = 0;
-		for (int i = 0; i < instructions.length; i++)
+		int i = 0, j = 0;
+		for (Instruction instruction : instructions)
 		{
-			g2d.drawString(instructions[i], 400 + j, 300 + 20 * (i % 10));
+			MemoryAddressing ma = instruction.getMemoryAddressings().iterator().next();
+			String param = ma.getOperandsBytesSize() != 0 ? "<int32>" : "";
+			String text = instruction.getName() + " " + param;
+			
+			g2d.drawString(text, 400 + j, 300 + 20 * (i % 10));
 			if (((i + 1) % 10) == 0)
 			{
 				j += 100;
 			}
-		}*/
+			
+			i++;
+		}
 	}
 }

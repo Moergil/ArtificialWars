@@ -19,7 +19,7 @@ public class FirmwareLoader
 		
 		int programSegmentStartAddress = 0;
 		// TODO hack, mapping data segment after instruction memory
-		int dataSegmentStartAddress = 64 * Integer.BYTES;
+		int dataSegmentStartAddress = 64 * Integer.BYTES * 2;
 		
 		AssemblerEPH32 assembler = new AssemblerEPH32(programSegmentStartAddress, dataSegmentStartAddress);
 		

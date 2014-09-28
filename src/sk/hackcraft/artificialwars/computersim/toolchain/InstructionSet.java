@@ -3,8 +3,10 @@ package sk.hackcraft.artificialwars.computersim.toolchain;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 public abstract class InstructionSet
 {
@@ -44,6 +46,15 @@ public abstract class InstructionSet
 	
 	protected abstract int calculateBytesSize(int code, MemoryAddressing memoryAddressing);
 
+	public Set<Instruction> getAllInstructions()
+	{
+		Set<Instruction> set = new TreeSet<>((Instruction ins1, Instruction ins2) -> ins1.getName().compareTo(ins2.getName()));
+		
+		set.addAll(instructions.values());
+		
+		return set;
+	}
+	
 	public Instruction getInstruction(String name)
 	{
 		return instructions.get(name);
