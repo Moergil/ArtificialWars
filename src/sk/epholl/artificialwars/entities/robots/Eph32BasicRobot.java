@@ -301,6 +301,12 @@ public class Eph32BasicRobot extends Entity
 
 	private void nextInstructionCooldownSwitch()
 	{
+		if (instructionPointer >= instructionMemory.length)
+		{
+			selfDestruct();
+			return;
+		}
+		
 		switch (instructionMemory[instructionPointer])
 		{
 			case -1:

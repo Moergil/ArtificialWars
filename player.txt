@@ -1,4 +1,4 @@
-jmp 1000
+seta 1000
 start:
 scan
 lock
