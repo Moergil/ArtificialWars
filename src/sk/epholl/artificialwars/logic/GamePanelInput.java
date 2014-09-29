@@ -29,12 +29,12 @@ public class GamePanelInput
 		button.setActivationListener(() -> game.pauseGame());
 		buttons.add(button);
 		
-		button = new GameButton(210, 290, 545, 565, "Slow");
-		button.setActivationListener(() -> {game.setTimerDelay(80); game.continueGame();});
+		button = new GameButton(210, 290, 545, 565, "Step");
+		button.setActivationListener(() -> {game.pauseGame(); game.singleStep();});
 		buttons.add(button);
 		
-		button = new GameButton(310, 390, 545, 565, "Normal");
-		button.setActivationListener(() -> {game.setTimerDelay(20); game.continueGame();});
+		button = new GameButton(310, 390, 545, 565, "Slow");
+		button.setActivationListener(() -> {game.setTimerDelay(40); game.continueGame();});
 		buttons.add(button);
 		
 		button = new GameButton(410, 490, 545, 565, "Fast");

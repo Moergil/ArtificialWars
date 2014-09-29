@@ -28,7 +28,7 @@ public class MenuPanel extends JPanel
 		int right = 140;
 		int y = 100;
 		int height = 30;
-		int spacing = 50;
+		int spacing = 20;
 		for (int i = 0; i < 5; i++)
 		{
 			int levelIndex = i + 1;

@@ -46,11 +46,16 @@ public class GameLogic
 			@Override
 			public void actionPerformed(ActionEvent ae)
 			{
-				logicCycle();
-				panel.repaint();
-				cycleCount++;
+				singleStep();
 			}
 		});
+	}
+	
+	public void singleStep()
+	{
+		logicCycle();
+		panel.repaint();
+		cycleCount++;
 	}
 
 	private void initialise()
