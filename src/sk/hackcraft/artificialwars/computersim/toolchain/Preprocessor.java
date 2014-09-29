@@ -20,14 +20,14 @@ import java.util.regex.Pattern;
 
 public class Preprocessor extends CodeProcessor<CodeProcessorState>
 {
-	private Pattern lineCommentPattern;
+	private String lineComment;
 	private String macroStart, macroEnd;
 
 	private final Map<String, Macro> macros = new HashMap<>();
 	
-	public Preprocessor(String lineCommentStart, String macroStart, String macroEnd)
+	public Preprocessor(String lineComment, String macroStart, String macroEnd)
 	{	
-		this.lineCommentPattern = Pattern.compile(String.format("^([^%s]*)%s", lineCommentStart, lineCommentStart));
+		this.lineComment = lineComment;
 		this.macroStart = macroStart;
 		this.macroEnd = macroEnd;
 	}
@@ -61,18 +61,19 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 		{
 			state.incrementLineNumber();
 			
-			if (isMess(line))
+			String cleanedLine = cleanLine(line);
+			if (cleanedLine.isEmpty())
 			{
 				continue;
 			}
 			
 			if (state.isParsingMacro())
 			{
-				parseMacro(line, state);
+				parseMacro(cleanedLine, state);
 			}
-			else if (!scanMacros(line, state))
+			else if (!scanMacros(cleanedLine, state))
 			{
-				codeLines.add(line);
+				codeLines.add(cleanedLine);
 			}
 		}
 		
@@ -93,14 +94,16 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 		finished(state);
 	}
 	
-	private boolean isMess(String line)
+	private String cleanLine(String line)
 	{
-		Matcher commentMatcher = lineCommentPattern.matcher(line);
+		int commentIndex = line.indexOf(lineComment);
 		
-		line = (commentMatcher.find()) ? commentMatcher.group(1) : line;
-		line = line.trim();
+		if (commentIndex != -1)
+		{
+			line = line.substring(0, commentIndex);
+		}
 		
-		return line.isEmpty() ? true : false;
+		return line.trim();
 	}
 	
 	private boolean scanMacros(String line, PreprocessorState state)
@@ -180,7 +183,7 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 
 			String assembly = macro.process(operandValues, state.getLineNumber());
 			
-			verboseOut.println(assembly);
+			verboseOut.print(assembly);
 			
 			writer.write(assembly);
 		}

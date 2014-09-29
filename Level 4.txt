@@ -9,5 +9,5 @@
 obstacle 390 410 250 350
 objective_units 0 1000 0 1000 1 0 invisible
 Destroy enemy green robot.
-robot 255 128 128 0 200 300 player.txt
+robot 255 128 128 0 200 300 moerobot.txt
 robot 100 150 100 1 600 300 basic_stationary_robot.txt

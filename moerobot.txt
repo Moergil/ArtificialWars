@@ -1,0 +1,87 @@
+;;;;;;;;;
+; M-800	;
+;;;;;;;;;
+
+move_random_offset = 400
+fire_random_offset = 20
+
+int tx
+int mx 200
+int my 200
+
+; generate destination coordinates and issue movement order
+move_order:
+	; move to saved coordinates
+	seta my
+	memload
+	swp
+	seta mx
+	memload
+	move
+
+; generate new move position
+move_coordinates_generation:
+	; set MP to mx
+	seta mx
+	setmp
+	
+	; load X, swap to B, set offset to A, add together and save to mx - new X position
+	posx
+	swp
+	rnd move_random_offset
+	add
+	memsave
+	
+	; load Y, swap to B, set offset to A, add together, and save to my - new Y position
+	posy
+	swp
+	rnd move_random_offset
+	add
+	incmp
+	memsave
+	
+; moving logic
+move_loop:
+	; try to shot at enemy if scan is succesfull
+	; otherwise go to move loop
+	scan
+	jmpl fire_order
+	jmp move_loop_checks
+	
+	; lock enemy and fire on it
+	; robot will fire three shots, one directly to enemy and two with pseudo-random offset around target
+	; only Y parameter is randomized, but it should be sufficient and few memory access are needed
+	fire_order:
+		; prepare save slot
+		seta tx
+		setmp
+		
+		; first, accurrate shot
+		lock
+		fire
+		
+		; save target X
+		memsave
+		
+		random_shot
+		random_shot
+		
+move_loop_checks:
+	jmpc move_order	; issue move order to another place when colliding
+	jmpm move_loop ; stay inside loop while moving
+
+jmp move_order
+
+;;; MACROs ;;;
+
+; macro for randomized shooting
+; it assums, that B is target Y
+; and that memory pointer is set to target X
+; only Y parameter is randomized
+macro random_shot
+	rnd fire_random_offset
+	add
+	swp
+	memload
+	fire
+/macro

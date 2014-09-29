@@ -69,20 +69,23 @@ public class GamePanel extends JPanel
 			
 			Eph32BasicRobot robot = getSelectedRobot();
 			
-			g2d.setFont(monospace);
+			Graphics2D g2d2 = (Graphics2D)g2d.create();
+			g2d2.setFont(monospace);
 			
 			if (robot == null)
 			{
-				g2d.drawString("Click any robot to select it.", 520, 537);
+				g2d2.drawString("Click any robot to select it.", 520, 537);
 			}
 			else
 			{
 				String registers = robot.getRegistersString();
-				g2d.drawString(registers, 520, 517);
+				g2d2.drawString(registers, 520, 517);
 				
 				String line = robot.getActualLine();
-				g2d.drawString(line, 520, 537);
+				g2d2.drawString(line, 520, 537);
 			}
+			
+			g2d2.dispose();
 
 			for (GameButton button : input.getButtons())
 			{
