@@ -8,7 +8,7 @@
 
 objective_units 0 1000 0 1000 1 0 invisible
 Destroy all green robots.
-robot 255 128 128 0 400 300 player.txt
+robot 255 128 128 0 400 300 moerobot.txt
 robot 100 150 100 1 200 300 dummy_robot.txt
 robot 100 150 100 1 600 300 dummy_robot.txt
 robot 100 150 100 1 400 150 dummy_robot.txt

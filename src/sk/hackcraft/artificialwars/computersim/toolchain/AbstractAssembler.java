@@ -408,7 +408,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		
 		if (!found)
 		{
-			throw new CodeProcessException(state.getLineNumber(), "Can't process instruction; no suitable memory addressing found for given param: " + param);
+			throw new CodeProcessException(state.getLineNumber(), "Can't process instruction " + name + "; no suitable memory addressing found for given param: " + param);
 		}
 	}
 	
