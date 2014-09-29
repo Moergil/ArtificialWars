@@ -119,8 +119,10 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		endianness.valueToBytes(binaryValue, output);
 	}
 	
-	private boolean validateValue(String value, int bytesCount)
+	private boolean validateValue(String value, int wordsCount)
 	{
+		int bytesCount = wordsCount * instructionSet.getWordBytesSize();
+		
 		for (ValueParser parser : valueParsers)
 		{
 			if (parser.validate(value))

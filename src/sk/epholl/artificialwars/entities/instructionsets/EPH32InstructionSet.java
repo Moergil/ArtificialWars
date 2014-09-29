@@ -75,18 +75,18 @@ public class EPH32InstructionSet extends InstructionSet
 		IMPLIED(0, "imp"),
 		IMMEDIATE(1, "imm");
 
-		private final int operandsBytesSize;
+		private final int operandsWordsSize;
 		private final String shortName;
 		
-		private EPH32MemoryAddressing(int operandsBytesSize, String shortName)
+		private EPH32MemoryAddressing(int operandsWordsSize, String shortName)
 		{
-			this.operandsBytesSize = operandsBytesSize;
+			this.operandsWordsSize = operandsWordsSize;
 			this.shortName = shortName;
 		}
 		
 		public int getOperandsWordsSize()
 		{
-			return operandsBytesSize;
+			return operandsWordsSize;
 		}
 		
 		@Override

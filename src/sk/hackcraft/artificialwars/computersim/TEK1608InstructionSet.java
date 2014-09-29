@@ -358,19 +358,19 @@ public class TEK1608InstructionSet extends InstructionSet
 		 */
 		ZEROPAGE_Y_INDEXED(1, "ZPY");
 		
-		private final int operandsBytesSize;
+		private final int operandsWordsSize;
 		private final String shortName;
 		
-		private TEK1608MemoryAddressing(int operandsBytesSize, String shortName)
+		private TEK1608MemoryAddressing(int operandsWordsSize, String shortName)
 		{
-			this.operandsBytesSize = operandsBytesSize;
+			this.operandsWordsSize = operandsWordsSize;
 			this.shortName = shortName;
 		}
 		
 		@Override
 		public int getOperandsWordsSize()
 		{
-			return operandsBytesSize;
+			return operandsWordsSize;
 		}
 		
 		public String getShortName()
