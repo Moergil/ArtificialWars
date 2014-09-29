@@ -1,3 +1,4 @@
+jmp 1000
 start:
 scan
 lock
