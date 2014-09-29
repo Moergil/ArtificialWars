@@ -60,10 +60,12 @@ public class GameLogic
 
 	private void initialise()
 	{
+		//borders
+		
 		entities.add(new Obstacle(-20, panel.getWidth() + 30, -20, 0, this));
 		entities.add(new Obstacle(-20, panel.getWidth() + 30, panel.getHeight() - 80, panel.getHeight() + 20, this));
 		entities.add(new Obstacle(-20, 0, 0, panel.getHeight(), this));
-		entities.add(new Obstacle(panel.getWidth() + 10, panel.getWidth() + 30, 0, panel.getHeight(), this));
+		entities.add(new Obstacle(panel.getWidth() , panel.getWidth() + 20, 0, panel.getHeight(), this));
 	}
 
 	public void startGame()

@@ -11,7 +11,13 @@ The basic robot parameters are defined as:
 * 5 hitpoints
 * 2 damage with each shot
 
-Instructions are either without parameter, or with one word-size parameter. All
+
+Each instruction has zero or one parameter, all parameters are Int32, displayed on the main menu.
+
+If you click on any robot ingame, you get some basic debug information: Value of registers A, B, memory pointer,
+current line number and time to activate current instruction (IC - instruction cooldown).
+
+Instructions are either without parameter, or with one word-size (Int32) parameter. All
 instructons are operating on signed arithmetics. There is no status register or
 stack. Jump instructions are using absolute adresses only.
 
@@ -22,7 +28,7 @@ X and Y position of enemy robot.
 
 Memory pointer is used for setting address for storing and loading values from RAM.
 
-Lock register is not accessible directly, but its used by scan and fire instruction
+Lock register is not accessible directly, but its used by scan and lock instruction (and fire to attack enemy robot)
 and its values can be loaded to A and B registers.
 
 Instructions:
@@ -57,4 +63,47 @@ jmp		P		jump to different instruction line. (Incorrect value may cause unexpecte
 jmpz	P		jump to parameter instruction line if value in A = 0.
 jmpc	P		jump to parameter instruction line if robot is collided with something and can not move.
 jmpm	P		jump to parameter instruction line if robot is currently moving.
-jmpl	P		jump to parameter instruction line if nothing is locked. (No locked enemy robot).
+jmpl	P		jump to parameter instruction line if an enemy robot is locked. (lock != null)
+
+Example 1: Move robot to a position.
+;robot movement
+seta 600
+setb 400
+move
+
+Example 2: jumps
+;infinite cycle
+label:
+ jmp label
+ 
+; absolute jump
+wait 1
+wait 2
+wait 3
+jmp 2
+; will jump to wait 3 instruction and cycle
+
+; will search for an enemy robot and if lock found, shoots
+lock:
+ scan
+ lock
+ jmpl firing
+ jmp lock
+firing:
+ fire
+jmp lock
+ 
+Example 3: basic cycle
+;basic for cycle
+seta 10
+;loop 10 times
+loop:
+ wait 1
+ ;check if loop ended
+ jmpz endloop
+ ;decrement a
+ dec
+ jmp loop
+ ;if seta 10 is first instruction, jmp 1 would also work
+endloop:
+; loop ended, continue code
