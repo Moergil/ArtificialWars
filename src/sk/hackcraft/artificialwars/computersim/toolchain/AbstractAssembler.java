@@ -419,7 +419,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		
 		MemoryAddressing ma = opcode.getMemoryAddressing();
 		
-		byte operandValue[] = new byte[ma.getOperandsWordsSize()];
+		byte operandValue[] = new byte[ma.getOperandsWordsSize() * instructionSet.getWordBytesSize()];
 
 		if (parameter != null)
 		{

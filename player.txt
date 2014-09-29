@@ -1,4 +1,9 @@
 start:
-seta 600
-setb 300
-move 
+scan
+lock
+jmpl firing
+jmp start
+firing:
+fire
+fire
+jmp start 

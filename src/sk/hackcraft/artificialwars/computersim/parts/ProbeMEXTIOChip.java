@@ -48,15 +48,15 @@ public class ProbeMEXTIOChip implements AbstractChipProbe<ProbeMEXTIOChip.Regist
 	{
 		this.chip = chip;
 		
-		formatters.put(RegisterMEXTIO.RH, CommonValueFormatter::toHexa8);
-		formatters.put(RegisterMEXTIO.RL, CommonValueFormatter::toHexa8);
-		formatters.put(RegisterMEXTIO.ROH, CommonValueFormatter::toHexa8);
-		formatters.put(RegisterMEXTIO.ROL, CommonValueFormatter::toHexa8);
-		formatters.put(RegisterMEXTIO.MOV, CommonValueFormatter::toHexa8);
+		formatters.put(RegisterMEXTIO.RH, CommonValueFormatter::toHexa2);
+		formatters.put(RegisterMEXTIO.RL, CommonValueFormatter::toHexa2);
+		formatters.put(RegisterMEXTIO.ROH, CommonValueFormatter::toHexa2);
+		formatters.put(RegisterMEXTIO.ROL, CommonValueFormatter::toHexa2);
+		formatters.put(RegisterMEXTIO.MOV, CommonValueFormatter::toHexa2);
 		formatters.put(RegisterMEXTIO.F, CommonValueFormatter::toBinary8);
-		formatters.put(RegisterMEXTIO.N, CommonValueFormatter::toHexa8);
+		formatters.put(RegisterMEXTIO.N, CommonValueFormatter::toHexa2);
 		formatters.put(RegisterMEXTIO.DS, CommonValueFormatter::toBinary8);
-		formatters.put(RegisterMEXTIO.DG, CommonValueFormatter::toHexa8);
+		formatters.put(RegisterMEXTIO.DG, CommonValueFormatter::toHexa2);
 	}
 	
 	public RegisterMEXTIO[] getRegisters()

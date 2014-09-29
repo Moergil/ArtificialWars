@@ -45,11 +45,11 @@ public class ProbeProcessorTEK1608 implements AbstractChipProbe<ProbeProcessorTE
 	{
 		this.processor = processor;
 		
-		formatters.put(RegisterTEK1608.A, CommonValueFormatter::toHexa8);
-		formatters.put(RegisterTEK1608.X, CommonValueFormatter::toHexa8);
-		formatters.put(RegisterTEK1608.Y, CommonValueFormatter::toHexa8);
-		formatters.put(RegisterTEK1608.SP, CommonValueFormatter::toHexa8);
-		formatters.put(RegisterTEK1608.PC, CommonValueFormatter::toHexa16);
+		formatters.put(RegisterTEK1608.A, CommonValueFormatter::toHexa2);
+		formatters.put(RegisterTEK1608.X, CommonValueFormatter::toHexa2);
+		formatters.put(RegisterTEK1608.Y, CommonValueFormatter::toHexa2);
+		formatters.put(RegisterTEK1608.SP, CommonValueFormatter::toHexa2);
+		formatters.put(RegisterTEK1608.PC, CommonValueFormatter::toHexa4);
 		formatters.put(RegisterTEK1608.SR, CommonValueFormatter::toBinary8);
 	}
 	

@@ -1,6 +1,7 @@
 package sk.epholl.artificialwars.graphics;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -11,6 +12,7 @@ import java.awt.event.MouseEvent;
 import javax.swing.JPanel;
 
 import sk.epholl.artificialwars.entities.Entity;
+import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
 import sk.epholl.artificialwars.logic.GameLogic;
 import sk.epholl.artificialwars.logic.GamePanelInput;
 import sk.epholl.artificialwars.logic.MainLogic;
@@ -23,6 +25,9 @@ public class GamePanel extends JPanel
 	private GamePanelInput input;
 	
 	private Point mousePointer;
+	private Eph32BasicRobot selectedRobot = null;
+	
+	private final Font monospace = new Font(Font.MONOSPACED, Font.PLAIN, 12);
 
 	public GamePanel()
 	{
@@ -61,6 +66,23 @@ public class GamePanel extends JPanel
 			g2d.drawString(logic.getOutputString(), 120, 537);
 			
 			g2d.drawString(formatMousePointer(), 520, 560);
+			
+			Eph32BasicRobot robot = getSelectedRobot();
+			
+			g2d.setFont(monospace);
+			
+			if (robot == null)
+			{
+				g2d.drawString("Click any robot to select it.", 520, 537);
+			}
+			else
+			{
+				String registers = robot.getRegistersString();
+				g2d.drawString(registers, 520, 517);
+				
+				String line = robot.getActualLine();
+				g2d.drawString(line, 520, 537);
+			}
 
 			for (GameButton button : input.getButtons())
 			{
@@ -80,7 +102,13 @@ public class GamePanel extends JPanel
 			public void mouseClicked(MouseEvent event)
 			{
 				if (event.getButton() == MouseEvent.BUTTON1 && input != null)
-					input.mouseClicked(event.getX(), event.getY());
+				{
+					if (! input.gameButtonClicked(event.getX(), event.getY()))
+					{
+						selectedRobot = input.checkRobotClicked(event.getX(), event.getY());
+						repaint();
+					}
+				}
 			}
 			
 			@Override
@@ -98,5 +126,10 @@ public class GamePanel extends JPanel
 				"Current mouse pos: [ " + mousePointer.x + ", " + mousePointer.y + "]"
 				:
 				"";
+	}
+	
+	private Eph32BasicRobot getSelectedRobot()
+	{
+		return selectedRobot;
 	}
 }

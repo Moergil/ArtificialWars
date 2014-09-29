@@ -1,6 +1,6 @@
-scan 0
-lock 0
-fire 0
-fire 0
-wait 10
+scan
+lock
+fire
+fire
+wait 1
 jmp 1

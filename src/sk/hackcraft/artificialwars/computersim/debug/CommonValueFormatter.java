@@ -23,13 +23,18 @@ public class CommonValueFormatter
 		return format("00000000", Integer.toBinaryString(value));
 	}
 	
-	public static String toHexa8(int value)
+	public static String toHexa2(int value)
 	{
 		return format("00", Integer.toHexString(value).toUpperCase());
 	}
 	
-	public static String toHexa16(int value)
+	public static String toHexa4(int value)
 	{
 		return format("0000", Integer.toHexString(value).toUpperCase());
+	}
+	
+	public static String toDecimal4(int value)
+	{
+		return format("0000", Integer.toString(value));
 	}
 }

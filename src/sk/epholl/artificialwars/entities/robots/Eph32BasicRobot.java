@@ -13,6 +13,7 @@ import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Projectile;
 import sk.epholl.artificialwars.entities.instructionsets.EPH32InstructionSet;
 import sk.epholl.artificialwars.logic.GameLogic;
+import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 
 /**
@@ -251,7 +252,7 @@ public class Eph32BasicRobot extends Entity
 
 			case 50:
 			{ // IP = P
-				instructionPointer = parameter - 1;
+				instructionPointer = parameter;
 				decrementInstructionPointer();
 				break;
 			}
@@ -259,7 +260,7 @@ public class Eph32BasicRobot extends Entity
 			{ // if (A == 0) IP = P
 				if (regA == 0)
 				{
-					instructionPointer = parameter - 1;
+					instructionPointer = parameter;
 					decrementInstructionPointer();
 				}
 				break;
@@ -268,7 +269,7 @@ public class Eph32BasicRobot extends Entity
 			{ // if (isCollided()) IP = P
 				if (isCollided())
 				{
-					instructionPointer = parameter - 1;
+					instructionPointer = parameter;
 					decrementInstructionPointer();
 				}
 				break;
@@ -277,16 +278,16 @@ public class Eph32BasicRobot extends Entity
 			{ // if (isMoving()) IP = P
 				if (isMoving())
 				{
-					instructionPointer = parameter - 1;
+					instructionPointer = parameter;
 					decrementInstructionPointer();
 				}
 				break;
 			}
 			case 54:
-			{ // if (aimLock == null) IP = P
-				if (aimLock == null)
+			{ // if (aimLock != null) IP = P
+				if (aimLock != null)
 				{
-					instructionPointer = parameter - 1;
+					instructionPointer = parameter;
 					decrementInstructionPointer();
 				}
 				break;
@@ -370,13 +371,21 @@ public class Eph32BasicRobot extends Entity
 		ByteArrayInputStream bais = new ByteArrayInputStream(firmware);
 		DataInput input = new DataInputStream(bais);
 		
-		for (int i = 0; i < firmware.length / Integer.BYTES / 2; i++)
+		int programSize = input.readInt() / Integer.BYTES / 2;
+		int dataSize = input.readInt() / Integer.BYTES;
+		
+		for (int i = 0; i < programSize; i++)
 		{
 			int instruction = input.readInt();
 			int parameter = input.readInt();
 			
 			instructionMemory[i + offset] = instruction;
 			parameterMemory[i + offset] = parameter;
+		}
+		
+		for (int i = 0; i < dataSize; i++)
+		{
+			memory[i] = input.readInt();
 		}
 	}
 
@@ -476,6 +485,28 @@ public class Eph32BasicRobot extends Entity
 		}
 		hitpoints = -1;
 	}
+	
+	public String getRegistersString()
+	{
+		String a, b, mp, ip, ic;
+		
+		a = CommonValueFormatter.toDecimal4(regA);
+		b = CommonValueFormatter.toDecimal4(regB);
+		mp = CommonValueFormatter.toDecimal4(memoryPointer);
+		ip = CommonValueFormatter.toDecimal4(instructionPointer);
+		ic = CommonValueFormatter.toDecimal4(instructionCooldown);
+		
+		return String.format("A:%s B:%s MP:%s IP:%s IC:%s", a, b, mp, ip, ic);
+	}
+
+	public String getActualLine()
+	{
+		String line = CommonValueFormatter.toDecimal4(instructionPointer);
+		String instructionName = EPH32InstructionSet.getInstance().getOpcode(instructionMemory[instructionPointer]).getInstructionName();
+		String param = CommonValueFormatter.toDecimal4(parameterMemory[instructionPointer]);
+		
+		return String.format("Line %s %5s %s", line, instructionName, param);
+	}
 
 	private void incrementInsturcionPointer()
 	{
@@ -488,7 +519,7 @@ public class Eph32BasicRobot extends Entity
 		instructionPointer--;
 		if (instructionPointer < 0)
 		{
-			instructionPointer = 0;
+			instructionPointer = -1;
 		}
 	}
 
