@@ -1,6 +1,7 @@
 package sk.epholl.artificialwars.entities;
 
 import java.awt.Color;
+import java.util.Set;
 
 import sk.epholl.artificialwars.logic.GameLogic;
 
@@ -12,17 +13,29 @@ public class Doodad extends Entity
 	public static final int DEFAULT_DOODAD_DURATION = 15;
 
 	private int doodadDuration;
-	private int cascadeCount;
 
-	public Doodad(int posX, int posY, GameLogic game, Color color, int cascadeCount, int size)
+	public Doodad(GameLogic game, Color color, int size)
 	{
-		super(posX, posY, game);
+		super(game);
 		this.color = color;
 		doodadDuration = DEFAULT_DOODAD_DURATION;
-
-		this.cascadeCount = cascadeCount - 1;
-		this.sizeX = size;
-		this.sizeY = size;
+		
+		setWidth(size);
+		setHeight(size);
+	}
+	
+	@Override
+	public void update(Set<Entity> nearbyEntities)
+	{
+		super.update(nearbyEntities);
+		
+		if (doodadDuration < 0)
+		{
+			destroy();
+			return;
+		}
+		
+		doodadDuration--;
 	}
 
 	@Override
@@ -38,36 +51,9 @@ public class Doodad extends Entity
 	}
 
 	@Override
-	public boolean isTimed()
-	{
-		return true;
-	}
-
-	@Override
 	public boolean isCollidable()
 	{
 		return false;
-	}
-
-	@Override
-	public boolean movesInfinitely()
-	{
-		return true;
-	}
-
-	@Override
-	public void destroy()
-	{
-		destroyed = true;
-		if (cascadeCount > 0)
-		{
-			Doodad explosion = new Doodad((int) getPosX(), (int) getPosY(), game, color, cascadeCount, sizeX * 2);
-			explosion.setMoveSpeed(moveSpeed);
-			explosion.setVectorX(vectorX);
-			explosion.setVectorY(vectorY);
-
-			game.addEntity(explosion);
-		}
 	}
 
 	@Override
@@ -77,19 +63,7 @@ public class Doodad extends Entity
 	}
 
 	@Override
-	public boolean aboutToRemove()
-	{
-		doodadDuration--;
-		if (doodadDuration < 0)
-		{
-			destroy();
-			return true;
-		}
-		return false;
-	}
-
-	@Override
-	public boolean collidesWith(Entity e)
+	public boolean isCollidingWith(Entity e)
 	{
 		return false;
 	}

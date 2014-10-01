@@ -1,6 +1,6 @@
 package sk.hackcraft.artificialwars.computersim.parts;
 
-public interface AbstractChipProbe<R extends AbstractChipProbe.Register>
+public interface AbstractProcessorProbe<R extends AbstractProcessorProbe.Register>
 {
 	public interface Register
 	{

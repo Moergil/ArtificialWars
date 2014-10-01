@@ -1,133 +1,149 @@
 package sk.epholl.artificialwars.entities;
 
 import java.awt.Color;
+import java.util.HashSet;
+import java.util.Set;
 
 import sk.epholl.artificialwars.logic.GameLogic;
 import sk.epholl.artificialwars.logic.Vector2D;
 
-/**
- * @author epholl
- */
 public abstract class Entity
 {
-	protected double posX;
-	protected double posY;
-	protected double vectorX = 0;
-	protected double vectorY = 0;
-	protected double moveSpeed = 0.2;
-	protected int moveDuration = -1;
+	private Vector2D position, direction;
 
-	protected GameLogic game;
+	private double moveSpeed, rotateSpeed;
+
+	protected final GameLogic game;
 
 	protected Color color = Color.BLACK;
-	protected int sizeX = 10;
-	protected int sizeY = 10;
+	private int width = 10;
+	private int height = 10;
 
-	protected boolean colliding = false;
-	protected boolean destroyed = false;
+	private boolean colliding = false;
+	private boolean destroyed = false;
 
-	public Entity(int posX, int posY, GameLogic game)
+	public Entity(GameLogic game)
 	{
-		this.posX = posX;
-		this.posY = posY;
+		this.position = Vector2D.ORIGIN;
+		this.direction = Vector2D.NORTH;
 
 		this.game = game;
 	}
-
-	public void setDestination(int destinationX, int destinationY)
+	
+	/**
+	 * Checks if entity is destroyable.
+	 * @return <code>true</code> if entity is destroyable, <code>false</code> otherwise
+	 */
+	public abstract boolean isDestructible();
+	
+	/**
+	 * Checks if entity has player.
+	 * @return <code>true</code> if entity has player, <code>false</code> otherwise
+	 */
+	public abstract boolean hasPlayer();
+	
+	/**
+	 * Checks if entity is collidable.
+	 * @return <code>true</code> if entity is collidable, <code>false</code> otherwise
+	 */
+	public abstract boolean isCollidable();
+	
+	/**
+	 * Checks if entity is solid.
+	 * @return <code>true</code> if entity is solid, <code>false</code> otherwise
+	 */
+	public abstract boolean isSolid();
+	
+	public void update(Set<Entity> nearbyEntities)
 	{
-		Vector2D vector = new Vector2D(destinationX - posX, destinationY - posY);
+		Vector2D newPosition = calcNewPosition();
 
-		vectorX = vector.getNewX();
-		vectorY = vector.getNewY();
-
-		if (!movesInfinitely())
-			moveDuration = (int) (vector.getLength() / moveSpeed);
-		else
-			moveDuration = -1;
+		if (isSolid() && isCollidable())
+		{
+			Set<Entity> collidingEntities = getCollisions(newPosition, nearbyEntities);
+			
+			if (collidingEntities.isEmpty())
+			{
+				setPosition(newPosition);
+			}
+			else
+			{
+				collided(collidingEntities);
+			}
+		}
+	}
+	
+	protected void collided(Set<Entity> entities)
+	{
 	}
 
 	public void turn()
 	{
-
 	}
-
-	public void moveToNextPosition()
+	
+	private Vector2D calcNewPosition()
 	{
-		colliding = false;
-
-		if (moveDuration == 0)
+		return position.add(direction.scale(moveSpeed));
+	}
+	
+	private Set<Entity> getCollisions(Vector2D position, Set<Entity> entities)
+	{
+		Set<Entity> collidingEntities = new HashSet<>();
+		
+		for (Entity collisionEntity : entities)
 		{
-			vectorX = 0;
-			vectorY = 0;
-			return;
+			if (collisionEntity != this && this.isCollidingWith(collisionEntity))
+			{
+				collidingEntities.add(collisionEntity);
+			}
 		}
-
-		posX += getVectorX();
-		posY += getVectorY();
-
-		if (!movesInfinitely())
-			moveDuration--;
+		
+		return collidingEntities;
+	}
+	
+	public void setPosition(double x, double y)
+	{
+		this.position = new Vector2D(x, y);
+	}
+	
+	public void setPosition(Vector2D position)
+	{
+		this.position = position;
+	}
+	
+	public void setDirection(Vector2D direction)
+	{
+		this.direction = direction;
+	}
+	
+	public Vector2D getPosition()
+	{
+		return position;
+	}
+	
+	public Vector2D getDirection()
+	{
+		return direction;
+	}
+	
+	public void setWidth(int width)
+	{
+		this.width = width;
 	}
 
-	public void returnToPreviousPosition()
+	public int getWidth()
 	{
-		colliding = true;
-
-		posX -= getVectorX();
-		posY -= getVectorY();
-		if (!movesInfinitely())
-			moveDuration++;
+		return width;
 	}
-
-	public int getPosX()
+	
+	public void setHeight(int height)
 	{
-		return (int) posX;
+		this.height = height;
 	}
-
-	public int getLeftmostPosX()
+	
+	public int getHeight()
 	{
-		return (int) posX - (sizeX / 2);
-	}
-
-	public int getRightmostPosX()
-	{
-		return (int) posX + (sizeX / 2);
-	}
-
-	public int getPosY()
-	{
-		return (int) posY;
-	}
-
-	public int getUppermostPosY()
-	{
-		return (int) posY + (sizeY / 2);
-	}
-
-	public int getDownmostPosY()
-	{
-		return (int) posY - (sizeY / 2);
-	}
-
-	public double getVectorX()
-	{
-		return vectorX * moveSpeed;
-	}
-
-	public double getVectorY()
-	{
-		return vectorY * moveSpeed;
-	}
-
-	public int getSizeX()
-	{
-		return sizeX;
-	}
-
-	public int getSizeY()
-	{
-		return sizeY;
+		return height;
 	}
 
 	public Color getColor()
@@ -145,19 +161,19 @@ public abstract class Entity
 		return moveSpeed;
 	}
 
-	public void setVectorX(double vectorX)
-	{
-		this.vectorX = vectorX;
-	}
-
-	public void setVectorY(double vectorY)
-	{
-		this.vectorY = vectorY;
-	}
-
 	public void setMoveSpeed(double moveSpeed)
 	{
 		this.moveSpeed = moveSpeed;
+	}
+	
+	public double getRotateSpeed()
+	{
+		return rotateSpeed;
+	}
+	
+	public void setRotateSpeed(double rotateSpeed)
+	{
+		this.rotateSpeed = rotateSpeed;
 	}
 
 	public boolean isCollided()
@@ -165,34 +181,80 @@ public abstract class Entity
 		return colliding;
 	}
 
-	public boolean isEnded()
+	public boolean isCollidingWith(Entity e)
+	{
+		if (!e.isCollidable())
+		{
+			return false;
+		}
+		
+		double halfWidth = width / 2;
+		double halfHeight = height / 2;
+		
+		double x1, x2, y1, y2;
+		x1 = position.getX() - halfWidth;
+		x2 = position.getX() + halfWidth;
+		y1 = position.getY() - halfHeight;
+		y2 = position.getY() + halfHeight;
+		
+		return e.isColliding(x1, x2, y1, y2);
+	}
+	
+	public boolean isCollidingWith(Vector2D vector)
+	{
+		double x = vector.getX();
+		double y = vector.getY();
+		
+		return isColliding(x, x, y, y);
+	}
+	
+	private boolean isColliding(double x1, double x2, double y1, double y2)
+	{
+		double halfWidth = width / 2;
+		double halfHeight = height / 2;
+		
+		double ex1, ex2, ey1, ey2;
+		ex1 = position.getX() - halfWidth;
+		ex2 = position.getX() + halfWidth;
+		ey1 = position.getY() - halfHeight;
+		ey2 = position.getY() + halfHeight;
+		
+		boolean collideX = false, collideY = false;
+		
+		if (x1 > ex1 && x1 < ex2 || x2 > ex1 && x2 < ex2)
+		{
+			collideX = true;
+		}
+		
+		if (y1 > ey1 && y1 < ey2 || y2 > ey1 && y2 < ey2)
+		{
+			collideY = true;
+		}
+		
+		return collideX && collideY;
+	}
+	
+	public boolean isDestroyed()
 	{
 		return destroyed;
 	}
 
-	public boolean collidesWith(Entity e)
-	{
-		if (e.isCollidable() && Math.abs(e.getPosX() - getPosX()) < ((getSizeX() + e.getSizeX()) / 2) && Math.abs(e.getPosY() - getPosY()) < ((getSizeY() + e.getSizeY()) / 2))
-			return true;
-		return false;
-	}
-
-	public boolean aboutToRemove()
+	public boolean isExists()
 	{
 		return destroyed;
 	}
 
 	public boolean isMoving()
 	{
-		if (isCollided())
-			return false;
-		return (vectorX != 0 || vectorY != 0);
+		return moveSpeed != 0;
 	}
 
 	public void beHit(Projectile shot)
 	{
 		if (isSolid())
+		{
 			shot.destroy();
+		}
 	}
 
 	public int getPlayer()
@@ -202,23 +264,11 @@ public abstract class Entity
 
 	public double getDistance(Entity e)
 	{
-		double differenceX = Math.abs(posX - e.posX);
-		double differenceY = Math.abs(posY - e.posY);
-
-		return Math.sqrt(differenceX * differenceX + differenceY * differenceY);
+		return new Vector2D(getPosition(), e.getPosition()).getLength();
 	}
 
-	public abstract boolean movesInfinitely();
-
-	public abstract boolean isDestructible();
-
-	public abstract boolean hasPlayer();
-
-	public abstract boolean isTimed();
-
-	public abstract boolean isCollidable();
-
-	public abstract boolean isSolid();
-
-	public abstract void destroy();
+	public void destroy()
+	{
+		destroyed = true;
+	}
 }

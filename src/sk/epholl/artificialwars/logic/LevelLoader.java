@@ -8,11 +8,12 @@ import java.io.IOException;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
+import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Obstacle;
-import sk.epholl.artificialwars.entities.objectives.NumberOfUnitsObjective;
-import sk.epholl.artificialwars.entities.robots.Exterminator;
-import sk.epholl.artificialwars.entities.robots.FirmwareLoader;
+import sk.epholl.artificialwars.entities.objectives.Objective;
 import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
+import sk.epholl.artificialwars.entities.robots.FirmwareLoader;
+import sk.epholl.artificialwars.entities.robots.RobotExterminator;
 
 public class LevelLoader
 {
@@ -58,25 +59,58 @@ public class LevelLoader
 
 				if (currentWord.equals("objective_units"))
 				{
-					NumberOfUnitsObjective o;
+					Objective o;
 
 					int leftBorder = Integer.parseInt(parser.nextToken());
 					int rightBorder = Integer.parseInt(parser.nextToken());
 					int upperBorder = Integer.parseInt(parser.nextToken());
 					int lowerBorder = Integer.parseInt(parser.nextToken());
 
-					int ownerPlayer = Integer.parseInt(parser.nextToken());
-					int numberOfUnits = Integer.parseInt(parser.nextToken());
+					final int ownerPlayer = Integer.parseInt(parser.nextToken());
+					final int requiredUnits = Integer.parseInt(parser.nextToken());
 
-					boolean visible;
-					if (parser.hasMoreTokens() && parser.nextToken().equals("invisible"))
-						visible = false;
-					else
-						visible = true;
+					String objectiveMessage = String.format("Player %d must bring %d robots to designated location.", ownerPlayer, requiredUnits);
 
-					o = new NumberOfUnitsObjective(leftBorder, rightBorder, upperBorder, lowerBorder, logic, ownerPlayer, numberOfUnits, visible);
+					o = new Objective(leftBorder, rightBorder, upperBorder, lowerBorder, logic, objectiveMessage)
+					{
+						@Override
+						protected boolean evaluate(GameLogic game)
+						{
+							int ownedUnits = 0;
+							int unitsInArea = 0;
 
-					o.setMessage(inputReader.readLine());
+							for (Entity e : game.getEntities())
+							{
+								if (e.getPlayer() != ownerPlayer)
+								{
+									continue;
+								}
+								
+								ownedUnits++;
+								
+								if (this.isCollidingWith(e))
+								{
+									unitsInArea++;
+								}
+							}
+							
+							if (ownedUnits == 0)
+							{
+								setSuccess(false);
+								return true;
+							}
+							
+							if (unitsInArea >= requiredUnits)
+							{
+								setSuccess(true);
+								return true;
+							}
+							
+							return false;
+						}
+					};
+
+					inputReader.readLine();
 
 					logic.addEntity(o);
 				}
@@ -114,7 +148,8 @@ public class LevelLoader
 
 					String instructionFile = parser.nextToken();
 
-					r = new Eph32BasicRobot(new Color(red, green, blue), player, posX, posY, logic);
+					r = new Eph32BasicRobot(new Color(red, green, blue), player, logic);
+					r.setPosition(posX, posY);
 					
 					try
 					{
@@ -129,7 +164,7 @@ public class LevelLoader
 				}
 				else if (currentWord.equals("exterminator"))
 				{
-					Exterminator r;
+					RobotExterminator r;
 					
 					int red = Integer.parseInt(parser.nextToken());
 					int green = Integer.parseInt(parser.nextToken());
@@ -140,7 +175,7 @@ public class LevelLoader
 
 					String instructionFile = parser.nextToken();
 					
-					r = new Exterminator(new Color(red, green, blue), player, posX, posY, logic, 0);
+					r = new RobotExterminator(new Color(red, green, blue), player, posX, posY, logic, 0);
 					
 					try
 					{

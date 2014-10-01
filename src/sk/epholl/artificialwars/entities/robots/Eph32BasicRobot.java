@@ -6,13 +6,18 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import sk.epholl.artificialwars.entities.Doodad;
 import sk.epholl.artificialwars.entities.Entity;
+import sk.epholl.artificialwars.entities.Explosion;
 import sk.epholl.artificialwars.entities.Projectile;
 import sk.epholl.artificialwars.entities.instructionsets.EPH32InstructionSet;
 import sk.epholl.artificialwars.logic.GameLogic;
+import sk.epholl.artificialwars.logic.Vector2D;
 import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 
@@ -24,14 +29,18 @@ public class Eph32BasicRobot extends Entity
 {
 	public static final int DEFAULT_HITPOINTS = 5;
 	public static final int DEFAULT_INSTRUCTION_COOLDOWN_MULTIPLICATOR = 2;
-	public static final Random random = new Random();
+	
+	private final Random random;
 
 	private int player;
 
 	private int hitpoints;
 
-	private int regA;
-	private int regB;
+	private int regA, regB;
+	
+	private final int LOCK_OFFSET, LOCK_ACCURACY_TIME;
+	private int lockX, lockY, lockTime;
+	private boolean lockSuccess;
 
 	private int[] instructionMemory;
 	private int[] parameterMemory;
@@ -40,18 +49,17 @@ public class Eph32BasicRobot extends Entity
 	private int instructionPointer;
 	private int instructionCooldown;
 
-	private InstructionSet instructionSet;
-
-	private Entity aimLock;
-
-	public Eph32BasicRobot(Color color, int player, int posX, int posY, GameLogic game)
+	public Eph32BasicRobot(Color color, int player, GameLogic game)
 	{
-		super(posX, posY, game);
+		super(game);
+		
+		this.random = new Random(game.getSeed());
+
 		this.color = color;
 		this.player = player;
 
-		this.sizeX = 6;
-		this.sizeY = 6;
+		setWidth(6);
+		setHeight(6);
 
 		hitpoints = DEFAULT_HITPOINTS;
 
@@ -59,21 +67,35 @@ public class Eph32BasicRobot extends Entity
 		parameterMemory = new int[64];
 
 		memory = new int[4];
-
-		instructionSet = EPH32InstructionSet.getInstance();
-		aimLock = null;
+		
+		lockTime = 100;
+		LOCK_OFFSET = 20;
+		LOCK_ACCURACY_TIME = 50;
+	}
+	
+	@Override
+	public void update(Set<Entity> nearbyEntities)
+	{
+		super.update(nearbyEntities);
+		
+		if (hitpoints <= 0)
+		{
+			destroy();
+		}
 	}
 
 	@Override
 	public void turn()
 	{
-		refreshLocksState();
-
 		if (!instructionCooldownDone())
+		{
 			return;
+		}
 		
 		if (instructionPointer >= instructionMemory.length)
+		{
 			return;
+		}
 
 		try
 		{
@@ -88,30 +110,22 @@ public class Eph32BasicRobot extends Entity
 			selfDestruct();
 		}
 
-		incrementInsturcionPointer();
+		incrementInstructionPointer();
 
 		nextInstructionCooldownSwitch();
 	}
 
-	public InstructionSet getInstructionSet()
-	{
-		return instructionSet;
-	}
-
-	private void refreshLocksState()
-	{
-		if (aimLock != null && aimLock.isEnded())
-			aimLock = null;
-	}
-
 	private boolean instructionCooldownDone()
 	{
-		if (instructionCooldown != 0)
+		if (instructionCooldown > 0)
 		{
 			instructionCooldown--;
 			return false;
 		}
-		return true;
+		else
+		{
+			return true;
+		}
 	}
 
 	private void instructionCycleSwitch()
@@ -122,142 +136,157 @@ public class Eph32BasicRobot extends Entity
 		switch (instruction)
 		{
 			case -1:
-			{ // self destruct
+			{
+				// self destruct
 				selfDestruct();
 				break;
 			}
 			case 0: // 10*P wait
 				break;
 			case 1:
-			{ // A = A + B
+			{
+				// A = A + B
 				regA += regB;
 				break;
 			}
 			case 2:
-			{ // A = A - B
+			{
+				// A = A - B
 				regA -= regB;
 				break;
 			}
 			case 3:
-			{ // A = A++
+			{
+				// A = A++
 				regA++;
 				break;
 			}
 			case 4:
-			{ // A = A--
+			{
+				// A = A--
 				regA--;
 				break;
 			}
 
 			case 5:
-			{ // A = B, B = A
+			{
+				// A = B, B = A
 				int temp = regA;
 				regA = regB;
 				regB = temp;
 				break;
 			}
 			case 6:
-			{ // A = B
+			{
+				// A = B
 				regA = regB;
 				break;
 			}
 			case 8:
-			{ // A = P
+			{
+				// A = P
 				regA = parameter;
 				break;
 			}
 			case 9:
-			{ // B = P
+			{
+				// B = P
 				regB = parameter;
 				break;
 			}
 
 			case 10:
-			{ // fire a shot to [A, B]
+			{
+				// fire a shot to [A, B]
 				fire();
 				break;
 			}
 			case 15:
-			{ // find a robot to lock (if none found, null returned)
-				findEnemyRobot();
+			{
+				// find a robot to lock (if none found, null returned)
+				setLock();
 				break;
 			}
 			case 16:
-			{ // set A and B to coords of aimLock (posX and posY if null)
-				if (aimLock == null)
-				{
-					regA = getPosX();
-					regB = getPosY();
-				}
-				else
-				{
-					regA = aimLock.getPosX();
-					regB = aimLock.getPosY();
-				}
+			{
+				// set A and B to actual accuracy lock coordinates
+				setLockToRegisters();
 				break;
 			}
 
 			case 20:
-			{ // A = random int in <-P, P>
+			{
+				// A = random int in <-P, P>
 				regA = random.nextInt((parameter * 2) + 1) - parameter;
 				break;
 			}
 			case 21:
-			{ // A = random int in <-B, B>
+			{
+				// A = random int in <-B, B>
 				regA = random.nextInt((regB * 2) + 1) - regB;
 				break;
 			}
 
 			case 30:
-			{ // A = current pos X
-				regA = getPosX();
+			{
+				// A = current pos X
+				regA = (int)getPosition().getX();
 				break;
 			}
 			case 31:
-			{ // A = current pos Y
-				regA = getPosY();
+			{
+				// A = current pos Y
+				regA = (int)getPosition().getY();
 				break;
 			}
 			case 32:
-			{ // set movement to [A, B]
-				setDestination(regA, regB);
+			{
+				// set movement to [A, B]
+				setMovementTo(regA, regB);
 				break;
 			}
 
 			case 40:
-			{ // set A to MP
+			{
+				// set A to MP
 				memoryPointer = regA;
 				break;
 			}
 			case 41:
-			{ // MP++
+			{
+				// MP++
 				memoryPointer++;
 				break;
 			}
 			case 42:
-			{ // MP--
+			{
+				// MP--
 				memoryPointer--;
 				break;
 			}
 			case 45:
-			{ // [MP] = A
+			{
+				// [MP] = A
 				memory[memoryPointer] = regA;
 				break;
 			}
 			case 46:
-			{ // A = [MP]
+			{
+				// A = [MP]
 				regA = memory[memoryPointer];
 				break;
 			}
 
 			case 50:
-			{ // IP = P
+			{
+				// IP = P
 				instructionPointer = parameter;
 				decrementInstructionPointer();
 				break;
 			}
 			case 51:
-			{ // if (A == 0) IP = P
+			{
+				// if (A == 0) IP = P
 				if (regA == 0)
 				{
 					instructionPointer = parameter;
@@ -266,7 +295,8 @@ public class Eph32BasicRobot extends Entity
 				break;
 			}
 			case 52:
-			{ // if (isCollided()) IP = P
+			{
+				// if (isCollided()) IP = P
 				if (isCollided())
 				{
 					instructionPointer = parameter;
@@ -275,7 +305,8 @@ public class Eph32BasicRobot extends Entity
 				break;
 			}
 			case 53:
-			{ // if (isMoving()) IP = P
+			{
+				// if (isMoving()) IP = P
 				if (isMoving())
 				{
 					instructionPointer = parameter;
@@ -284,8 +315,9 @@ public class Eph32BasicRobot extends Entity
 				break;
 			}
 			case 54:
-			{ // if (aimLock != null) IP = P
-				if (aimLock != null)
+			{
+				// if something was locked IP = P
+				if (lockSuccess)
 				{
 					instructionPointer = parameter;
 					decrementInstructionPointer();
@@ -293,8 +325,8 @@ public class Eph32BasicRobot extends Entity
 				break;
 			}
 			default:
-			{ // default instruction operation
-
+			{
+				// default instruction operations
 			}
 		}
 	}
@@ -394,6 +426,11 @@ public class Eph32BasicRobot extends Entity
 			memory[i] = input.readInt();
 		}
 	}
+	
+	private void setMovementTo(int x, int y)
+	{
+		// TODO
+	}
 
 	@Override
 	public void beHit(Projectile shot)
@@ -401,8 +438,7 @@ public class Eph32BasicRobot extends Entity
 		this.hitpoints -= shot.getDamage();
 		shot.destroy();
 
-		Color doodadColor = new Color(0, 0, 0, 100);
-		Doodad explosion = new Doodad((int) getPosX(), (int) getPosY(), game, doodadColor, 3, 3);
+		Explosion explosion = Explosion.create(game, getPosition());
 		game.addEntity(explosion);
 	}
 
@@ -419,35 +455,9 @@ public class Eph32BasicRobot extends Entity
 	}
 
 	@Override
-	public boolean isTimed()
-	{
-		return false;
-	}
-
-	@Override
 	public boolean isCollidable()
 	{
 		return true;
-	}
-
-	@Override
-	public boolean movesInfinitely()
-	{
-		return false;
-	}
-
-	@Override
-	public boolean aboutToRemove()
-	{
-		if (hitpoints >= 0)
-		{
-			return false;
-		}
-		else
-		{
-			destroy();
-			return true;
-		}
 	}
 
 	@Override
@@ -459,13 +469,9 @@ public class Eph32BasicRobot extends Entity
 	@Override
 	public void destroy()
 	{
-		destroyed = true;
-		Color doodadColor = new Color(0, 0, 0, 100);
+		super.destroy();		
 
-		Doodad explosion = new Doodad((int) getPosX(), (int) getPosY(), game, doodadColor, 4, 5);
-		explosion.setMoveSpeed(moveSpeed);
-		explosion.setVectorX(vectorX);
-		explosion.setVectorY(vectorY);
+		Explosion explosion = Explosion.create(game, getPosition());
 		game.addEntity(explosion);
 	}
 
@@ -477,18 +483,16 @@ public class Eph32BasicRobot extends Entity
 
 	public void fire()
 	{
-		Projectile shot = new Projectile(getPosX(), getPosY(), regA, regB, game);
+		Projectile shot = new Projectile(game, this);
+		
+		shot.setPosition(getPosition());
+		shot.setDirection(new Vector2D(regA, regB));
+		
 		game.addEntity(shot);
 	}
 
 	public void selfDestruct()
 	{
-		for (int i = 0; i < 15; i++)
-		{
-			regA = getPosX() + random.nextInt(11) - 5;
-			regB = getPosY() + random.nextInt(11) - 5;
-			fire();
-		}
 		hitpoints = -1;
 	}
 	
@@ -514,7 +518,7 @@ public class Eph32BasicRobot extends Entity
 		return String.format("Line %s %5s %s", line, instructionName, param);
 	}
 
-	private void incrementInsturcionPointer()
+	private void incrementInstructionPointer()
 	{
 		if (++instructionPointer >= instructionMemory.length)
 			instructionPointer--;
@@ -529,29 +533,58 @@ public class Eph32BasicRobot extends Entity
 		}
 	}
 
-	private void findEnemyRobot()
+	private void setLock()
 	{
-		ArrayList<Eph32BasicRobot> targets = new ArrayList<Eph32BasicRobot>();
+		List<Entity> targets = new ArrayList<>();
 
 		for (Entity e : game.getEntities())
 		{
-			if (e instanceof Eph32BasicRobot)
+			if (e == this || e.getPlayer() == getPlayer())
 			{
-				Eph32BasicRobot r = (Eph32BasicRobot) e;
-				if (r.getPlayer() != getPlayer())
-				{
-					targets.add(r);
-				}
+				continue;
+			}
+			
+			if (e.isDestructible())
+			{
+				targets.add(e);
 			}
 		}
 
 		if (targets.isEmpty())
 		{
-			aimLock = null;
+			lockSuccess = false;
+			lockX = regA;
+			lockY = regB;
 		}
 		else
 		{
-			aimLock = targets.get(random.nextInt(targets.size()));
+			lockSuccess = true;
+			lockTime = game.getCycleCount();
+			
+			Entity target = targets.get(random.nextInt(targets.size()));
+			Vector2D position = target.getPosition();
+			
+			lockX = (int)position.getX();
+			lockY = (int)position.getY();
 		}
+	}
+	
+	private void setLockToRegisters()
+	{
+		int elapsedCycles = game.getCycleCount() - lockTime;
+
+		int offsetX = 0, offsetY = 0;
+		if (elapsedCycles < LOCK_ACCURACY_TIME)
+		{
+			double multiplier = 1 - (1.0 / LOCK_ACCURACY_TIME) * elapsedCycles;
+
+			int offset = (int)(LOCK_OFFSET * multiplier);
+			
+			offsetX = random.nextInt(offset * 2) - offset;
+			offsetY = random.nextInt(offset * 2) - offset;
+		}
+		
+		regA = lockX + offsetX;
+		regB = lockY + offsetY;
 	}
 }

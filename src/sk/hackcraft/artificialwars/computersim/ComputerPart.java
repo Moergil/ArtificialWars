@@ -1,6 +1,6 @@
 package sk.hackcraft.artificialwars.computersim;
 
-public interface Part
+public interface ComputerPart
 {
 	String getName();
 	

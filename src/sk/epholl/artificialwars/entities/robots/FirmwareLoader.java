@@ -43,7 +43,7 @@ public class FirmwareLoader
 		}
 	}
 	
-	public static void loadFirmwareExterminator(String firmwareFile, Exterminator exterminator) throws IOException, ProgrammingException
+	public static void loadFirmwareExterminator(String firmwareFile, RobotExterminator exterminator) throws IOException, ProgrammingException
 	{
 		Preprocessor preprocessor = new Preprocessor(";", "MACRO", "/MACRO");
 		AssemblerTEK1608 assembler = new AssemblerTEK1608();

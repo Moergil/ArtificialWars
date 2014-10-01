@@ -3,46 +3,34 @@ package sk.epholl.artificialwars.entities;
 import java.awt.Color;
 
 import sk.epholl.artificialwars.logic.GameLogic;
+import sk.epholl.artificialwars.logic.Vector2D;
 
-/**
- * @author epholl
- */
 public class Obstacle extends Entity
 {
 	public static final Color DEFAULT_OBSTACLE_COLOR = new Color(200, 150, 150);
 
-	private boolean aboutToRemove = false;
-
 	public Obstacle(int posX, int posY, GameLogic game)
 	{
-		super(posX, posY, game);
+		super(game);
+		
+		setPosition(new Vector2D(posX, posY));
 
-		this.sizeX = 10;
-		this.sizeY = 10;
+		setWidth(10);
+		setHeight(10);
 
 		this.color = DEFAULT_OBSTACLE_COLOR;
 	}
 
 	public Obstacle(int leftBorder, int rightBorder, int upperBorder, int lowerBorder, GameLogic game)
 	{
-		super(((leftBorder + rightBorder) / 2), ((upperBorder + lowerBorder) / 2), game);
+		super(game);
 
-		this.sizeX = Math.abs(rightBorder - leftBorder);
-		this.sizeY = Math.abs(upperBorder - lowerBorder);
+		setPosition(new Vector2D((leftBorder + rightBorder) / 2, (upperBorder + lowerBorder) / 2));
+		
+		setWidth(Math.abs(rightBorder - leftBorder));
+		setHeight(Math.abs(upperBorder - lowerBorder));
 
 		this.color = DEFAULT_OBSTACLE_COLOR;
-	}
-
-	@Override
-	public boolean aboutToRemove()
-	{
-		return aboutToRemove;
-	}
-
-	@Override
-	public boolean movesInfinitely()
-	{
-		return true;
 	}
 
 	@Override
@@ -58,12 +46,6 @@ public class Obstacle extends Entity
 	}
 
 	@Override
-	public boolean isTimed()
-	{
-		return false;
-	}
-
-	@Override
 	public boolean isCollidable()
 	{
 		return true;
@@ -73,12 +55,5 @@ public class Obstacle extends Entity
 	public boolean isSolid()
 	{
 		return true;
-	}
-
-	@Override
-	public void destroy()
-	{
-		destroyed = true;
-		aboutToRemove = true;
 	}
 }

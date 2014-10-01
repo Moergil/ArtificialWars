@@ -62,26 +62,24 @@ public class GamePanelInput
 	
 	public Eph32BasicRobot checkRobotClicked(int x, int y)
 	{
-		List<Entity> entities = gameLogic.getEntities();
+		Set<Entity> entities = gameLogic.getEntities();
 		
-		Set<Entity> robots = entities
+		Set<Eph32BasicRobot> robots = entities
 				.stream()
 				.filter((entity) -> entity instanceof Eph32BasicRobot)
+				.map((entity) -> (Eph32BasicRobot)entity)
 				.collect(Collectors.toSet());
 
-		for (Entity robot: robots)
+		Vector2D pointer = new Vector2D(x, y);
+		
+		for (Eph32BasicRobot robot: robots)
 		{
-			if (checkRobotClicked(x, y, robot))
-				return (Eph32BasicRobot) robot;
+			if (robot.isCollidingWith(pointer))
+			{
+				return robot;
+			}
 		}
 		
 		return null;
-	}
-	
-	private boolean checkRobotClicked(int x, int y, Entity entity)
-	{
-		Eph32BasicRobot robot = (Eph32BasicRobot) entity;
-		
-		return (x >= robot.getLeftmostPosX() && x <= robot.getRightmostPosX() && y >= robot.getDownmostPosY() && y <= robot.getUppermostPosY());
 	}
 }

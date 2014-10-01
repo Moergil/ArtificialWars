@@ -26,8 +26,8 @@ public class MEXTIOChip extends MemoryChip
 	public interface Address
 	{
 		public static final int
-			ROTATION_HI = 0,
-			ROTATION_LO = 1,
+			ABS_ROTATION_HI = 0,
+			ABS_ROTATION_LO = 1,
 			ROTATION_ORDER_HI = 2,
 			ROTATION_ORDER_LO = 3,
 			MOVE_ORDER_VALUE = 4,
@@ -55,8 +55,8 @@ public class MEXTIOChip extends MemoryChip
 	private Pins pins = Pins.DUMMY;
 	
 	protected byte
-		rotationHibyte,
-		rotationLobyte,
+		absoluteRotationHibyte,
+		absoluteRotationLobyte,
 		rotationOrderHibyte,
 		rotationOrderLobyte,
 		moveOrderValue,
@@ -101,10 +101,15 @@ public class MEXTIOChip extends MemoryChip
 		this.pins = pins;
 	}
 	
-	public void setRotation(byte hibyte, byte lobyte)
+	public void setAbsoluteRotation(short rotation)
 	{
-		this.rotationHibyte = hibyte;
-		this.rotationLobyte = lobyte;
+		setAbsoluteRotation((byte)(rotation >>> 8), (byte)rotation);
+	}
+	
+	public void setAbsoluteRotation(byte hibyte, byte lobyte)
+	{
+		this.absoluteRotationHibyte = hibyte;
+		this.absoluteRotationLobyte = lobyte;
 	}
 	
 	public void travelled(int units)
@@ -117,6 +122,22 @@ public class MEXTIOChip extends MemoryChip
 		{
 			value = 0;
 		}
+	}
+	
+	public void rotated(int units)
+	{
+		rotationOrderLobyte = (byte)units;
+		rotationOrderHibyte = (byte)(units >>> 8);
+	}
+	
+	public int getMoveOrderValue()
+	{
+		return Byte.toUnsignedInt(moveOrderValue);
+	}
+	
+	public int getRotationOrderValue()
+	{
+		return Short.toUnsignedInt((short)(rotationOrderHibyte << 8 | rotationOrderLobyte));
 	}
 	
 	public void setNoise(byte noise)
@@ -168,10 +189,10 @@ public class MEXTIOChip extends MemoryChip
 	{
 		switch (address)
 		{
-			case Address.ROTATION_HI:
-				return rotationHibyte;
-			case Address.ROTATION_LO:
-				return rotationLobyte;
+			case Address.ABS_ROTATION_HI:
+				return absoluteRotationHibyte;
+			case Address.ABS_ROTATION_LO:
+				return absoluteRotationLobyte;
 			case Address.MOVE_ORDER_VALUE:
 				return moveOrderValue;
 			case Address.ROTATION_ORDER_HI:

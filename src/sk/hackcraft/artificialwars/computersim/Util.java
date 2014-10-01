@@ -2,6 +2,8 @@ package sk.hackcraft.artificialwars.computersim;
 
 public class Util
 {
+	public static final byte UNSIGNED_BYTE_MAX_VALUE_RAW = (byte)0xFF;
+	
 	public static boolean isBetween(int fromInc, int toExc, int value)
 	{
 		return value >= fromInc && value < toExc;

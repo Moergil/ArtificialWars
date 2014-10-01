@@ -6,21 +6,26 @@ import java.util.List;
 public class Computer
 {
 	private final Bus bus;
-	private List<Part> parts = new ArrayList<>();
+	private List<ComputerPart> parts = new ArrayList<>();
 	
-	public Computer(Bus bus)
+	public Computer(int busPinsCount)
 	{
-		this.bus = bus;
+		this.bus = new Bus(busPinsCount);
 	}
 	
-	public void addPart(Part part)
+	protected Bus getBus()
+	{
+		return bus;
+	}
+	
+	public void addPart(ComputerPart part)
 	{
 		parts.add(part);		
 	}
 	
 	public void tick()
 	{
-		for (Part part : parts)
+		for (ComputerPart part : parts)
 		{
 			part.update();
 		}

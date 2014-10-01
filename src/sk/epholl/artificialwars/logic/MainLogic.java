@@ -1,6 +1,7 @@
 package sk.epholl.artificialwars.logic;
 
 import java.awt.Container;
+import java.util.Random;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -49,7 +50,7 @@ public class MainLogic implements Runnable
 
 	public void loadLevel(String name)
 	{
-		GameLogic logic = new GameLogic();
+		GameLogic logic = new GameLogic(new Random().nextLong());
 
 		LevelLoader parser = new LevelLoader(logic, name);
 		if (!parser.loadLevel())

@@ -16,6 +16,7 @@ import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
 import sk.epholl.artificialwars.logic.GameLogic;
 import sk.epholl.artificialwars.logic.GamePanelInput;
 import sk.epholl.artificialwars.logic.MainLogic;
+import sk.epholl.artificialwars.logic.Vector2D;
 
 public class GamePanel extends JPanel
 {
@@ -57,7 +58,16 @@ public class GamePanel extends JPanel
 			for (Entity e : logic.getEntities())
 			{
 				g2d.setColor(e.getColor());
-				g2d.fillRect(e.getLeftmostPosX(), e.getDownmostPosY(), e.getSizeX(), e.getSizeY());
+				
+				Vector2D position = e.getPosition();
+				
+				int width = e.getWidth();
+				int height = e.getHeight();
+				
+				int x = (int)(position.getX() - width / 2);
+				int y = (int)(position.getY() - height / 2);
+				
+				g2d.fillRect(x, y, width, height);
 			}
 
 			g2d.setColor(Color.yellow);
@@ -106,7 +116,7 @@ public class GamePanel extends JPanel
 			{
 				if (event.getButton() == MouseEvent.BUTTON1 && input != null)
 				{
-					if (! input.gameButtonClicked(event.getX(), event.getY()))
+					if (!input.gameButtonClicked(event.getX(), event.getY()))
 					{
 						selectedRobot = input.checkRobotClicked(event.getX(), event.getY());
 						repaint();
@@ -125,10 +135,14 @@ public class GamePanel extends JPanel
 	
 	private String formatMousePointer()
 	{
-		return (mousePointer != null)? 
-				"Current mouse pos: [ " + mousePointer.x + ", " + mousePointer.y + "]"
-				:
-				"";
+		if (mousePointer != null)
+		{
+			return String.format("Current mouse pos: [%d, %d]", mousePointer.x, mousePointer.y);
+		}
+		else
+		{
+			return "";
+		}
 	}
 	
 	private Eph32BasicRobot getSelectedRobot()

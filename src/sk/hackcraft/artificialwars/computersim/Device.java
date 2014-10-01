@@ -1,6 +1,6 @@
 package sk.hackcraft.artificialwars.computersim;
 
-public interface Device extends Part
+public interface Device extends ComputerPart
 {
 	default String getPinName(int index)
 	{

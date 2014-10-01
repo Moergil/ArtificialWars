@@ -6,7 +6,7 @@
 
 //robot red green blue player posX posY instructionFileName
 
-objective_units 0 1000 0 1000 1 0 invisible
+objective_units 0 1000 0 1000 1 0
 Destroy enemy green robots.
 robot 255 128 128 0 200 250 player.txt
 robot 255 128 128 0 200 350 moerobot.txt

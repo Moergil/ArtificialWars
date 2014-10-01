@@ -2,9 +2,8 @@ package sk.epholl.artificialwars.logic;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.swing.Timer;
 
@@ -18,6 +17,8 @@ import sk.epholl.artificialwars.graphics.GamePanel;
  */
 public class GameLogic
 {
+	private final long seed;
+	
 	private GamePanel panel;
 	private boolean gameRunning = true;
 	private Timer timer;
@@ -27,13 +28,13 @@ public class GameLogic
 	private String outputString;
 	private int outputStringValidity;
 
-	private ArrayList<Entity> entities;
-	private ArrayList<Entity> entityBuffer;
+	private Set<Entity> entities;
 
-	public GameLogic()
+	public GameLogic(long seed)
 	{
-		entities = new ArrayList<Entity>();
-		entityBuffer = new ArrayList<Entity>();
+		this.seed = seed;
+		
+		entities = new HashSet<>();
 
 		outputString = "";
 		outputStringValidity = 0;
@@ -49,6 +50,11 @@ public class GameLogic
 				singleStep();
 			}
 		});
+	}
+	
+	public long getSeed()
+	{
+		return seed;
 	}
 	
 	public void singleStep()
@@ -71,7 +77,6 @@ public class GameLogic
 	public void startGame()
 	{
 		initialise();
-		reloadEntities();
 		panel.repaint();
 	}
 
@@ -96,7 +101,7 @@ public class GameLogic
 		this.panel = panel;
 	}
 
-	public List<Entity> getEntities()
+	public Set<Entity> getEntities()
 	{
 		return entities;
 	}
@@ -113,23 +118,26 @@ public class GameLogic
 			setOutputString(e.toString(), 1);
 			objectiveCount++;
 		}
-		entityBuffer.add(e);
+		
+		entities.add(e);
 	}
 
 	public void objectiveReached(Objective o)
 	{
-		objectiveCount--;
-		setOutputString("Objective reached: " + o.toString(), 400);
-		o.destroy();
-		if (objectiveCount == 0)
-			endGame(true);
-	}
-
-	public void objectiveFailed(Objective o)
-	{
-		setOutputString(o.toString(), 100);
-		endGame(false);
-		o.destroy();
+		if (o.isSuccess())
+		{
+			objectiveCount--;
+			setOutputString("Objective reached: " + o.toString(), 400);
+			o.destroy();
+			if (objectiveCount == 0)
+				endGame(true);
+		}
+		else
+		{
+			setOutputString(o.toString(), 100);
+			endGame(false);
+			o.destroy();
+		}
 	}
 
 	public void removeEntity(Entity e)
@@ -155,38 +163,34 @@ public class GameLogic
 
 	private void logicCycle()
 	{
-		ListIterator<Entity> iteratorEntities = entities.listIterator();
-
-		while (iteratorEntities.hasNext())
+		// update entities internal state
+		for (Entity entity : entities)
 		{
-			Entity e = iteratorEntities.next();
-
-			e.moveToNextPosition();
-
-			for (Entity collisionEntity : entities)
+			entity.update(new HashSet<>(entities));
+		}
+		
+		// allow entities to interact with world
+		Set<Entity> entitiesToRemove = new HashSet<>();
+		for (Entity entity : entities)
+		{
+			entity.turn();
+			
+			if (!entity.isExists())
 			{
-				if (collisionEntity != e && e.collidesWith(collisionEntity))
-				{
-					e.returnToPreviousPosition();
-				}
+				entitiesToRemove.add(entity);
 			}
-
-			e.turn();
-
-			if (e.aboutToRemove())
-				iteratorEntities.remove();
+		}
+		
+		// remove destroyed entities
+		for (Entity entity : entitiesToRemove)
+		{
+			entities.remove(entity);
 		}
 
-		reloadEntities();
-
 		if (outputStringValidity < getCycleCount())
+		{
 			outputString = "";
-	}
-
-	private void reloadEntities()
-	{
-		entities.addAll(entityBuffer);
-		entityBuffer.clear();
+		}
 	}
 
 	private void endGame(boolean victory)

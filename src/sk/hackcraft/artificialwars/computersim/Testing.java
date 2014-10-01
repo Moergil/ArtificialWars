@@ -22,9 +22,8 @@ public class Testing
 		 * 2-17		A0-A15
 		 * 18-25	D0-D7
 		 */
-		Bus bus = new Bus(26);
-		
-		Computer computer = new Computer(bus);
+		Computer computer = new Computer(26);
+		Bus bus = computer.getBus();
 		
 		BusProbe probe = new BusProbe(26, (builder, bits) -> {
 			for (int i = bits.length - 1; i >= 0; i--)

@@ -6,7 +6,7 @@
 
 //robot red green blue player posX posY instructionFileName
 
-objective_units 400 800 0 1000 0 1 visible
+objective_units 400 800 0 1000 0 1
 Get the robot to the right side of screen.
 obstacle 150 250 190 210
 obstacle 150 250 390 410

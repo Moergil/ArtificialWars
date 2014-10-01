@@ -6,9 +6,9 @@ import java.util.Map;
 import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
 import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter.IntFormatter;
 
-public class ProbeProcessorTEK1608 implements AbstractChipProbe<ProbeProcessorTEK1608.RegisterTEK1608>
+public class ProbeProcessorTEK1608 implements AbstractProcessorProbe<ProbeProcessorTEK1608.RegisterTEK1608>
 {	
-	public enum RegisterTEK1608 implements AbstractChipProbe.Register
+	public enum RegisterTEK1608 implements AbstractProcessorProbe.Register
 	{
 		A(1),
 		X(1),

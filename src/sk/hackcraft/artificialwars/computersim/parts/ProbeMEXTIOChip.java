@@ -6,9 +6,9 @@ import java.util.Map;
 import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
 import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter.IntFormatter;
 
-public class ProbeMEXTIOChip implements AbstractChipProbe<ProbeMEXTIOChip.RegisterMEXTIO>
+public class ProbeMEXTIOChip implements AbstractProcessorProbe<ProbeMEXTIOChip.RegisterMEXTIO>
 {	
-	public enum RegisterMEXTIO implements AbstractChipProbe.Register
+	public enum RegisterMEXTIO implements AbstractProcessorProbe.Register
 	{
 		RH(1),
 		RL(1),
@@ -69,9 +69,9 @@ public class ProbeMEXTIOChip implements AbstractChipProbe<ProbeMEXTIOChip.Regist
 		switch (register)
 		{
 			case RH:
-				return chip.rotationHibyte;
+				return chip.absoluteRotationHibyte;
 			case RL:
-				return chip.rotationLobyte;
+				return chip.absoluteRotationLobyte;
 			case ROH:
 				return chip.rotationOrderHibyte;
 			case ROL:
@@ -109,9 +109,9 @@ public class ProbeMEXTIOChip implements AbstractChipProbe<ProbeMEXTIOChip.Regist
 		switch (register)
 		{
 			case RH:
-				chip.rotationHibyte = (byte)value;
+				chip.absoluteRotationHibyte = (byte)value;
 			case RL:
-				chip.rotationLobyte = (byte)value;
+				chip.absoluteRotationLobyte = (byte)value;
 			case ROH:
 				chip.rotationOrderHibyte = (byte)value;
 			case ROL:
