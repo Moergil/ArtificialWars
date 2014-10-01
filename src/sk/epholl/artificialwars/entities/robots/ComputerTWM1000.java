@@ -12,7 +12,7 @@ import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608.Regis
 import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608;
 import sk.hackcraft.artificialwars.computersim.parts.Serial8SegmentDisplay;
 
-public class ComputerTWM80 extends Computer
+public class ComputerTWM1000 extends Computer
 {
 	public static final int
 		DATA_RANGE = 8,
@@ -32,7 +32,7 @@ public class ComputerTWM80 extends Computer
 	private final BusProbe busProbe;
 	private final MemoryProbe memoryProbe;
 
-	public ComputerTWM80()
+	public ComputerTWM1000()
 	{
 		super(busPinsCount);
 		
@@ -136,7 +136,7 @@ public class ComputerTWM80 extends Computer
 		
 		byte memoryData[] = memory.getMemory();
 		
-		System.arraycopy(memoryData, pc, firmware, 0, firmware.length);
+		System.arraycopy(memoryData, 0, firmware, 0, firmware.length);
 	}
 	
 	public MEXTIOChip getIO()

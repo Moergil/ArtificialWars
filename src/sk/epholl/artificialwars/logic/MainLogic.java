@@ -53,9 +53,14 @@ public class MainLogic implements Runnable
 		GameLogic logic = new GameLogic(new Random().nextLong());
 
 		LevelLoader parser = new LevelLoader(logic, name);
-		if (!parser.loadLevel())
+		
+		try
 		{
-			throw new RuntimeException("Error loading level: " + name);
+			parser.loadLevel();
+		}
+		catch (Exception e)
+		{
+			throw new RuntimeException("Error loading level: ", e);
 		}
 
 		createGame(logic);

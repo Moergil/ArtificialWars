@@ -6,14 +6,18 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.NoSuchElementException;
+import java.util.Scanner;
 import java.util.StringTokenizer;
 
 import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Obstacle;
+import sk.epholl.artificialwars.entities.objectives.CaptureLocationObjective;
+import sk.epholl.artificialwars.entities.objectives.DestroyEnemyObjective;
 import sk.epholl.artificialwars.entities.objectives.Objective;
 import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
 import sk.epholl.artificialwars.entities.robots.FirmwareLoader;
-import sk.epholl.artificialwars.entities.robots.RobotExterminator;
+import sk.epholl.artificialwars.entities.robots.RobotTWM1608;
+import sk.epholl.artificialwars.entities.robots.FirmwareLoader.ProgrammingException;
 
 public class LevelLoader
 {
@@ -42,170 +46,136 @@ public class LevelLoader
 		return true;
 	}
 
-	public boolean loadLevel()
+	public void loadLevel() throws IOException, IllegalArgumentException
 	{
 		String line;
-		String currentWord;
-		StringTokenizer parser;
-		try
+
+		while ((line = inputReader.readLine()) != null)
 		{
-			while ((line = inputReader.readLine()) != null)
+			if (line.equals("") || line.startsWith("//"))
 			{
-				if (line.equals("") || line.startsWith("//"))
-					continue;
-				parser = new StringTokenizer(line);
+				continue;
+			}
+			
+			try (Scanner scanner = new Scanner(line))
+			{
+				String key = scanner.next();
 
-				currentWord = parser.nextToken();
-
-				if (currentWord.equals("objective_units"))
+				switch (key)
 				{
-					Objective o;
-
-					int leftBorder = Integer.parseInt(parser.nextToken());
-					int rightBorder = Integer.parseInt(parser.nextToken());
-					int upperBorder = Integer.parseInt(parser.nextToken());
-					int lowerBorder = Integer.parseInt(parser.nextToken());
-
-					final int ownerPlayer = Integer.parseInt(parser.nextToken());
-					final int requiredUnits = Integer.parseInt(parser.nextToken());
-
-					String objectiveMessage = String.format("Player %d must bring %d robots to designated location.", ownerPlayer, requiredUnits);
-
-					o = new Objective(leftBorder, rightBorder, upperBorder, lowerBorder, logic, objectiveMessage)
-					{
-						@Override
-						protected boolean evaluate(GameLogic game)
-						{
-							int ownedUnits = 0;
-							int unitsInArea = 0;
-
-							for (Entity e : game.getEntities())
-							{
-								if (e.getPlayer() != ownerPlayer)
-								{
-									continue;
-								}
-								
-								ownedUnits++;
-								
-								if (this.isCollidingWith(e))
-								{
-									unitsInArea++;
-								}
-							}
-							
-							if (ownedUnits == 0)
-							{
-								setSuccess(false);
-								return true;
-							}
-							
-							if (unitsInArea >= requiredUnits)
-							{
-								setSuccess(true);
-								return true;
-							}
-							
-							return false;
-						}
-					};
-
-					inputReader.readLine();
-
-					logic.addEntity(o);
+					case "objective":
+						parseObjective(scanner);
+						break;
+					case "obstacle":
+						parseObstacle(scanner);
+						break;
+					case "robot":
+						parseRobot(scanner);
+						break;
+					default:
+						throw new IllegalArgumentException("Unknown entity: " + key);
 				}
-				else if (currentWord.equals("obstacle"))
-				{
-					Obstacle o;
-
-					int leftBorder = Integer.parseInt(parser.nextToken());
-					int rightBorder = Integer.parseInt(parser.nextToken());
-
-					if (parser.hasMoreTokens())
-					{
-						int upperBorder = Integer.parseInt(parser.nextToken());
-						int lowerBorder = Integer.parseInt(parser.nextToken());
-
-						o = new Obstacle(leftBorder, rightBorder, upperBorder, lowerBorder, logic);
-					}
-					else
-					{
-						o = new Obstacle(leftBorder, rightBorder, logic);
-					}
-
-					logic.addEntity(o);
-				}
-				else if (currentWord.equals("robot"))
-				{
-					Eph32BasicRobot r;
-
-					int red = Integer.parseInt(parser.nextToken());
-					int green = Integer.parseInt(parser.nextToken());
-					int blue = Integer.parseInt(parser.nextToken());
-					int player = Integer.parseInt(parser.nextToken());
-					int posX = Integer.parseInt(parser.nextToken());
-					int posY = Integer.parseInt(parser.nextToken());
-
-					String instructionFile = parser.nextToken();
-
-					r = new Eph32BasicRobot(new Color(red, green, blue), player, logic);
-					r.setPosition(posX, posY);
-					
-					try
-					{
-						FirmwareLoader.loadFirmwareRobot(instructionFile, r);
-					}
-					catch (Exception e)
-					{
-						e.printStackTrace();
-					}
-
-					logic.addEntity(r);
-				}
-				else if (currentWord.equals("exterminator"))
-				{
-					RobotExterminator r;
-					
-					int red = Integer.parseInt(parser.nextToken());
-					int green = Integer.parseInt(parser.nextToken());
-					int blue = Integer.parseInt(parser.nextToken());
-					int player = Integer.parseInt(parser.nextToken());
-					int posX = Integer.parseInt(parser.nextToken());
-					int posY = Integer.parseInt(parser.nextToken());
-
-					String instructionFile = parser.nextToken();
-					
-					r = new RobotExterminator(new Color(red, green, blue), player, posX, posY, logic, 0);
-					
-					try
-					{
-						FirmwareLoader.loadFirmwareExterminator(instructionFile, r);
-					}
-					catch (Exception e)
-					{
-						e.printStackTrace();
-					}
-
-					logic.addEntity(r);
-				}
-				else
-					throw new IllegalArgumentException("Unknown level entity in file: " + line);
 			}
 		}
-		catch (IOException e)
-		{
-			return false;
-		}
-		catch (NoSuchElementException e)
-		{
-			return false;
-		}
-		catch (NullPointerException e)
-		{
-			return false;
-		}
+	}
 
-		return true;
+	private void parseRobot(Scanner scanner)
+	{		
+		int red = scanner.nextInt();
+		int green = scanner.nextInt();
+		int blue = scanner.nextInt();
+		
+		int player = scanner.nextInt();
+		
+		int x = scanner.nextInt();
+		int y = scanner.nextInt();
+
+		Color color = new Color(red, green, blue);
+		
+		String type = scanner.next();
+		String firmwareFileName = scanner.next();
+		
+		try
+		{
+			switch (type)
+			{
+				case "eph32":
+				{
+					Eph32BasicRobot robot = new Eph32BasicRobot(color, player, logic);
+					robot.setCenterPosition(x, y);
+					
+					FirmwareLoader.loadFirmwareRobot(firmwareFileName, robot);
+					logic.addEntity(robot);
+					break;
+				}
+				case "twm1608":
+				{
+					RobotTWM1608 robot = new RobotTWM1608(color, player, logic, logic.getSeed());
+					robot.setCenterPosition(x, y);
+					
+					FirmwareLoader.loadFirmwareExterminator(firmwareFileName, robot);
+					logic.addEntity(robot);
+					break;
+				}
+				default:
+					throw new IllegalArgumentException("Invalid robot type: " + type);
+			}
+		}
+		catch (ProgrammingException e)
+		{
+			e.printStackTrace();
+		}
+	}
+
+	private void parseObstacle(Scanner scanner)
+	{
+		int x = scanner.nextInt();
+		int y = scanner.nextInt();
+
+		int width = scanner.nextInt();
+		int height = scanner.nextInt();
+		
+		Obstacle obstacle = new Obstacle(x, y, width, height, logic);
+		
+		logic.addEntity(obstacle);
+	}
+
+	private void parseObjective(Scanner scanner)
+	{
+		String type = scanner.next();
+		
+		switch (type)
+		{
+			case "capture":
+			{
+				int x = scanner.nextInt();
+				int y = scanner.nextInt();
+				int w = scanner.nextInt();
+				int h = scanner.nextInt();
+				
+				int player = scanner.nextInt();
+				int unitsAmount = scanner.nextInt();
+				
+				Objective objective = new CaptureLocationObjective(logic, player, unitsAmount);
+				objective.setCenterPosition(x, y);
+				objective.setWidth(w);
+				objective.setHeight(h);
+				logic.addObjective(objective);
+				
+				break;
+			}
+			case "destroy":
+			{
+				int player = scanner.nextInt();
+				
+				Objective objective = new DestroyEnemyObjective(logic, player);
+				logic.addObjective(objective);
+				
+				break;
+			}
+			default:
+				throw new IllegalArgumentException("Invalid objective type: " + type);
+		}
 	}
 
 	public boolean isDone()

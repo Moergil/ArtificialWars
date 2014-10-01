@@ -297,7 +297,7 @@ public class Eph32BasicRobot extends Entity
 			case 52:
 			{
 				// if (isCollided()) IP = P
-				if (isCollided())
+				if (isColliding())
 				{
 					instructionPointer = parameter;
 					decrementInstructionPointer();
@@ -430,14 +430,15 @@ public class Eph32BasicRobot extends Entity
 	private void setMovementTo(int x, int y)
 	{
 		// TODO
+		System.out.println("TODOOO set movement");
 	}
 
 	@Override
 	public void beHit(Projectile shot)
 	{
+		super.beHit(shot);
 		this.hitpoints -= shot.getDamage();
-		shot.destroy();
-
+		
 		Explosion explosion = Explosion.create(game, getPosition());
 		game.addEntity(explosion);
 	}
@@ -485,8 +486,8 @@ public class Eph32BasicRobot extends Entity
 	{
 		Projectile shot = new Projectile(game, this);
 		
-		shot.setPosition(getPosition());
-		shot.setDirection(new Vector2D(regA, regB));
+		shot.setCenterPosition(getPosition());
+		shot.setDirection(new Vector2D(regA, regB).sub(getPosition()));
 		
 		game.addEntity(shot);
 	}
@@ -500,20 +501,20 @@ public class Eph32BasicRobot extends Entity
 	{
 		String a, b, mp, ip, ic;
 		
-		a = CommonValueFormatter.toDecimal4(regA);
-		b = CommonValueFormatter.toDecimal4(regB);
-		mp = CommonValueFormatter.toDecimal4(memoryPointer);
-		ip = CommonValueFormatter.toDecimal4(instructionPointer);
-		ic = CommonValueFormatter.toDecimal4(instructionCooldown);
+		a = CommonValueFormatter.toDecimal5(regA);
+		b = CommonValueFormatter.toDecimal5(regB);
+		mp = CommonValueFormatter.toDecimal5(memoryPointer);
+		ip = CommonValueFormatter.toDecimal5(instructionPointer);
+		ic = CommonValueFormatter.toDecimal5(instructionCooldown);
 		
 		return String.format("A:%s B:%s MP:%s IP:%s IC:%s", a, b, mp, ip, ic);
 	}
 
 	public String getActualLine()
 	{
-		String line = CommonValueFormatter.toDecimal4(instructionPointer);
+		String line = CommonValueFormatter.toDecimal5(instructionPointer);
 		String instructionName = EPH32InstructionSet.getInstance().getOpcode(instructionMemory[instructionPointer]).getInstructionName();
-		String param = CommonValueFormatter.toDecimal4(parameterMemory[instructionPointer]);
+		String param = CommonValueFormatter.toDecimal5(parameterMemory[instructionPointer]);
 		
 		return String.format("Line %s %5s %s", line, instructionName, param);
 	}

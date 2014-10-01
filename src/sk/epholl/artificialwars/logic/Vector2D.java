@@ -67,7 +67,26 @@ public class Vector2D
 	public Vector2D normalise()
 	{
 		double length = getLength();
-		return new Vector2D(x / length, y / length);
+		
+		if (isZero())
+		{
+			return this;
+		}
+		
+		Vector2D vector = new Vector2D(x / length, y / length);
+		vector.length = 1;
+		
+		return vector;
+	}
+	
+	public boolean isUnit()
+	{
+		return getLength() == 1;
+	}
+	
+	public boolean isZero()
+	{
+		return getLength() == 0;
 	}
 	
 	@Override
@@ -88,5 +107,11 @@ public class Vector2D
 	{
 		// TODO
 		return (int)Double.doubleToLongBits(x * y);
+	}
+	
+	@Override
+	public String toString()
+	{
+		return String.format("[%.2f,%.2f]", x, y);
 	}
 }

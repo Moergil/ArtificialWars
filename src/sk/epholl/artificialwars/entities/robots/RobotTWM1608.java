@@ -19,11 +19,11 @@ import sk.epholl.artificialwars.logic.Vector2DMath;
 import sk.hackcraft.artificialwars.computersim.Util;
 import sk.hackcraft.artificialwars.computersim.parts.MEXTIOChip;
 
-public class RobotExterminator extends Entity
+public class RobotTWM1608 extends Entity
 {
 	public static void main(String[] args) throws Exception
 	{
-		RobotExterminator e = new RobotExterminator(Color.BLACK, 0, 10, 15, null, 0);
+		RobotTWM1608 e = new RobotTWM1608(Color.BLACK, 0, null, 0);
 		
 		FirmwareLoader.loadFirmwareExterminator("fibonacci.asm", e);
 		
@@ -47,7 +47,7 @@ public class RobotExterminator extends Entity
 	private double movementPerSecond = 10;
 	private double rotationStep = 360 / 65536;
 	
-	private final ComputerTWM80 computer;
+	private final ComputerTWM1000 computer;
 	
 	private final short PROGRAM_OFFSET = 0x0200;
 	
@@ -59,7 +59,7 @@ public class RobotExterminator extends Entity
 	private static final double GRADIENT_DETECTOR_ANGLE = (Math.PI / 4) * 2;
 	private static final double GRADIENT_DETECTOR_DETECTING_THRESHOLD = 1;
 	
-	public RobotExterminator(Color color, int player, int posX, int posY, GameLogic game, long seed)
+	public RobotTWM1608(Color color, int player, GameLogic game, long seed)
 	{
 		super(game);
 		
@@ -68,7 +68,7 @@ public class RobotExterminator extends Entity
 		
 		this.random = new Random(seed);
 		
-		computer = new ComputerTWM80();
+		computer = new ComputerTWM1000();
 		
 		SpotsProvider provider = new ExterminatorDetectorSpotsProvider();
 		
@@ -215,7 +215,7 @@ public class RobotExterminator extends Entity
 	{
 		Projectile shot = new Projectile(game, this);
 		
-		shot.setPosition(getPosition());
+		shot.setCenterPosition(getPosition());
 		shot.setDirection(getDirection());
 		
 		game.addEntity(shot);
@@ -257,10 +257,10 @@ public class RobotExterminator extends Entity
 	@Override
 	public void beHit(Projectile shot)
 	{
+		super.beHit(shot);
 		this.hitpoints -= shot.getDamage();
-		shot.destroy();
-
-		Explosion explosion = Explosion.create(game, getPosition(), shot.getDirection(), shot.getMoveSpeed());
+		
+		Explosion explosion = Explosion.create(game, getPosition());
 		game.addEntity(explosion);
 	}
 	
@@ -279,7 +279,7 @@ public class RobotExterminator extends Entity
 
 			for (Entity e : game.getEntities())
 			{
-				if (e == RobotExterminator.this)
+				if (e == RobotTWM1608.this)
 				{
 					continue;
 				}
@@ -304,7 +304,7 @@ public class RobotExterminator extends Entity
 				Vector2D targetVector = new Vector2D(exterminatorVector, target.getPosition());
 				
 				double relativeRotation = Vector2DMath.getRelativeSignedAngle(exterminatorVector, targetVector);
-				double distance = target.getDistance(RobotExterminator.this);
+				double distance = target.getDistance(RobotTWM1608.this);
 				double width = Math.max(target.getWidth(), target.getHeight());
 				
 				spots.add(new DetectorSpot(relativeRotation, distance, width));

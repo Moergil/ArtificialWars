@@ -12,6 +12,8 @@ import java.awt.event.MouseEvent;
 import javax.swing.JPanel;
 
 import sk.epholl.artificialwars.entities.Entity;
+import sk.epholl.artificialwars.entities.Explosion;
+import sk.epholl.artificialwars.entities.objectives.Objective;
 import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
 import sk.epholl.artificialwars.logic.GameLogic;
 import sk.epholl.artificialwars.logic.GamePanelInput;
@@ -57,6 +59,21 @@ public class GamePanel extends JPanel
 		{
 			for (Entity e : logic.getEntities())
 			{
+				if (e instanceof Objective)
+				{
+					Objective o = (Objective)e;
+					
+					if (!o.isPhysical())
+					{
+						continue;
+					}
+				}
+				
+				if (e instanceof Explosion && e.getDirection().isZero())
+				{
+					System.out.println(e.getDirection().getLength());
+				}
+
 				g2d.setColor(e.getColor());
 				
 				Vector2D position = e.getPosition();

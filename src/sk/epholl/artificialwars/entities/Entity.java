@@ -56,24 +56,35 @@ public abstract class Entity
 	
 	public void update(Set<Entity> nearbyEntities)
 	{
+		colliding = false;
+		
 		Vector2D newPosition = calcNewPosition();
 
-		if (isSolid() && isCollidable())
+		if (isCollidable())
 		{
 			Set<Entity> collidingEntities = getCollisions(newPosition, nearbyEntities);
 			
 			if (collidingEntities.isEmpty())
 			{
-				setPosition(newPosition);
+				setCenterPosition(newPosition);
 			}
 			else
 			{
+				colliding = true;
 				collided(collidingEntities);
 			}
+		}
+		else
+		{
+			setCenterPosition(newPosition);
 		}
 	}
 	
 	protected void collided(Set<Entity> entities)
+	{
+	}
+	
+	protected void destroyed()
 	{
 	}
 
@@ -101,19 +112,32 @@ public abstract class Entity
 		return collidingEntities;
 	}
 	
-	public void setPosition(double x, double y)
+	public void setCenterPosition(double x, double y)
 	{
-		this.position = new Vector2D(x, y);
+		setCenterPosition(new Vector2D(x, y));
 	}
 	
-	public void setPosition(Vector2D position)
+	public void setCornerPosition(double x, double y)
+	{
+		setCornerPosition(new Vector2D(x, y));
+	}
+	
+	public void setCenterPosition(Vector2D position)
 	{
 		this.position = position;
 	}
 	
+	public void setCornerPosition(Vector2D position)
+	{
+		double x = position.getX() + width / 2;
+		double y = position.getY() + height / 2;
+
+		setCenterPosition(x, y);
+	}
+	
 	public void setDirection(Vector2D direction)
 	{
-		this.direction = direction;
+		this.direction = direction.normalise();
 	}
 	
 	public Vector2D getPosition()
@@ -176,7 +200,7 @@ public abstract class Entity
 		this.rotateSpeed = rotateSpeed;
 	}
 
-	public boolean isCollided()
+	public boolean isColliding()
 	{
 		return colliding;
 	}
@@ -241,7 +265,7 @@ public abstract class Entity
 
 	public boolean isExists()
 	{
-		return destroyed;
+		return !destroyed;
 	}
 
 	public boolean isMoving()
@@ -270,5 +294,6 @@ public abstract class Entity
 	public void destroy()
 	{
 		destroyed = true;
+		destroyed();
 	}
 }

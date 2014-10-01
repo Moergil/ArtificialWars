@@ -9,24 +9,27 @@ import sk.epholl.artificialwars.logic.Vector2D;
 
 public abstract class Objective extends Entity
 {
+	public enum State
+	{
+		IN_PROGRESS,
+		SUCCESS,
+		FAIL;
+	}
+
 	public static final Color DEFAULT_OBJECTIVE_COLOR = new Color(128, 200, 128, 32);
 
-	private final String message;
-	private boolean completed, success;
+	private State state;
 
-	public Objective(int leftBorder, int rightBorder, int upperBorder, int lowerBorder, GameLogic game, String message)
+	public Objective(GameLogic game)
 	{
 		super(game);
-		
-		this.message = message;
-
-		setPosition(new Vector2D((leftBorder + rightBorder) / 2, (upperBorder + lowerBorder) / 2));
-		
-		setWidth(Math.abs(rightBorder - leftBorder));
-		setHeight(Math.abs(upperBorder - lowerBorder));
 
 		this.color = DEFAULT_OBJECTIVE_COLOR;
+		
+		state = State.IN_PROGRESS;
 	}
+	
+	public abstract String getDescription();
 	
 	@Override
 	public boolean isSolid()
@@ -52,41 +55,34 @@ public abstract class Objective extends Entity
 		return false;
 	}
 	
+	@Deprecated
+	/*
+	 * Rework so objectives will not be entities, but they will use special entities for collisions and such
+	 */
+	public abstract boolean isPhysical();
+	
 	@Override
 	public void update(Set<Entity> nearbyEntities)
 	{
 		super.update(nearbyEntities);
 		
-		if (evaluate(game))
+		state = evaluate(game);
+		if (state != State.IN_PROGRESS)
 		{
-			completed = true;
 			game.objectiveReached(this);
 		}
 	}
 	
-	public boolean isCompleted()
+	public State getState()
 	{
-		return completed;
+		return state;
 	}
 	
-	public boolean isSuccess()
-	{
-		return success;
-	}
-	
-	protected void setSuccess(boolean success)
-	{
-		this.success = success;
-	}
-	
-	protected abstract boolean evaluate(GameLogic game);
+	protected abstract State evaluate(GameLogic game);
 
 	@Override
 	public String toString()
 	{
-		if (message == null)
-			return "Objective";
-		else
-			return message;
+		return getDescription();
 	}
 }

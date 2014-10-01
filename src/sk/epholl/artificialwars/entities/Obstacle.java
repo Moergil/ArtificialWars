@@ -9,26 +9,14 @@ public class Obstacle extends Entity
 {
 	public static final Color DEFAULT_OBSTACLE_COLOR = new Color(200, 150, 150);
 
-	public Obstacle(int posX, int posY, GameLogic game)
-	{
-		super(game);
-		
-		setPosition(new Vector2D(posX, posY));
-
-		setWidth(10);
-		setHeight(10);
-
-		this.color = DEFAULT_OBSTACLE_COLOR;
-	}
-
-	public Obstacle(int leftBorder, int rightBorder, int upperBorder, int lowerBorder, GameLogic game)
+	public Obstacle(int x, int y, int width, int height, GameLogic game)
 	{
 		super(game);
 
-		setPosition(new Vector2D((leftBorder + rightBorder) / 2, (upperBorder + lowerBorder) / 2));
+		setWidth(width);
+		setHeight(height);
 		
-		setWidth(Math.abs(rightBorder - leftBorder));
-		setHeight(Math.abs(upperBorder - lowerBorder));
+		setCornerPosition(x, y);
 
 		this.color = DEFAULT_OBSTACLE_COLOR;
 	}

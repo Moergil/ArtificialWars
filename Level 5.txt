@@ -6,10 +6,9 @@
 
 //robot red green blue player posX posY instructionFileName
 
-objective_units 0 1000 0 1000 1 0
-Destroy enemy green robots.
-robot 255 128 128 0 200 250 player.txt
-robot 255 128 128 0 200 350 moerobot.txt
-robot 100 150 100 1 600 200 killer_robot.txt
-robot 100 150 100 1 600 300 killer_robot.txt
-robot 100 150 100 1 600 400 killer_robot.txt
+objective destroy 1
+robot 255 128 128 0 200 250 eph32 player.txt
+robot 255 128 128 0 200 350 eph32 moerobot.txt
+robot 100 150 100 1 600 200 eph32 killer_robot.txt
+robot 100 150 100 1 600 300 eph32 killer_robot.txt
+robot 100 150 100 1 600 400 eph32 killer_robot.txt

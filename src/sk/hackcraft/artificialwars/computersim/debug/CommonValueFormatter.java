@@ -33,8 +33,8 @@ public class CommonValueFormatter
 		return format("0000", Integer.toHexString(value).toUpperCase());
 	}
 	
-	public static String toDecimal4(int value)
+	public static String toDecimal5(int value)
 	{
-		return format("0000", Integer.toString(value));
+		return format("    ", Integer.toString(value));
 	}
 }

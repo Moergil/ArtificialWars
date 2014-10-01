@@ -2,6 +2,7 @@ package sk.epholl.artificialwars.logic;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -68,10 +69,13 @@ public class GameLogic
 	{
 		//borders
 		
-		entities.add(new Obstacle(-20, panel.getWidth() + 30, -20, 0, this));
-		entities.add(new Obstacle(-20, panel.getWidth() + 30, panel.getHeight() - 80, panel.getHeight() + 20, this));
-		entities.add(new Obstacle(-20, 0, 0, panel.getHeight(), this));
-		entities.add(new Obstacle(panel.getWidth() , panel.getWidth() + 20, 0, panel.getHeight(), this));
+		int thickness = 10;
+		int uiPanel = 100;
+		
+		entities.add(new Obstacle(0, 0, panel.getWidth(), thickness, this));
+		entities.add(new Obstacle(0, 0, thickness, panel.getHeight(), this));
+		entities.add(new Obstacle(panel.getWidth() - thickness, 0, thickness, panel.getHeight(), this));
+		entities.add(new Obstacle(0, panel.getHeight() - 100, panel.getWidth(), uiPanel, this));
 	}
 
 	public void startGame()
@@ -112,25 +116,29 @@ public class GameLogic
 	}
 
 	public void addEntity(Entity e)
-	{
-		if (e instanceof Objective)
-		{
-			setOutputString(e.toString(), 1);
-			objectiveCount++;
-		}
-		
+	{		
 		entities.add(e);
+	}
+	
+	public void addObjective(Objective objective)
+	{
+		setOutputString(objective.getDescription(), 1);
+		objectiveCount++;
+		
+		addEntity(objective);
 	}
 
 	public void objectiveReached(Objective o)
 	{
-		if (o.isSuccess())
+		if (o.getState() == Objective.State.SUCCESS)
 		{
 			objectiveCount--;
 			setOutputString("Objective reached: " + o.toString(), 400);
 			o.destroy();
 			if (objectiveCount == 0)
+			{
 				endGame(true);
+			}
 		}
 		else
 		{
@@ -163,28 +171,24 @@ public class GameLogic
 
 	private void logicCycle()
 	{
+		// snapshotting current entities
+		Set<Entity> entitiesCopy = Collections.unmodifiableSet(new HashSet<>(entities));
+		
 		// update entities internal state
-		for (Entity entity : entities)
+		for (Entity entity : entitiesCopy)
 		{
-			entity.update(new HashSet<>(entities));
+			entity.update(entitiesCopy);
 		}
 		
 		// allow entities to interact with world
-		Set<Entity> entitiesToRemove = new HashSet<>();
-		for (Entity entity : entities)
+		for (Entity entity : entitiesCopy)
 		{
 			entity.turn();
 			
 			if (!entity.isExists())
 			{
-				entitiesToRemove.add(entity);
+				entities.remove(entity);
 			}
-		}
-		
-		// remove destroyed entities
-		for (Entity entity : entitiesToRemove)
-		{
-			entities.remove(entity);
 		}
 
 		if (outputStringValidity < getCycleCount())

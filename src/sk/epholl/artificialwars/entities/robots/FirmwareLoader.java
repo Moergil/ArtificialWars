@@ -13,7 +13,7 @@ import sk.hackcraft.artificialwars.computersim.toolchain.Preprocessor;
 
 public class FirmwareLoader
 {
-	public static void loadFirmwareRobot(String fileName, Eph32BasicRobot robot) throws IOException, ProgrammingException
+	public static void loadFirmwareRobot(String fileName, Eph32BasicRobot robot) throws ProgrammingException
 	{
 		Preprocessor preprocessor = new Preprocessor(";", "macro", "/macro");
 		
@@ -43,7 +43,7 @@ public class FirmwareLoader
 		}
 	}
 	
-	public static void loadFirmwareExterminator(String firmwareFile, RobotExterminator exterminator) throws IOException, ProgrammingException
+	public static void loadFirmwareExterminator(String firmwareFile, RobotTWM1608 exterminator) throws ProgrammingException
 	{
 		Preprocessor preprocessor = new Preprocessor(";", "MACRO", "/MACRO");
 		AssemblerTEK1608 assembler = new AssemblerTEK1608();

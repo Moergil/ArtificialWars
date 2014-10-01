@@ -64,6 +64,8 @@ public class Projectile extends Entity
 				e.beHit(this);
 			}
 		}
+		
+		destroy();
 	}
 	
 	@Override
@@ -94,7 +96,7 @@ public class Projectile extends Entity
 	@Override
 	public boolean isCollidable()
 	{
-		return false;
+		return true;
 	}
 
 	@Override
@@ -108,7 +110,7 @@ public class Projectile extends Entity
 	{
 		super.destroy();
 
-		Explosion explosion = Explosion.create(game, getPosition(), getDirection(), getMoveSpeed());
+		Explosion explosion = Explosion.create(game, getPosition(), getDirection(), getMoveSpeed() / 2);
 		game.addEntity(explosion);
 	}
 }
