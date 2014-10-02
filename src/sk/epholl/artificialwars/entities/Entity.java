@@ -7,6 +7,7 @@ import java.util.Set;
 import sk.epholl.artificialwars.logic.GameLogic;
 import sk.epholl.artificialwars.logic.Vector2D;
 
+// TODO passive and active entities, like movement and collision checkings
 public abstract class Entity
 {
 	private Vector2D centerPosition, direction;

@@ -22,25 +22,3 @@ reverse:
 	setb 0
 	move
 	jmp fire
-
-bUp = 100
-bDown = 300
-
-begin:
-	posx
-	setb bUp
-	move
-	lockfire
-	lockfire
-	posx
-	setb bDown
-	move
-	lockfire
-	lockfire
-	jmp begin
-	
-macro lockfire
-	scan
-	lock
-	fire
-/macro

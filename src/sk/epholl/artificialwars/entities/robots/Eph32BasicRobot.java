@@ -72,10 +72,10 @@ public class Eph32BasicRobot extends Entity implements Robot
 		parameterMemory = new int[64];
 
 		memory = new int[4];
-		
-		lockTime = 100;
-		LOCK_OFFSET = 20;
-		LOCK_ACCURACY_TIME = 50;
+
+		LOCK_OFFSET = 30;
+		LOCK_ACCURACY_TIME = 250;
+		lockTime = 0;
 	}
 	
 	@Override
