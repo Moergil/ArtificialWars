@@ -3,4 +3,4 @@ lock
 fire
 fire
 wait 1
-jmp 1
+jmp 0

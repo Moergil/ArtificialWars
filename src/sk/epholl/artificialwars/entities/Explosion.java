@@ -40,7 +40,7 @@ public class Explosion extends Doodad
 		if (cascade < 4)
 		{
 			Explosion explosion = new Explosion(game, cascade + 1);
-			explosion.setCenterPosition(getPosition());
+			explosion.setCenterPosition(getCenterPosition());
 			explosion.setDirection(getDirection());
 			explosion.setMoveSpeed(getMoveSpeed() / 2);
 			game.addEntity(explosion);

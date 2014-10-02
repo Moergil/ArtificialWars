@@ -55,7 +55,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		String quoted = Pattern.quote(memoryAddressingFormat);
 		
 		// TODO assembler specific
-		String patternText = quoted.replaceAll("([%])", "\\\\E([\\$A-Za-z0-9_]+)\\\\Q");
+		String patternText = quoted.replaceAll("([%])", "\\\\E([-\\$A-Za-z0-9_]+)\\\\Q");
 		patternText = patternText.replaceAll("\\\\Q\\\\E", "");
 
 		Pattern pattern = Pattern.compile("^" + patternText + "$");

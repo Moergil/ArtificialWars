@@ -36,7 +36,7 @@ public class CaptureLocationObjective extends Objective
 		int count = (int)game.getEntities()
 				.stream()
 				.filter((entity) -> entity.hasPlayer() && entity.getPlayer() == playerId)
-				.filter((entity) -> this.isCollidingWith(entity))
+				.filter((entity) -> this.isCollidingWith(entity, getCenterPosition()))
 				.count();
 		
 		if (count >= amount)

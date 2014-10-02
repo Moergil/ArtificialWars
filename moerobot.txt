@@ -2,6 +2,27 @@
 ; M-800	;
 ;;;;;;;;;
 
+bg:
+	rnd 32
+	swp
+	seta 50
+	move
+lp:
+	jmpc reverse
+	jmpm lp
+fire:
+	scan
+	lock
+	fire
+	fire
+	fire
+	jmp bg
+reverse:
+	seta -30
+	setb 0
+	move
+	jmp fire
+
 bUp = 100
 bDown = 300
 

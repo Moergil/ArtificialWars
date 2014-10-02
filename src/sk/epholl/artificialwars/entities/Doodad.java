@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.util.Set;
 
 import sk.epholl.artificialwars.logic.GameLogic;
+import sk.epholl.artificialwars.logic.Vector2D;
 
 /**
  * @author epholl
@@ -63,7 +64,7 @@ public class Doodad extends Entity
 	}
 
 	@Override
-	public boolean isCollidingWith(Entity e)
+	public boolean isCollidingWith(Entity e, Vector2D centerPosition)
 	{
 		return false;
 	}

@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.util.Set;
 
 import sk.epholl.artificialwars.logic.GameLogic;
+import sk.epholl.artificialwars.logic.Vector2D;
 
 /**
  * @author epholl
@@ -69,7 +70,7 @@ public class Projectile extends Entity
 	}
 	
 	@Override
-	public boolean isCollidingWith(Entity e)
+	public boolean isCollidingWith(Entity e, Vector2D centerPosition)
 	{
 		if (e == source)
 		{
@@ -77,7 +78,7 @@ public class Projectile extends Entity
 		}
 		else
 		{
-			return super.isCollidingWith(e);
+			return super.isCollidingWith(e, centerPosition);
 		}		
 	}
 
@@ -110,7 +111,7 @@ public class Projectile extends Entity
 	{
 		super.destroy();
 
-		Explosion explosion = Explosion.create(game, getPosition(), getDirection(), getMoveSpeed() / 2);
+		Explosion explosion = Explosion.create(game, getCenterPosition(), getDirection(), getMoveSpeed() / 2);
 		game.addEntity(explosion);
 	}
 }

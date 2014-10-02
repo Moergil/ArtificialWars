@@ -7,6 +7,7 @@ public class Vector2D
 {
 	public static final Vector2D ORIGIN = new Vector2D(0, 0);
 	public static final Vector2D NORTH = new Vector2D(0, 1);
+	public static final Vector2D EAST = new Vector2D(1, 0);
 	
 	private final double x, y;
 
@@ -62,6 +63,17 @@ public class Vector2D
 	public Vector2D scale(double scalar)
 	{
 		return new Vector2D(x * scalar, y * scalar);
+	}
+	
+	public Vector2D rotate(double angle)
+	{
+		double sin = Math.sin(angle);
+		double cos = Math.cos(angle);
+		
+		double newX = cos * x + -sin * y;
+		double newY = sin * x +  cos * y;
+		
+		return new Vector2D(newX, newY);
 	}
 	
 	public Vector2D normalise()

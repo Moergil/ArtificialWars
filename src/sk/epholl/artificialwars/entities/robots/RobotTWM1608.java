@@ -19,7 +19,7 @@ import sk.epholl.artificialwars.logic.Vector2DMath;
 import sk.hackcraft.artificialwars.computersim.Util;
 import sk.hackcraft.artificialwars.computersim.parts.MEXTIOChip;
 
-public class RobotTWM1608 extends Entity
+public class RobotTWM1608 extends Entity implements Robot
 {
 	public static void main(String[] args) throws Exception
 	{
@@ -215,7 +215,7 @@ public class RobotTWM1608 extends Entity
 	{
 		Projectile shot = new Projectile(game, this);
 		
-		shot.setCenterPosition(getPosition());
+		shot.setCenterPosition(getCenterPosition());
 		shot.setDirection(getDirection());
 		
 		game.addEntity(shot);
@@ -250,7 +250,7 @@ public class RobotTWM1608 extends Entity
 	{
 		super.destroy();
 
-		Explosion explosion = Explosion.create(game, getPosition());
+		Explosion explosion = Explosion.create(game, getCenterPosition());
 		game.addEntity(explosion);
 	}
 	
@@ -260,7 +260,7 @@ public class RobotTWM1608 extends Entity
 		super.beHit(shot);
 		this.hitpoints -= shot.getDamage();
 		
-		Explosion explosion = Explosion.create(game, getPosition());
+		Explosion explosion = Explosion.create(game, getCenterPosition());
 		game.addEntity(explosion);
 	}
 	
@@ -301,7 +301,7 @@ public class RobotTWM1608 extends Entity
 			
 			for (Entity target : targets)
 			{
-				Vector2D targetVector = new Vector2D(exterminatorVector, target.getPosition());
+				Vector2D targetVector = new Vector2D(exterminatorVector, target.getCenterPosition());
 				
 				double relativeRotation = Vector2DMath.getRelativeSignedAngle(exterminatorVector, targetVector);
 				double distance = target.getDistance(RobotTWM1608.this);

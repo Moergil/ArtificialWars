@@ -25,7 +25,7 @@ import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
  * @author epholl
  */
 //TODO treba abstraktnu triedu Robot, ktora by reprezentovala entitu typu robot
-public class Eph32BasicRobot extends Entity
+public class Eph32BasicRobot extends Entity implements Robot
 {
 	public static final int DEFAULT_HITPOINTS = 5;
 	public static final int DEFAULT_INSTRUCTION_COOLDOWN_MULTIPLICATOR = 2;
@@ -48,6 +48,11 @@ public class Eph32BasicRobot extends Entity
 	private int memoryPointer;
 	private int instructionPointer;
 	private int instructionCooldown;
+	
+	private final double MOVE_SPEED = 1, ROTATION_SPEED = Math.PI / 64;
+	
+	private int moveTicks;
+	private int rotateTicks;
 
 	public Eph32BasicRobot(Color color, int player, GameLogic game)
 	{
@@ -81,6 +86,24 @@ public class Eph32BasicRobot extends Entity
 		if (hitpoints <= 0)
 		{
 			destroy();
+		}
+
+		if (moveTicks == 0)
+		{
+			setMoveSpeed(0);
+		}
+		else
+		{
+			moveTicks--;
+		}
+		
+		if (rotateTicks == 0)
+		{
+			setRotateSpeed(0);
+		}
+		else
+		{
+			rotateTicks--;
 		}
 	}
 
@@ -230,22 +253,21 @@ public class Eph32BasicRobot extends Entity
 			case 30:
 			{
 				// A = current pos X
-				regA = (int)getPosition().getX();
+				regA = (int)getCenterPosition().getX();
 				break;
 			}
 			case 31:
 			{
 				// A = current pos Y
-				regA = (int)getPosition().getY();
+				regA = (int)getCenterPosition().getY();
 				break;
 			}
 			case 32:
 			{
-				// set movement to [A, B]
+				// set movement, A is distance, B is relative signed angle
 				setMovementTo(regA, regB);
 				break;
 			}
-
 			case 40:
 			{
 				// set A to MP
@@ -427,10 +449,13 @@ public class Eph32BasicRobot extends Entity
 		}
 	}
 	
-	private void setMovementTo(int x, int y)
+	private void setMovementTo(int moveTicks, int rotateTicks)
 	{
-		// TODO
-		System.out.println("TODOOO set movement");
+		setMoveSpeed(MOVE_SPEED * (int)Math.signum(moveTicks));
+		setRotateSpeed(ROTATION_SPEED * (int)Math.signum(rotateTicks) * -1);
+		
+		this.moveTicks = Math.abs(moveTicks);
+		this.rotateTicks = Math.abs(rotateTicks);
 	}
 
 	@Override
@@ -439,7 +464,7 @@ public class Eph32BasicRobot extends Entity
 		super.beHit(shot);
 		this.hitpoints -= shot.getDamage();
 		
-		Explosion explosion = Explosion.create(game, getPosition());
+		Explosion explosion = Explosion.create(game, getCenterPosition());
 		game.addEntity(explosion);
 	}
 
@@ -472,7 +497,7 @@ public class Eph32BasicRobot extends Entity
 	{
 		super.destroy();		
 
-		Explosion explosion = Explosion.create(game, getPosition());
+		Explosion explosion = Explosion.create(game, getCenterPosition());
 		game.addEntity(explosion);
 	}
 
@@ -486,8 +511,8 @@ public class Eph32BasicRobot extends Entity
 	{
 		Projectile shot = new Projectile(game, this);
 		
-		shot.setCenterPosition(getPosition());
-		shot.setDirection(new Vector2D(regA, regB).sub(getPosition()));
+		shot.setCenterPosition(getCenterPosition());
+		shot.setDirection(new Vector2D(regA, regB).sub(getCenterPosition()));
 		
 		game.addEntity(shot);
 	}
@@ -563,7 +588,7 @@ public class Eph32BasicRobot extends Entity
 			lockTime = game.getCycleCount();
 			
 			Entity target = targets.get(random.nextInt(targets.size()));
-			Vector2D position = target.getPosition();
+			Vector2D position = target.getCenterPosition();
 			
 			lockX = (int)position.getX();
 			lockY = (int)position.getY();

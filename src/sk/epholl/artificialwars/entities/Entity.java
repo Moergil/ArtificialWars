@@ -9,7 +9,7 @@ import sk.epholl.artificialwars.logic.Vector2D;
 
 public abstract class Entity
 {
-	private Vector2D position, direction;
+	private Vector2D centerPosition, direction;
 
 	private double moveSpeed, rotateSpeed;
 
@@ -24,7 +24,7 @@ public abstract class Entity
 
 	public Entity(GameLogic game)
 	{
-		this.position = Vector2D.ORIGIN;
+		this.centerPosition = Vector2D.ORIGIN;
 		this.direction = Vector2D.NORTH;
 
 		this.game = game;
@@ -58,15 +58,20 @@ public abstract class Entity
 	{
 		colliding = false;
 		
-		Vector2D newPosition = calcNewPosition();
+		Vector2D newDirection = this.direction.rotate(rotateSpeed);
+		Vector2D newCenterPosition = calcNewPosition(newDirection);
 
+		setDirection(newDirection);
+		
 		if (isCollidable())
 		{
-			Set<Entity> collidingEntities = getCollisions(newPosition, nearbyEntities);
+			Set<Entity> collidingEntities = getCollisions(newCenterPosition, nearbyEntities);
 			
 			if (collidingEntities.isEmpty())
 			{
-				setCenterPosition(newPosition);
+				Vector2D offset = new Vector2D(getCenterPosition(), newCenterPosition);
+				setCenterPosition(newCenterPosition);
+				moved(offset, rotateSpeed);
 			}
 			else
 			{
@@ -76,8 +81,12 @@ public abstract class Entity
 		}
 		else
 		{
-			setCenterPosition(newPosition);
+			setCenterPosition(newCenterPosition);
 		}
+	}
+	
+	protected void moved(Vector2D offset, double angle)
+	{
 	}
 	
 	protected void collided(Set<Entity> entities)
@@ -92,18 +101,19 @@ public abstract class Entity
 	{
 	}
 	
-	private Vector2D calcNewPosition()
+	private Vector2D calcNewPosition(Vector2D direction)
 	{
-		return position.add(direction.scale(moveSpeed));
+		Vector2D newDirection = direction.scale(moveSpeed);
+		return centerPosition.add(newDirection);
 	}
 	
-	private Set<Entity> getCollisions(Vector2D position, Set<Entity> entities)
+	private Set<Entity> getCollisions(Vector2D centerPosition, Set<Entity> entities)
 	{
 		Set<Entity> collidingEntities = new HashSet<>();
 		
 		for (Entity collisionEntity : entities)
 		{
-			if (collisionEntity != this && this.isCollidingWith(collisionEntity))
+			if (collisionEntity != this && this.isCollidingWith(collisionEntity, centerPosition))
 			{
 				collidingEntities.add(collisionEntity);
 			}
@@ -124,7 +134,7 @@ public abstract class Entity
 	
 	public void setCenterPosition(Vector2D position)
 	{
-		this.position = position;
+		this.centerPosition = position;
 	}
 	
 	public void setCornerPosition(Vector2D position)
@@ -140,9 +150,17 @@ public abstract class Entity
 		this.direction = direction.normalise();
 	}
 	
-	public Vector2D getPosition()
+	public Vector2D getCenterPosition()
 	{
-		return position;
+		return centerPosition;
+	}
+	
+	public Vector2D getCornerPosition()
+	{
+		double x = centerPosition.getX() - width / 2;
+		double y = centerPosition.getY() - height / 2;
+		
+		return new Vector2D(x, y);
 	}
 	
 	public Vector2D getDirection()
@@ -205,7 +223,7 @@ public abstract class Entity
 		return colliding;
 	}
 
-	public boolean isCollidingWith(Entity e)
+	public boolean isCollidingWith(Entity e, Vector2D centerPosition)
 	{
 		if (!e.isCollidable())
 		{
@@ -216,10 +234,10 @@ public abstract class Entity
 		double halfHeight = height / 2;
 		
 		double x1, x2, y1, y2;
-		x1 = position.getX() - halfWidth;
-		x2 = position.getX() + halfWidth;
-		y1 = position.getY() - halfHeight;
-		y2 = position.getY() + halfHeight;
+		x1 = centerPosition.getX() - halfWidth;
+		x2 = centerPosition.getX() + halfWidth;
+		y1 = centerPosition.getY() - halfHeight;
+		y2 = centerPosition.getY() + halfHeight;
 		
 		return e.isColliding(x1, x2, y1, y2);
 	}
@@ -238,10 +256,10 @@ public abstract class Entity
 		double halfHeight = height / 2;
 		
 		double ex1, ex2, ey1, ey2;
-		ex1 = position.getX() - halfWidth;
-		ex2 = position.getX() + halfWidth;
-		ey1 = position.getY() - halfHeight;
-		ey2 = position.getY() + halfHeight;
+		ex1 = centerPosition.getX() - halfWidth;
+		ex2 = centerPosition.getX() + halfWidth;
+		ey1 = centerPosition.getY() - halfHeight;
+		ey2 = centerPosition.getY() + halfHeight;
 		
 		boolean collideX = false, collideY = false;
 		
@@ -254,7 +272,7 @@ public abstract class Entity
 		{
 			collideY = true;
 		}
-		
+
 		return collideX && collideY;
 	}
 	
@@ -288,7 +306,7 @@ public abstract class Entity
 
 	public double getDistance(Entity e)
 	{
-		return new Vector2D(getPosition(), e.getPosition()).getLength();
+		return new Vector2D(getCenterPosition(), e.getCenterPosition()).getLength();
 	}
 
 	public void destroy()

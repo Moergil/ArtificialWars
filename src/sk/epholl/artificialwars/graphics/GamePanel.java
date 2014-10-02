@@ -15,6 +15,7 @@ import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Explosion;
 import sk.epholl.artificialwars.entities.objectives.Objective;
 import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
+import sk.epholl.artificialwars.entities.robots.Robot;
 import sk.epholl.artificialwars.logic.GameLogic;
 import sk.epholl.artificialwars.logic.GamePanelInput;
 import sk.epholl.artificialwars.logic.MainLogic;
@@ -68,23 +69,30 @@ public class GamePanel extends JPanel
 						continue;
 					}
 				}
-				
-				if (e instanceof Explosion && e.getDirection().isZero())
-				{
-					System.out.println(e.getDirection().getLength());
-				}
 
 				g2d.setColor(e.getColor());
-				
-				Vector2D position = e.getPosition();
-				
+
 				int width = e.getWidth();
 				int height = e.getHeight();
 				
-				int x = (int)(position.getX() - width / 2);
-				int y = (int)(position.getY() - height / 2);
+				Vector2D cornerPosition = e.getCornerPosition();
+				int x = (int)cornerPosition.getX();
+				int y = (int)cornerPosition.getY();
 				
 				g2d.fillRect(x, y, width, height);
+				
+				Vector2D centerPosition = e.getCenterPosition();
+				int x1 = (int)centerPosition.getX();
+				int y1 = (int)centerPosition.getY();
+
+				if (e instanceof Robot)
+				{
+					Vector2D direction = e.getDirection();
+					int x2 = (int)(x1 + direction.getX() * 10);
+					int y2 = (int)(y1 + direction.getY() * 10);
+					
+					g2d.drawLine(x1, y1, x2, y2);
+				}
 			}
 
 			g2d.setColor(Color.yellow);
