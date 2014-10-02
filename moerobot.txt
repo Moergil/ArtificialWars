@@ -1,24 +1,41 @@
-;;;;;;;;;
-; M-800	;
-;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+; Mauser-9000 bot   ;
+; coded by @Moergil ;
+;;;;;;;;;;;;;;;;;;;;;
 
-bg:
-	rnd 32
-	swp
-	seta 50
-	move
-lp:
-	jmpc reverse
-	jmpm lp
-fire:
+begin:
+	movement move1 moveLoop1 reverseMove1 finishLabel1
+	quickFire
+	movement move2 moveLoop2 reverseMove2 finishLabel2
+	accurateAddFire
+	jmp begin
+	
+macro movement moveLabel loopLabel reverseLabel finishLabel
+	moveLabel:
+		rnd 8
+		swp
+		seta 50
+		move
+	loopLabel:
+		jmpc reverseLabel
+		jmpm loopLabel
+		jmp finishLabel
+	reverseLabel:
+		seta -30
+		setb 48
+		move
+		jmp moveLabel
+	finishLabel:
+/macro
+
+macro quickFire
 	scan
 	lock
 	fire
 	fire
+/macro
+
+macro accurateAddFire
+	lock
 	fire
-	jmp bg
-reverse:
-	seta -30
-	setb 0
-	move
-	jmp fire
+/macro
