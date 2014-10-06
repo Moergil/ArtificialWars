@@ -1,40 +1,37 @@
 <!DOCTYPE html>
 <html>
-
   <head>
     <meta charset='utf-8'>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="description" content="Artificial Wars : Retro robots programming game">
 
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
 
-    <title>Artificial Wars</title>
+    <title>Artificial Wars by Moergil</title>
   </head>
 
   <body>
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/Moergil/ArtificialWars">View on GitHub</a>
+    <header>
+      <div class="container">
+        <h1>Artificial Wars</h1>
+        <h2>Retro robots programming game</h2>
 
-          <h1 id="project_title">Artificial Wars</h1>
-          <h2 id="project_tagline">Retro robots programming game</h2>
+        <section id="downloads">
+          <a href="https://github.com/Moergil/ArtificialWars/zipball/master" class="btn">Download as .zip</a>
+          <a href="https://github.com/Moergil/ArtificialWars/tarball/master" class="btn">Download as .tar.gz</a>
+          <a href="https://github.com/Moergil/ArtificialWars" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
 
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/Moergil/ArtificialWars/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/Moergil/ArtificialWars/tarball/master">Download this project as a tar.gz file</a>
-            </section>
-        </header>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
+    <div class="container">
+      <section id="main_content">
         <h3>
 <a name="welcome-to-artificial-wars" class="anchor" href="#welcome-to-artificial-wars"><span class="octicon octicon-link"></span></a>Welcome to Artificial Wars.</h3>
 
-<p>Artificial Wars is a game, where you are designing and programming your robots to complete various objectives. As programming language you will use assembly dialect, which looks like this:</p>
+<p>Artificial Wars is a game, where you get a bunch of robots and a task to complete. You are controlling your robots by writing programs which are controlling them. These programs are written in assembly dialect, which looks like this:</p>
 
 <pre><code>seta 32
 swp
@@ -42,39 +39,150 @@ seta 50
 move
 </code></pre>
 
-<p>This code will make your robot move and change direction.</p>
+<h3>
+<a name="the-robot" class="anchor" href="#the-robot"><span class="octicon octicon-link"></span></a>The robot</h3>
+
+<ul>
+<li>word of size 4 bytes (signed 32bit integer)</li>
+<li>memory is word adressable</li>
+<li>1 general purpose register A of 1 word size </li>
+<li>1 store register B of 1 word size </li>
+<li>1 memory pointer register of 1 word size </li>
+<li>4 words of RAM</li>
+<li>64 words of ROM used to store program instruction codes</li>
+<li>64 words of ROM used to store instruction parameters</li>
+<li>1 lock register for storing positions of enemies</li>
+<li>5 hitpoints</li>
+<li>2 damage with each shot</li>
+</ul><p>Each instruction has zero or one parameter, all parameters are signed 32bits integers. All
+instructons are operating on signed arithmetics. There is no status register or
+stack. Jump instructions are using absolute adresses only.</p>
+
+<p>A is used for main arithmetics, as incrementation, decrementatin or storing result for
+adding and subtraction. B is used as additional storage for two operands operations,
+as addition or subtraction. Memory pointer is used to setting position to memory, where you can store values or load values from.</p>
+
+<p>Each instruction takes some cycles to execute. This time is multiplied if robot is moving.</p>
 
 <h3>
-<a name="designer-templates" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>Designer Templates</h3>
+<a name="instructions" class="anchor" href="#instructions"><span class="octicon octicon-link"></span></a>Instructions</h3>
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+<pre><code>-   no parameter
+P   parameter
+
+Name    Param   Description
+wait    P   wait for P*constant cycles.
+add -   add B to A.
+sub -   subtract B from A.
+inc -   increment A by 1.
+dec -   dectrement A by 1.
+swp -   swap registers A and B.
+setab   -   set value of B to A.
+seta    P   set parameter value to A.
+setb    P   set parameter value to B.
+fire    -   fire a shot to location [A, B] (Can hit robot itself if used incorrectly).
+scan    -   search for enemy robots, if at least one exists, lock it.
+lock    -   set locked robot's X and Y coordinates to A and B.
+rnd -   generate random integer from -parameter to parameter (included) and save it to A.
+rndb    -   generate random integer from -B to B (included) and save it to A.
+posx    -   save current X position to A.
+posy    -   save current Y position to A.
+move    -   start moving to location [A, B]. Instructions work while moving, but they are considerably slower.
+setmp   -   set memory pointer to value of A. (Incorrect value of memory pointer may cause unexpected results)
+incmp   -   increment memory pointer.
+decmp   -   decrement memory pointer.
+memsave -   save value of A to memory using memory pointer.
+memload -   load memory value to A using memory pointer.
+jmp P   jump to different instruction line. (Incorrect value may cause unexpected results).
+jmpz    P   jump to parameter instruction line if value in A = 0.
+jmpc    P   jump to parameter instruction line if robot is collided with something and can not move.
+jmpm    P   jump to parameter instruction line if robot is currently moving.
+jmpl    P   jump to parameter instruction line if an enemy robot is locked. (lock != null)
+</code></pre>
 
 <h3>
-<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Rather Drive Stick?</h3>
+<a name="assembly" class="anchor" href="#assembly"><span class="octicon octicon-link"></span></a>Assembly</h3>
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+<p>everything after ; is ignored until end of line</p>
+
+<pre><code>seta 5 ; this is comment
+; this is also comment
+</code></pre>
+
+<p>You can use constants, variables, labels and macros. Available values are decimal, binary (starting with 0b), hexadecimal (starting with 0x) and octal (starting with 0).</p>
+
+<p>Constants are defined as:</p>
+
+<pre><code>name = value
+</code></pre>
+
+<p>They can be used as parameters for instructions. They are replaced for values during compilation time.</p>
+
+<p>Variables are defined as:</p>
+
+<pre><code>type name &lt;value&gt;
+</code></pre>
+
+<p>Supported type is int (4 bytes). Value is optional parameter. Value of memory can be changed during execution. Variables can be used as parameters for instructions. In that case, the address of variable is passed as instruction value.</p>
+
+<p>Labels looks like:</p>
+
+<pre><code>name:
+</code></pre>
+
+<p>They mark address position in code, and can be used for quickly jumping from one position of code to another. Assembly supports only absolute jumps.</p>
+
+<p>Macros are chunks of code which can be inserted to assembly:</p>
+
+<pre><code>macro name &lt;parameters...&gt;
+...code...
+/macro
+</code></pre>
+
+<p>Every occurence of macro's name in assembly code is replaced with code defined in that macro. Macro can have parameters, which work similarly as constants.</p>
 
 <h3>
-<a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+<a name="examples" class="anchor" href="#examples"><span class="octicon octicon-link"></span></a>Examples</h3>
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+<p>Moving robot and turning robot:</p>
 
-<h3>
-<a name="support-or-contact" class="anchor" href="#support-or-contact"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
+<pre><code>seta 100
+setb 32
+move
+</code></pre>
 
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
+<p>Infinite loop:</p>
+
+<pre><code>inf_loop:
+jmp inf_loop
+</code></pre>
+
+<p>Loop of finding and firing after enemy:</p>
+
+<pre><code>lock_loop:
+scan
+lock
+jmpl firing:
+jmp lock
+firing:
+fire
+jmp lock
+</code></pre>
+
+<p>For cycle:</p>
+
+<pre><code>seta 10
+; loop 10 times
+loop:
+jmpz endloop
+dec
+jmp loop
+endloop:
+; loop end
+</code></pre>
       </section>
     </div>
 
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p class="copyright">Artificial Wars maintained by <a href="https://github.com/Moergil">Moergil</a></p>
-        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
-      </footer>
-    </div>
-
     
-
   </body>
 </html>
