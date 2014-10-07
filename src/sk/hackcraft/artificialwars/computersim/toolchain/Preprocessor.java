@@ -288,9 +288,10 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 					String operandName = operandNames[i];
 					String operandValue = Matcher.quoteReplacement(operandValues[i]);
 
-					Line processedLine = macroLine.modify((content) -> content.replaceAll(operandName, operandValue));
-					processedLines.add(processedLine);
+					macroLine = macroLine.modify((content) -> content.replaceAll(operandName, operandValue));
 				}
+				
+				processedLines.add(macroLine);
 			}
 			
 			return processedLines;

@@ -16,6 +16,8 @@ public class FirmwareLoader
 {
 	public static void loadFirmwareRobot(String fileName, Eph32BasicRobot robot) throws ProgrammingException
 	{
+		System.out.println("Loading " + fileName);
+		
 		Preprocessor preprocessor = new Preprocessor(";", "macro", "/macro");
 		
 		int programSegmentStartAddress = 0;
@@ -46,6 +48,8 @@ public class FirmwareLoader
 	
 	public static void loadFirmwareExterminator(String firmwareFile, RobotTWM1608 exterminator) throws ProgrammingException
 	{
+		System.out.println("Loading " + firmwareFile);
+		
 		Preprocessor preprocessor = new Preprocessor(";", "MACRO", "/MACRO");
 		AssemblerTEK1608 assembler = new AssemblerTEK1608();
 		
