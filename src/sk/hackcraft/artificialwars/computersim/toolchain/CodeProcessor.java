@@ -24,7 +24,7 @@ public abstract class CodeProcessor<S extends CodeProcessorState>
 		}
 	});
 	
-	public byte[] process(byte input[]) throws ProcessException, IOException
+	public byte[] process(byte input[]) throws ProgramException, IOException
 	{
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(input);
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -34,7 +34,7 @@ public abstract class CodeProcessor<S extends CodeProcessorState>
 		return outputStream.toByteArray();
 	}
 	
-	public abstract void process(InputStream input, OutputStream output) throws ProcessException, IOException;
+	public abstract void process(InputStream input, OutputStream output) throws ProgramException, IOException;
 
 	protected abstract S started();
 	
@@ -115,15 +115,15 @@ public abstract class CodeProcessor<S extends CodeProcessorState>
 		}
 	}
 	
-	public static class ProcessException extends Exception
+	public static class ProgramException extends Exception
 	{
-		public ProcessException(String message)
+		public ProgramException(String message)
 		{
 			super(message);
 		}
 	}
 	
-	public static class CodeSyntaxException extends ProcessException
+	public static class CodeSyntaxException extends ProgramException
 	{
 		private final Line line;
 		
@@ -146,7 +146,7 @@ public abstract class CodeProcessor<S extends CodeProcessorState>
 		}
 	}
 	
-	public static class LinkingException extends ProcessException
+	public static class LinkingException extends ProgramException
 	{
 		public LinkingException(String message)
 		{

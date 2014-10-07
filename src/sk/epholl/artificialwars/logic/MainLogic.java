@@ -52,11 +52,11 @@ public class MainLogic implements Runnable
 	{
 		GameLogic logic = new GameLogic(new Random().nextLong());
 
-		LevelLoader parser = new LevelLoader(logic, name);
+		LevelLoader parser = new LevelLoader(logic);
 		
 		try
 		{
-			parser.loadLevel();
+			parser.loadLevel(name);
 		}
 		catch (Exception e)
 		{

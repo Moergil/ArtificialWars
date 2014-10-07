@@ -9,12 +9,12 @@ import java.io.InputStream;
 import sk.hackcraft.artificialwars.computersim.toolchain.AssemblerEPH32;
 import sk.hackcraft.artificialwars.computersim.toolchain.AssemblerTEK1608;
 import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.CodeSyntaxException;
-import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.ProcessException;
+import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.ProgramException;
 import sk.hackcraft.artificialwars.computersim.toolchain.Preprocessor;
 
 public class FirmwareLoader
 {
-	public static void loadFirmwareRobot(String fileName, Eph32BasicRobot robot) throws ProgrammingException
+	public static void loadFirmwareRobot(String fileName, Eph32BasicRobot robot) throws ProgramException, IOException
 	{
 		System.out.println("Loading " + fileName);
 		
@@ -40,13 +40,9 @@ public class FirmwareLoader
 			byte firmware[] = output.toByteArray();
 			robot.loadFirmware(firmware, 0);
 		}
-		catch (IOException | ProcessException e)
-		{
-			throw new ProgrammingException("Can't load firmware:", e);
-		}
 	}
 	
-	public static void loadFirmwareExterminator(String firmwareFile, RobotTWM1608 exterminator) throws ProgrammingException
+	public static void loadFirmwareExterminator(String firmwareFile, RobotTWM1608 exterminator) throws ProgramException, IOException
 	{
 		System.out.println("Loading " + firmwareFile);
 		
@@ -64,23 +60,6 @@ public class FirmwareLoader
 			
 			byte objectCode[] = output.toByteArray();
 			exterminator.loadFirmware(objectCode);
-		}
-		catch (IOException | ProcessException e)
-		{
-			throw new ProgrammingException("Can't load firmware:", e);
-		}
-	}
-	
-	public static class ProgrammingException extends Exception
-	{
-		public ProgrammingException(String message)
-		{
-			super(message);
-		}
-		
-		public ProgrammingException(String message, Throwable cause)
-		{
-			super(message, cause);
 		}
 	}
 }

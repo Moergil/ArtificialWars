@@ -17,37 +17,22 @@ import sk.epholl.artificialwars.entities.objectives.Objective;
 import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
 import sk.epholl.artificialwars.entities.robots.FirmwareLoader;
 import sk.epholl.artificialwars.entities.robots.RobotTWM1608;
-import sk.epholl.artificialwars.entities.robots.FirmwareLoader.ProgrammingException;
+import sk.epholl.artificialwars.graphics.CompilationErrorWindow;
+import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.ProgramException;
 
 public class LevelLoader
 {
 	private GameLogic logic;
-	private BufferedReader inputReader;
 
-	private boolean isDone;
-
-	public LevelLoader(GameLogic logic, String fileName)
+	public LevelLoader(GameLogic logic)
 	{
 		this.logic = logic;
-		isDone = !setLevelFile(fileName);
 	}
 
-	public final boolean setLevelFile(String fileName)
+	public void loadLevel(String fileName) throws IOException, IllegalArgumentException
 	{
-		try
-		{
-			inputReader = new BufferedReader(new FileReader(fileName));
-		}
-		catch (FileNotFoundException e)
-		{
-			return false;
-		}
-
-		return true;
-	}
-
-	public void loadLevel() throws IOException, IllegalArgumentException
-	{
+		BufferedReader inputReader = new BufferedReader(new FileReader(fileName));
+		
 		String line;
 
 		while ((line = inputReader.readLine()) != null)
@@ -79,7 +64,7 @@ public class LevelLoader
 		}
 	}
 
-	private void parseRobot(Scanner scanner)
+	private void parseRobot(Scanner scanner) throws IOException
 	{		
 		int red = scanner.nextInt();
 		int green = scanner.nextInt();
@@ -121,9 +106,11 @@ public class LevelLoader
 					throw new IllegalArgumentException("Invalid robot type: " + type);
 			}
 		}
-		catch (ProgrammingException e)
+		catch (ProgramException e)
 		{
-			e.printStackTrace();
+			new CompilationErrorWindow().show(e);
+			
+			throw new IOException("Can't load robot: " + type + " " + firmwareFileName);
 		}
 	}
 
@@ -176,10 +163,5 @@ public class LevelLoader
 			default:
 				throw new IllegalArgumentException("Invalid objective type: " + type);
 		}
-	}
-
-	public boolean isDone()
-	{
-		return isDone;
 	}
 }
