@@ -92,7 +92,7 @@ public class AssemblerTEK1608 extends AbstractAssembler
 	}
 	
 	@Override
-	protected void linkTogether(AssemblerState state, OutputStream output) throws IOException, CodeProcessException
+	protected void linkTogether(AssemblerState state, OutputStream output) throws IOException, LinkingException
 	{
 		byte offset[];
 		
@@ -110,7 +110,7 @@ public class AssemblerTEK1608 extends AbstractAssembler
 		int programSegmentEnd = offset.length + program.length;
 		if (programSegmentEnd > dataStartAddress)
 		{
-			throw new CodeProcessException(-1, "Segments collision.");
+			throw new LinkingException("Segments collision.");
 		}
 		
 		int gap = dataStartAddress - programSegmentEnd;

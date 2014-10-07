@@ -103,7 +103,7 @@ public class RobotTWM1608 extends Entity implements Robot
 			computer.tick();
 		}
 		
-		MEXTIOChip io = computer.getIO();
+		/*MEXTIOChip io = computer.getIO();
 		
 		boolean fireOrder = io.areSet(MEXTIOChip.Flag.FIRE_ORDER);
 		updateGun(fireOrder);
@@ -158,7 +158,7 @@ public class RobotTWM1608 extends Entity implements Robot
 		io.setFlags(MEXTIOChip.Flag.MOVING, isMoving());
 		io.setFlags(MEXTIOChip.Flag.ROTATING, isRotating());
 		io.setFlags(MEXTIOChip.Flag.DETECTION_SEGMENT, isSegmentDetecting());
-		io.setFlags(MEXTIOChip.Flag.DETECTION_GRADIENT, isGradientDetecting());
+		io.setFlags(MEXTIOChip.Flag.DETECTION_GRADIENT, isGradientDetecting());*/
 
 		System.out.println(computer.getDisplay());
 	}

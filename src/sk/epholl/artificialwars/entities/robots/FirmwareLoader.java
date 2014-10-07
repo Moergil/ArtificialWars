@@ -8,7 +8,8 @@ import java.io.InputStream;
 
 import sk.hackcraft.artificialwars.computersim.toolchain.AssemblerEPH32;
 import sk.hackcraft.artificialwars.computersim.toolchain.AssemblerTEK1608;
-import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.CodeProcessException;
+import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.CodeSyntaxException;
+import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.ProcessException;
 import sk.hackcraft.artificialwars.computersim.toolchain.Preprocessor;
 
 public class FirmwareLoader
@@ -37,7 +38,7 @@ public class FirmwareLoader
 			byte firmware[] = output.toByteArray();
 			robot.loadFirmware(firmware, 0);
 		}
-		catch (IOException | CodeProcessException e)
+		catch (IOException | ProcessException e)
 		{
 			throw new ProgrammingException("Can't load firmware:", e);
 		}
@@ -60,7 +61,7 @@ public class FirmwareLoader
 			byte objectCode[] = output.toByteArray();
 			exterminator.loadFirmware(objectCode);
 		}
-		catch (IOException | CodeProcessException e)
+		catch (IOException | ProcessException e)
 		{
 			throw new ProgrammingException("Can't load firmware:", e);
 		}

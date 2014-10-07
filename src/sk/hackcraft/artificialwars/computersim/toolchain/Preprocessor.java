@@ -42,44 +42,44 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 	}
 	
 	@Override
-	public void process(InputStream input, OutputStream output) throws CodeProcessException, IOException
+	public void process(InputStream input, OutputStream output) throws CodeSyntaxException, IOException
 	{
 		PreprocessorState state = started();
 		
 		List<String> lines = readLines(input);
-		List<String> codeLines = new ArrayList<>();
+		List<Line> codeLines = new ArrayList<>();
 		
 		// remove mess (comments, empty lines) and find macros
 		verboseOut.println("*** pass 1 ***");
-		for (String line : lines)
+		int lineNumber = 0;
+		for (String lineString : lines)
 		{
-			state.incrementLineNumber();
+			lineNumber++;
 			
-			String cleanedLine = cleanLine(line);
+			String cleanedLine = cleanLine(lineString);
 			if (cleanedLine.isEmpty())
 			{
 				continue;
 			}
+
+			Line line = new Line(lineNumber, cleanedLine);
 			
 			if (state.isParsingMacro())
 			{
-				parseMacro(cleanedLine, state);
+				parseMacro(line, state);
 			}
 			else if (!scanMacros(cleanedLine, state))
 			{
-				codeLines.add(cleanedLine);
+				codeLines.add(line);
 			}
 		}
-		
-		state.rewind();
-		
+
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(output));
 		
 		// unroll macros
 		verboseOut.println("*** pass 2 ***");
-		for (String line : codeLines)
+		for (Line line : codeLines)
 		{
-			state.incrementLineNumber();
 			preprocessCode(line, state, writer);
 		}
 
@@ -137,9 +137,9 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 		return true;
 	}
 
-	private void parseMacro(String line, PreprocessorState state)
+	private void parseMacro(Line line, PreprocessorState state)
 	{
-		List<String> parts = splitLine(line);
+		List<String> parts = splitLine(line.getContent());
 		
 		MacroBuilder b = state.getMacroBuilder();
 		
@@ -157,9 +157,9 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 		}
 	}
 	
-	private void preprocessCode(String line, PreprocessorState state, BufferedWriter writer) throws CodeProcessException, IOException
+	private void preprocessCode(Line line, PreprocessorState state, BufferedWriter writer) throws CodeSyntaxException, IOException
 	{
-		String parts[] = line.split(" ");
+		String parts[] = line.getContent().split(" ");
 		
 		Macro macro = macros.get(parts[0]);
 		
@@ -167,7 +167,7 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 		{
 			verboseOut.println(line);
 			
-			writer.write(line);
+			writer.write(line.toString());
 			writer.newLine();
 			return;
 		}
@@ -175,11 +175,17 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 		{
 			String operandValues[] = Arrays.copyOfRange(parts, 1, parts.length);
 
-			String assembly = macro.process(operandValues, state.getLineNumber());
+			List<Line> macroLines = macro.process(line, operandValues);
 			
-			verboseOut.print(assembly);
-			
-			writer.write(assembly);
+			for (Line macroLine : macroLines)
+			{
+				String rawMacroLine = macroLine.toString();
+				
+				verboseOut.println(rawMacroLine);
+				
+				writer.write(rawMacroLine);
+				writer.newLine();
+			}
 		}
 	}
 	
@@ -187,18 +193,12 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 	protected void finished(CodeProcessorState stateObject)
 	{
 		verboseOut.println("Preprocessing finished.");
-		verboseOut.println("Processed " + stateObject.getLineNumber() + " lines.");
 	}
 	
 	private class PreprocessorState extends CodeProcessorState
 	{
 		private boolean parsingMacro;
 		private final MacroBuilder macroBuilder = new MacroBuilder();
-		
-		public PreprocessorState()
-		{
-			super(2);
-		}
 
 		public boolean isParsingMacro()
 		{
@@ -220,8 +220,8 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 	{
 		private String name;
 		private String operandNames[];
-		
-		private String macroAssembly = "";
+
+		private List<Line> macroAssembly = new ArrayList<>();
 		
 		public MacroBuilder setName(String name)
 		{
@@ -235,16 +235,16 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 			return this;
 		}
 		
-		public void addAssemblyLine(String line)
+		public void addAssemblyLine(Line line)
 		{
-			macroAssembly += line + System.lineSeparator();
+			macroAssembly.add(line);
 		}
 		
 		public void reset()
 		{
 			name = null;
 			operandNames = null;
-			macroAssembly = "";
+			macroAssembly.clear();
 		}
 		
 		public Macro create()
@@ -258,13 +258,13 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 		private final String name;
 		private final String operandNames[];
 		
-		private String macroAssembly;
+		private List<Line> macroAssembly = new ArrayList<>();
 		
-		public Macro(String name, String operandNames[], String macroAssembly)
+		public Macro(String name, String operandNames[], List<Line> macroAssembly)
 		{
 			this.name = name;
 			this.operandNames = operandNames;
-			this.macroAssembly = macroAssembly;
+			this.macroAssembly.addAll(macroAssembly);
 		}
 		
 		public String getName()
@@ -272,29 +272,28 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 			return name;
 		}
 		
-		public String[] getOperands()
-		{
-			return operandNames;
-		}
-		
-		public String process(String operandValues[], int lineNumber) throws CodeProcessException
+		public List<Line> process(Line line, String operandValues[]) throws CodeSyntaxException
 		{
 			if (operandNames.length != operandValues.length)
 			{
-				throw new CodeProcessException(lineNumber, "Macro operands count mismatch.");
+				throw new CodeSyntaxException(line, "Macro operands count mismatch.");
 			}
+
+			List<Line> processedLines = new ArrayList<>(macroAssembly.size());
 			
-			String assembly = macroAssembly;
-			
-			for (int i = 0; i < operandValues.length; i++)
+			for (Line macroLine : macroAssembly)
 			{
-				String operandName = operandNames[i];
-				String operandValue = Matcher.quoteReplacement(operandValues[i]);
-				
-				assembly = assembly.replaceAll(operandName, operandValue);
+				for (int i = 0; i < operandValues.length; i++)
+				{
+					String operandName = operandNames[i];
+					String operandValue = Matcher.quoteReplacement(operandValues[i]);
+
+					Line processedLine = macroLine.modify((content) -> content.replaceAll(operandName, operandValue));
+					processedLines.add(processedLine);
+				}
 			}
 			
-			return assembly;
+			return processedLines;
 		}
 	}
 }

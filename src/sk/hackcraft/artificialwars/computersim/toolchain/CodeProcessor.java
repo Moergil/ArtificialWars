@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,7 +24,7 @@ public abstract class CodeProcessor<S extends CodeProcessorState>
 		}
 	});
 	
-	public byte[] process(byte input[]) throws CodeProcessException, IOException
+	public byte[] process(byte input[]) throws ProcessException, IOException
 	{
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(input);
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -33,7 +34,7 @@ public abstract class CodeProcessor<S extends CodeProcessorState>
 		return outputStream.toByteArray();
 	}
 	
-	public abstract void process(InputStream input, OutputStream output) throws CodeProcessException, IOException;
+	public abstract void process(InputStream input, OutputStream output) throws ProcessException, IOException;
 
 	protected abstract S started();
 	
@@ -68,26 +69,88 @@ public abstract class CodeProcessor<S extends CodeProcessorState>
 		return list;
 	}
 	
-	public static class CodeProcessException extends Exception
+	public static class Line
 	{
-		private final int lineNumber;
+		private static final String DEFAULT_DELIMITER = " ";
+
+		public static Line createFromNumberedLine(String line)
+		{
+			int lineNumberEnd = line.indexOf(DEFAULT_DELIMITER);
+			
+			int number = Integer.parseInt(line.substring(0, lineNumberEnd));
+			String content = line.substring(lineNumberEnd + 1);
+			
+			return new Line(number, content);
+		}
 		
-		public CodeProcessException(int lineNumber, String message)
+		private final int number;
+		private final String content;
+		
+		public Line(int number, String content)
+		{
+			this.number = number;
+			this.content = content;
+		}
+		
+		public int getNumber()
+		{
+			return number;
+		}
+		
+		public String getContent()
+		{
+			return content;
+		}
+		
+		public Line modify(Function<String, String> modifier)
+		{
+			String modifiedContent = modifier.apply(content);
+			return new Line(number, modifiedContent);
+		}
+		
+		@Override
+		public String toString()
+		{
+			return String.format("%d %s", number, content);
+		}
+	}
+	
+	public static class ProcessException extends Exception
+	{
+		public ProcessException(String message)
+		{
+			super(message);
+		}
+	}
+	
+	public static class CodeSyntaxException extends ProcessException
+	{
+		private final Line line;
+		
+		public CodeSyntaxException(Line line, String message)
 		{
 			super(message);
 			
-			this.lineNumber = lineNumber;
+			this.line = line;
 		}
 		
-		public int getLineNumber()
+		public Line getLine()
 		{
-			return lineNumber;
+			return line;
 		}
 		
 		@Override
 		public String getMessage()
 		{
-			return "Line " + lineNumber + ": " + super.getMessage();
+			return String.format("Error on line %d: %s", line.getNumber(), super.getMessage());
+		}
+	}
+	
+	public static class LinkingException extends ProcessException
+	{
+		public LinkingException(String message)
+		{
+			super(message);
 		}
 	}
 }

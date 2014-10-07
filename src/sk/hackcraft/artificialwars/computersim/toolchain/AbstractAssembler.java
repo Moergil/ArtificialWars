@@ -139,38 +139,40 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 	}
 	
 	@Override
-	public void process(InputStream input, OutputStream output) throws CodeProcessException, IOException
+	public void process(InputStream input, OutputStream output) throws ProcessException, IOException
 	{
 		// TODO add checks for errors when reusing constants, variables or labels
 		AssemblerState state = started();
 
-		List<String> lines = readLines(input);
+		List<String> lineStrings = readLines(input);
+		List<Line> lines = new ArrayList<>(lineStrings.size());
+		for (String lineString : lineStrings)
+		{
+			Line line = Line.createFromNumberedLine(lineString);
+			lines.add(line);
+		}
+		
+		
 		List<String> codeLines = new ArrayList<>();
 
 		// 1 pass - find segments, labels, variables and constants
 		// also writes data to data segments
 		verboseOut.println("=== Pass 1 ===");
-		List<String> parts;
-		for (String line : lines)
+		List<Line> instructionLines = new ArrayList<>();
+		for (Line line : lines)
 		{
-			state.incrementLineNumber();
-			
-			parts = splitLine(line);
-			if (!scanIdentifiers(line, parts, state))
+			if (!scanDeclarations(line, state))
 			{
-				codeLines.add(line);
+				instructionLines.add(line);
 			}
 		}
 
 		// 2 pass - find, preprocess and record instructions
 		// puts instructions to records with memory addressing and such
 		verboseOut.println("=== Pass 2 ===");
-		for (String line : codeLines)
+		for (Line line : instructionLines)
 		{
-			state.incrementLineNumber();
-			
-			parts = splitLine(line);
-			scanCode(line, parts, state);
+			scanInstructions(line, state);
 		}
 
 		// 3 pass - insert values, calculate labels and write instructions to output
@@ -188,10 +190,11 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		finished(state);
 	}
 	
-	protected abstract void linkTogether(AssemblerState state, OutputStream output) throws CodeProcessException, IOException;
+	protected abstract void linkTogether(AssemblerState state, OutputStream output) throws LinkingException, IOException;
 
-	protected boolean scanIdentifiers(String line, List<String> parts, AssemblerState state) throws CodeProcessException, IOException
+	protected boolean scanDeclarations(Line line, AssemblerState state) throws CodeSyntaxException, IOException
 	{
+		List<String> parts = splitLine(line.getContent());
 		// pragmas
 		String firstPart = parts.get(0);
 		if (firstPart.charAt(0) == '.')
@@ -301,8 +304,9 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		return false;
 	}
 	
-	protected void scanCode(String line, List<String> parts, AssemblerState state) throws CodeProcessException, IOException
+	protected void scanInstructions(Line line, AssemblerState state) throws CodeSyntaxException, IOException
 	{
+		List<String> parts = splitLine(line.getContent());
 		String name = parts.get(0);
 		
 		// updating label with address
@@ -319,7 +323,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		
 		if (instruction == null)
 		{
-			throw new CodeProcessException(state.getLineNumber(), "Can't parse line: " + line);
+			throw new CodeSyntaxException(line, "Unknown instruction name: " + name);
 		}
 
 		String param = (parts.size() > 1) ? parts.get(1) : "";
@@ -386,12 +390,11 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			{
 				operandValue = null;
 			}
-			
-			int lineNumber = state.getLineNumber();
+
 			int address = state.getSegmentActualAddress(Segment.PROGRAM);
 			
 			Opcode opcode = instruction.getOpcode(ma);
-			InstructionRecord record = new InstructionRecord(lineNumber, address, opcode, operandValue);
+			InstructionRecord record = new InstructionRecord(line, address, opcode, operandValue);
 			state.getInstructions().add(record);
 
 			found = true;
@@ -406,11 +409,11 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		
 		if (!found)
 		{
-			throw new CodeProcessException(state.getLineNumber(), "Can't process instruction " + name + "; no suitable memory addressing found for given param: " + param);
+			throw new CodeSyntaxException(line, "Can't process instruction " + name + "; no suitable memory addressing found for given param: " + param);
 		}
 	}
 	
-	protected void processRecord(InstructionRecord record, AssemblerState state) throws CodeProcessException, IOException
+	protected void processRecord(InstructionRecord record, AssemblerState state) throws CodeSyntaxException, IOException
 	{		
 		Opcode opcode = record.getOpcode();
 				
@@ -437,7 +440,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 				Integer labelValue = state.getLabels().get(parameter);
 				if (labelValue == null)
 				{
-					throw new CodeProcessException(record.getLine(), "Label " + parameter + " doesn't exists.");
+					throw new CodeSyntaxException(record.getLine(), "Label " + parameter + " doesn't exists.");
 				}
 				
 				LabelType labelType = relativeLabelAddressing.get(name);
@@ -452,7 +455,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 				}
 				catch (IllegalArgumentException e)
 				{
-					throw new CodeProcessException(record.getLine(), e.getMessage());
+					throw new CodeSyntaxException(record.getLine(), e.getMessage());
 				}
 			}
 			else if (validateValue(parameter, ma.getOperandsWordsSize()))
@@ -461,7 +464,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			}
 			else
 			{
-				throw new CodeProcessException(state.getLineNumber(), "Invalid operand value: " + parameter);
+				throw new CodeSyntaxException(record.getLine(), "Invalid operand value: " + parameter);
 			}
 		}
 		
@@ -479,7 +482,6 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 	protected void finished(AssemblerState stateObject)
 	{
 		verboseOut.println("Finished!");
-		verboseOut.println("Processed " + stateObject.getLineNumber() + " lines.");
 	}
 	
 	public enum Segment
@@ -505,8 +507,6 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		
 		public AssemblerState()
 		{
-			super(2);
-			
 			for (Segment segment : Segment.values())
 			{
 				int index = segment.ordinal();
@@ -571,27 +571,24 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		{
 			return segmentOutput[segment.ordinal()].toByteArray();
 		}
-		
-		@Override
+
 		public void rewind()
 		{
 			for (Segment segment : Segment.values())
 			{
 				setSegmentActualAddress(segment, getSegmentStartAddress(segment));
 			}
-
-			super.rewind();
 		}
 	}
 	
 	private static class InstructionRecord
 	{
-		private final int line;
+		private final Line line;
 		private final int address;
 		private final Opcode opcode;
 		private final String operandRawValue;
 
-		public InstructionRecord(int line, int address, Opcode opcode, String operandRawValue)
+		public InstructionRecord(Line line, int address, Opcode opcode, String operandRawValue)
 		{
 			this.line = line;
 			this.address = address;
@@ -599,7 +596,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			this.operandRawValue = operandRawValue;
 		}
 		
-		public int getLine()
+		public Line getLine()
 		{
 			return line;
 		}

@@ -70,7 +70,7 @@ public class AssemblerEPH32 extends AbstractAssembler
 	}
 	
 	@Override
-	protected void linkTogether(AssemblerState state, OutputStream output) throws CodeProcessor.CodeProcessException, IOException
+	protected void linkTogether(AssemblerState state, OutputStream output) throws LinkingException, IOException
 	{
 		byte program[] = state.getSegmentBytes(Segment.PROGRAM);
 		byte data[] = state.getSegmentBytes(Segment.DATA);
@@ -79,12 +79,12 @@ public class AssemblerEPH32 extends AbstractAssembler
 		int programWordLength = program.length / EPH32InstructionSet.WORD_BYTES_SIZE;
 		if (program.length / Integer.BYTES / 2 > programMemorySize)
 		{
-			throw new CodeProcessException(-1, "Program size is bigger than available program memory.");
+			throw new LinkingException("Program size is bigger than available program memory.");
 		}
 		
 		if (data.length / Integer.BYTES > programMemorySize)
 		{
-			throw new CodeProcessException(-1, "Data size is bigger than available data memory.");
+			throw new LinkingException("Data size is bigger than available data memory.");
 		}
 		
 		DataOutputStream dataOutput = new DataOutputStream(output);

@@ -22,7 +22,7 @@ public class MemoryProbe
 		{
 			b.append(memory.readFromChip(i + offset) + " ");
 			
-			if (i % lineCount == 0)
+			if (i != 0 && i % lineCount == 0)
 			{
 				output.add(b.toString());
 				b.setLength(0);

@@ -136,7 +136,7 @@ public class ComputerTWM1000 extends Computer
 		
 		byte memoryData[] = memory.getMemory();
 		
-		System.arraycopy(memoryData, 0, firmware, 0, firmware.length);
+		System.arraycopy(firmware, 0, memoryData, 0, firmware.length);
 	}
 	
 	public MEXTIOChip getIO()
