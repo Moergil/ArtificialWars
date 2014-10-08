@@ -29,6 +29,8 @@ public class MemChip1024 extends MemoryChip
 	
 	public MemChip1024()
 	{
+		super(CHIP_SELECT_PIN, READWRITE_PIN);
+
 		memory = new byte[1024];
 	}
 	
@@ -86,21 +88,15 @@ public class MemChip1024 extends MemoryChip
 	}
 	
 	@Override
-	public void setBusConnection(Pins pins)
-	{
-		this.pins = pins;
-	}
-	
-	@Override
 	protected boolean isSelected()
 	{
-		return pins.readPin(CHIP_SELECT_PIN);
+		return getPins().readPin(CHIP_SELECT_PIN);
 	}
 
 	@Override
 	protected Mode getMode()
 	{
-		return pins.readPin(READWRITE_PIN) ? Mode.WRITE : Mode.READ;
+		return getPins().readPin(READWRITE_PIN) ? Mode.WRITE : Mode.READ;
 	}
 	
 	@Override

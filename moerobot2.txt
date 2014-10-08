@@ -3,18 +3,18 @@
 ;;;;;;;;;
 
 bg:
-scan
-lock
-fire
-lock
-fire
-lock
-fire
-lock
-fire
-wait 5
-lock
-fire
-lock
-fire
-jmp bg
+	scan
+	lock
+	fire
+	lock
+	fire
+	lock
+	fire
+	lock
+	fire
+	wait 5
+	lock
+	fire
+	lock
+	fire
+	jmp bg

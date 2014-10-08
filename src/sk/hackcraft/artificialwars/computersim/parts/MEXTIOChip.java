@@ -35,7 +35,8 @@ public class MEXTIOChip extends MemoryChip
 			DETECTION_GRADIENT = 7,
 			FLAGS = 8,
 			SET_FLAGS = 9,
-			NOISE = 10;
+			UNSET_FLAGS = 10,
+			NOISE = 11;
 	}
 	
 	public interface Flag
@@ -50,9 +51,7 @@ public class MEXTIOChip extends MemoryChip
 			NOISE = 64; // if true, noise is regenerated, stays on the same value otherwise
 	}
 	
-	private static final byte flagsWriteMask = Flag.FIRE_ORDER;
-
-	private Pins pins = Pins.DUMMY;
+	private static final byte flagsWriteMask = Flag.FIRE_ORDER | Flag.NOISE;
 	
 	protected byte
 		absoluteRotationHibyte,
@@ -64,6 +63,11 @@ public class MEXTIOChip extends MemoryChip
 		noise,
 		detectionSegment,
 		detectionGradient;
+	
+	public MEXTIOChip()
+	{
+		super(Pin.CHIP_SELECT, Pin.READWRITE);
+	}
 	
 	@Override
 	protected int[] createAddressIndexes()
@@ -93,12 +97,6 @@ public class MEXTIOChip extends MemoryChip
 		 * 13 chip select
 		 */
 		return 15;
-	}
-
-	@Override
-	public void setBusConnection(Pins pins)
-	{
-		this.pins = pins;
 	}
 	
 	public void setAbsoluteRotation(short rotation)
@@ -130,14 +128,25 @@ public class MEXTIOChip extends MemoryChip
 		rotationOrderHibyte = (byte)(units >>> 8);
 	}
 	
-	public int getMoveOrderValue()
+	public byte getMoveOrderValue()
 	{
-		return Byte.toUnsignedInt(moveOrderValue);
+		return moveOrderValue;
 	}
 	
-	public int getRotationOrderValue()
+	public void setMoveOrderValue(byte moveOrderValue)
 	{
-		return Short.toUnsignedInt((short)(rotationOrderHibyte << 8 | rotationOrderLobyte));
+		this.moveOrderValue = moveOrderValue;
+	}
+	
+	public short getRotationOrderValue()
+	{
+		return (short)(rotationOrderHibyte << 8 | rotationOrderLobyte);
+	}
+	
+	public void setRotationOrder(byte hibyte, byte lobyte)
+	{
+		this.rotationOrderHibyte = hibyte;
+		this.rotationOrderLobyte = lobyte;
 	}
 	
 	public void setNoise(byte noise)
@@ -158,13 +167,13 @@ public class MEXTIOChip extends MemoryChip
 	@Override
 	protected Mode getMode()
 	{
-		return pins.readPin(Pin.READWRITE) ? Mode.WRITE : Mode.READ;
+		return getPins().readPin(Pin.READWRITE) ? Mode.WRITE : Mode.READ;
 	}
 	
 	@Override
 	protected boolean isSelected()
 	{
-		return pins.readPin(Pin.CHIP_SELECT);
+		return getPins().readPin(Pin.CHIP_SELECT);
 	}
 	
 	public boolean areSet(int flags)
@@ -229,6 +238,8 @@ public class MEXTIOChip extends MemoryChip
 			case Address.SET_FLAGS:
 				flags |= value & flagsWriteMask;
 				break;
+			case Address.UNSET_FLAGS:
+				flags &= ~(value & flagsWriteMask);
 		}
 	}
 }

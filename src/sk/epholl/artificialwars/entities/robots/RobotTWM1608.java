@@ -25,7 +25,7 @@ public class RobotTWM1608 extends Entity implements Robot
 	{
 		RobotTWM1608 e = new RobotTWM1608(Color.BLACK, 0, null, 0);
 		
-		FirmwareLoader.loadFirmwareExterminator("fibonacci.asm", e);
+		FirmwareLoader.loadFirmwareExterminator("iotest.asm", e);
 		
 		for (int i = 0; i < 1000; i++)
 		{
@@ -59,6 +59,9 @@ public class RobotTWM1608 extends Entity implements Robot
 	private static final double GRADIENT_DETECTOR_ANGLE = (Math.PI / 4) * 2;
 	private static final double GRADIENT_DETECTOR_DETECTING_THRESHOLD = 1;
 	
+	private static final double MOVE_SPEED = 10;
+	private static final double ROTATION_SPEED = Math.PI / 64;
+	
 	public RobotTWM1608(Color color, int player, GameLogic game, long seed)
 	{
 		super(game);
@@ -70,7 +73,8 @@ public class RobotTWM1608 extends Entity implements Robot
 		
 		computer = new ComputerTWM1000();
 		
-		SpotsProvider provider = new ExterminatorDetectorSpotsProvider();
+		//SpotsProvider provider = new ExterminatorDetectorSpotsProvider();
+		SpotsProvider provider = () -> new HashSet<>();
 		
 		this.segmentDetector = new SegmentDetector(provider, SEGMENT_DETECTOR_SEGMENTS_COUNT, SEGMENT_DETECTOR_DETECTING_THRESHOLD);
 		this.gradientDetector = new GradientDetector(provider, GRADIENT_DETECTOR_ANGLE);
@@ -99,11 +103,12 @@ public class RobotTWM1608 extends Entity implements Robot
 		{
 			System.out.println(computer.getBusProbe());
 			System.out.println(computer.getProcessorProbe());
+			System.out.println(computer.getIoProbe());
 			System.out.println(computer.getMemoryProbe().getMemory(0, 32, 8));
 			computer.tick();
 		}
 		
-		/*MEXTIOChip io = computer.getIO();
+		MEXTIOChip io = computer.getIO();
 		
 		boolean fireOrder = io.areSet(MEXTIOChip.Flag.FIRE_ORDER);
 		updateGun(fireOrder);
@@ -142,11 +147,9 @@ public class RobotTWM1608 extends Entity implements Robot
 		}
 		
 		io.setDetectionGradient(chipDetectionGradient);
-		
-		int movementOrder = io.getMoveOrderValue();
-		int rotationOrder = io.getRotationOrderValue();
-		// TODO movement
-		// TODO rotation
+
+		updateMovement(io);
+		updateRotation(io);
 		
 		if (io.areSet(MEXTIOChip.Flag.NOISE))
 		{
@@ -158,9 +161,41 @@ public class RobotTWM1608 extends Entity implements Robot
 		io.setFlags(MEXTIOChip.Flag.MOVING, isMoving());
 		io.setFlags(MEXTIOChip.Flag.ROTATING, isRotating());
 		io.setFlags(MEXTIOChip.Flag.DETECTION_SEGMENT, isSegmentDetecting());
-		io.setFlags(MEXTIOChip.Flag.DETECTION_GRADIENT, isGradientDetecting());*/
+		io.setFlags(MEXTIOChip.Flag.DETECTION_GRADIENT, isGradientDetecting());
 
 		System.out.println(computer.getDisplay());
+	}
+	
+	private void updateMovement(MEXTIOChip io)
+	{
+		byte movementOrder = io.getMoveOrderValue();
+		
+		int signum = (int)Math.signum(movementOrder);
+		double newMoveSpeed = (movementOrder != 0) ? signum * MOVE_SPEED : 0;
+		setMoveSpeed(newMoveSpeed);
+		
+		byte newMovementOrder = (byte)(signum + movementOrder);
+		io.setMoveOrderValue(newMovementOrder);
+	}
+	
+	private void updateRotation(MEXTIOChip io)
+	{
+		short rotationOrder = io.getRotationOrderValue();
+
+		byte rotationHibyte = (byte)(rotationOrder >> 8);
+		
+		int signum = (int)Math.signum(rotationOrder);
+		double newRotationSpeed = (rotationHibyte != 0) ? signum * ROTATION_SPEED : 0;
+		
+		if (newRotationSpeed == 0)
+		{
+			byte rotationLobyte = (byte)(rotationOrder);
+			double preciousOffset = (rotationLobyte != 0) ? (ROTATION_SPEED / Byte.MAX_VALUE) * rotationLobyte : 0;
+			
+			newRotationSpeed += preciousOffset;
+		}
+		
+		setRotateSpeed(newRotationSpeed);
 	}
 	
 	private boolean isGunReady()

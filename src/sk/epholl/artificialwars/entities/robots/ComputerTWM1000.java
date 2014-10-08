@@ -7,6 +7,7 @@ import sk.hackcraft.artificialwars.computersim.parts.BusProbe;
 import sk.hackcraft.artificialwars.computersim.parts.MEXTIOChip;
 import sk.hackcraft.artificialwars.computersim.parts.MemChip1024;
 import sk.hackcraft.artificialwars.computersim.parts.MemoryProbe;
+import sk.hackcraft.artificialwars.computersim.parts.ProbeMEXTIOChip;
 import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608;
 import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608.RegisterTEK1608;
 import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608;
@@ -31,6 +32,7 @@ public class ComputerTWM1000 extends Computer
 	private final ProbeProcessorTEK1608 processorProbe;
 	private final BusProbe busProbe;
 	private final MemoryProbe memoryProbe;
+	private final ProbeMEXTIOChip ioProbe;
 
 	public ComputerTWM1000()
 	{
@@ -118,6 +120,8 @@ public class ComputerTWM1000 extends Computer
 		// data(0-7), address(8-11), readwrite, chipSelect
 		bus.connectDevice(io, new int[]{D0, D1, D2, D3, D4, D5, D6, D7, A0, A1, A2, A3, RW, CS1});
 		
+		ioProbe = new ProbeMEXTIOChip(io);
+		
 		display = new Serial8SegmentDisplay(8);
 		// readwrite, address, data(0-7), chipSelect
 		bus.connectDevice(display, new int[]{RW, A0, D0, D1, D2, D3, D4, D5, D6, D7, CS2});
@@ -162,5 +166,10 @@ public class ComputerTWM1000 extends Computer
 	public MemoryProbe getMemoryProbe()
 	{
 		return memoryProbe;
+	}
+	
+	public ProbeMEXTIOChip getIoProbe()
+	{
+		return ioProbe;
 	}
 }

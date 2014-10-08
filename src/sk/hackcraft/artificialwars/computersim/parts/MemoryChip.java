@@ -6,13 +6,18 @@ import sk.hackcraft.artificialwars.computersim.Pins;
 
 public abstract class MemoryChip implements Device
 {
-	protected Pins pins = Pins.DUMMY;
+	private Pins pins = Pins.DUMMY;
 	
 	protected final boolean dataBits[], addressBits[];
 	protected final int dataIndexes[], addressIndexes[];
 	
-	protected MemoryChip()
+	private final int CHIP_SELECT_PIN, READWRITE_PIN;
+	
+	protected MemoryChip(int CHIP_SELECT_PIN, int READWRITE_PIN)
 	{
+		this.CHIP_SELECT_PIN = CHIP_SELECT_PIN;
+		this.READWRITE_PIN = READWRITE_PIN;
+		
 		dataIndexes = createDataIndexes();
 		dataBits = new boolean[dataIndexes.length];
 		
@@ -61,8 +66,26 @@ public abstract class MemoryChip implements Device
 		}
 	}
 	
-	protected abstract boolean isSelected();
-	protected abstract Mode getMode();
+	@Override
+	public void setBusConnection(Pins pins)
+	{
+		this.pins = pins;
+	}
+	
+	public Pins getPins()
+	{
+		return pins;
+	}
+
+	protected boolean isSelected()
+	{
+		return getPins().readPin(CHIP_SELECT_PIN);
+	}
+
+	protected Mode getMode()
+	{
+		return getPins().readPin(READWRITE_PIN) ? Mode.WRITE : Mode.READ;
+	}
 	
 	protected abstract byte readFromChip(int address);
 	protected abstract void writeToChip(int address, byte value);
