@@ -31,12 +31,12 @@ public class MEXTIOChip extends MemoryChip
 			ROTATION_ORDER_HI = 2,
 			ROTATION_ORDER_LO = 3,
 			MOVE_ORDER_VALUE = 4,
-			DETECTION_SEGMENT = 6,
-			DETECTION_GRADIENT = 7,
-			FLAGS = 8,
-			SET_FLAGS = 9,
-			UNSET_FLAGS = 10,
-			NOISE = 11;
+			DETECTION_SEGMENT = 5,
+			DETECTION_GRADIENT = 6,
+			FLAGS = 7,
+			SET_FLAGS = 8,
+			UNSET_FLAGS = 9,
+			NOISE = 10;
 	}
 	
 	public interface Flag
@@ -140,7 +140,9 @@ public class MEXTIOChip extends MemoryChip
 	
 	public short getRotationOrderValue()
 	{
-		return (short)(rotationOrderHibyte << 8 | rotationOrderLobyte);
+		int low8bitMask = 0x000000FF;
+		
+		return (short)((rotationOrderHibyte << 8) | (rotationOrderLobyte & low8bitMask));
 	}
 	
 	public void setRotationOrder(byte hibyte, byte lobyte)

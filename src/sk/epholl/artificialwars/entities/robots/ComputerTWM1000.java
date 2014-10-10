@@ -124,7 +124,7 @@ public class ComputerTWM1000 extends Computer
 		
 		display = new Serial8SegmentDisplay(8);
 		// readwrite, address, data(0-7), chipSelect
-		bus.connectDevice(display, new int[]{RW, A0, D0, D1, D2, D3, D4, D5, D6, D7, CS2});
+		bus.connectDevice(display, new int[]{RW, D0, D1, D2, D3, D4, D5, D6, D7, CS2});
 
 		addPart(processor);
 		addPart(memory);

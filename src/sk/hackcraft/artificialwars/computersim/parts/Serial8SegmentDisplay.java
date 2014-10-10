@@ -6,8 +6,8 @@ import sk.hackcraft.artificialwars.computersim.Pins;
 
 /**
  * W 0
- * D 2-9
- * CS 10
+ * D 1-8
+ * CS 9
  */
 public class Serial8SegmentDisplay implements Device
 {
@@ -18,6 +18,7 @@ public class Serial8SegmentDisplay implements Device
 		CHIP_SELECT = DATA_START + DATA_LEN;
 	
 	private Pins pins = Pins.DUMMY;
+	private boolean writeInitiated;
 	
 	private final byte dataBuffer[];
 	
@@ -52,7 +53,18 @@ public class Serial8SegmentDisplay implements Device
 	{
 		if (pins.readPin(CHIP_SELECT) && pins.readPin(WRITE_PIN))
 		{
-			writeToBuffer();
+			if (!writeInitiated)
+			{
+				writeInitiated = true;
+			}
+			else
+			{
+				writeToBuffer();
+			}
+		}
+		else
+		{
+			writeInitiated = false;
 		}
 	}
 	
@@ -82,7 +94,12 @@ public class Serial8SegmentDisplay implements Device
 	@Override
 	public String toString()
 	{
-		// TODO testing, real values will not use ascii codes
-		return String.format("Display: %02X%02X", dataBuffer[1], dataBuffer[0]);
+		StringBuilder b = new StringBuilder("Display: ");
+		for (int i : dataBuffer)
+		{
+			b.append(i);
+		}
+		
+		return b.toString();
 	}
 }

@@ -283,14 +283,14 @@ public class ProcessorTEK1608 implements Device
 		setInitialInstruction(0x88, (ma) -> new ModifyRegister(this::decrementY));
 		
 		// EOR xor memory with accumulator
-		setInitialInstruction(0x49, (ma) -> new ModifyMemory(ma, this::xor));
-		setInitialInstruction(0x45, (ma) -> new ModifyMemory(ma, this::xor));
-		setInitialInstruction(0x55, (ma) -> new ModifyMemory(ma, this::xor));
-		setInitialInstruction(0x4D, (ma) -> new ModifyMemory(ma, this::xor));
-		setInitialInstruction(0x5D, (ma) -> new ModifyMemory(ma, this::xor));
-		setInitialInstruction(0x59, (ma) -> new ModifyMemory(ma, this::xor));
-		setInitialInstruction(0x41, (ma) -> new ModifyMemory(ma, this::xor));
-		setInitialInstruction(0x51, (ma) -> new ModifyMemory(ma, this::xor));
+		setInitialInstruction(0x49, (ma) -> new ModifyRegisterWithValue(ma, this::xor));
+		setInitialInstruction(0x45, (ma) -> new ModifyRegisterWithValue(ma, this::xor));
+		setInitialInstruction(0x55, (ma) -> new ModifyRegisterWithValue(ma, this::xor));
+		setInitialInstruction(0x4D, (ma) -> new ModifyRegisterWithValue(ma, this::xor));
+		setInitialInstruction(0x5D, (ma) -> new ModifyRegisterWithValue(ma, this::xor));
+		setInitialInstruction(0x59, (ma) -> new ModifyRegisterWithValue(ma, this::xor));
+		setInitialInstruction(0x41, (ma) -> new ModifyRegisterWithValue(ma, this::xor));
+		setInitialInstruction(0x51, (ma) -> new ModifyRegisterWithValue(ma, this::xor));
 		
 		// INC increment memory by one
 		setInitialInstruction(0xE6, (ma) -> new ModifyMemory(ma, this::increment));
@@ -346,14 +346,14 @@ public class ProcessorTEK1608 implements Device
 		setInitialInstruction(0xEA, (ma) -> new NoOperation());
 		
 		// ORA or memory with accumulator
-		setInitialInstruction(0x09, (ma) -> new ModifyMemory(ma, this::or));
-		setInitialInstruction(0x05, (ma) -> new ModifyMemory(ma, this::or));
-		setInitialInstruction(0x15, (ma) -> new ModifyMemory(ma, this::or));
-		setInitialInstruction(0x0D, (ma) -> new ModifyMemory(ma, this::or));
-		setInitialInstruction(0x1D, (ma) -> new ModifyMemory(ma, this::or));
-		setInitialInstruction(0x19, (ma) -> new ModifyMemory(ma, this::or));
-		setInitialInstruction(0x01, (ma) -> new ModifyMemory(ma, this::or));
-		setInitialInstruction(0x11, (ma) -> new ModifyMemory(ma, this::or));
+		setInitialInstruction(0x09, (ma) -> new ModifyRegisterWithValue(ma, this::or));
+		setInitialInstruction(0x05, (ma) -> new ModifyRegisterWithValue(ma, this::or));
+		setInitialInstruction(0x15, (ma) -> new ModifyRegisterWithValue(ma, this::or));
+		setInitialInstruction(0x0D, (ma) -> new ModifyRegisterWithValue(ma, this::or));
+		setInitialInstruction(0x1D, (ma) -> new ModifyRegisterWithValue(ma, this::or));
+		setInitialInstruction(0x19, (ma) -> new ModifyRegisterWithValue(ma, this::or));
+		setInitialInstruction(0x01, (ma) -> new ModifyRegisterWithValue(ma, this::or));
+		setInitialInstruction(0x11, (ma) -> new ModifyRegisterWithValue(ma, this::or));
 		
 		// PHA push accumulator on stack
 		setInitialInstruction(0x48, (ma) -> new Push(() -> a));
@@ -499,9 +499,7 @@ public class ProcessorTEK1608 implements Device
 	
 	private void and(byte value)
 	{
-		int result = a & value;
-		
-		a = (byte)result;
+		a = (byte)(a & value);
 		
 		setNegativeFlagByValue(a);
 		setZeroFlagByValue(a);
@@ -688,24 +686,20 @@ public class ProcessorTEK1608 implements Device
 		setNegativeFlagByValue(y);
 	}
 	
-	private byte xor(byte value)
+	private void xor(byte value)
 	{
-		int result = a ^ value;
+		a = (byte)(a ^ value);
 		
 		setZeroFlagByValue(a);
 		setNegativeFlagByValue(a);
-		
-		return (byte)result;
 	}
 	
-	private byte or(byte value)
+	private void or(byte value)
 	{
-		int result = a | value;
+		a = (byte)(a | value);
 		
 		setZeroFlagByValue(a);
 		setNegativeFlagByValue(a);
-		
-		return (byte)result;
 	}
 	
 	private void loadAccumulator(byte value)
