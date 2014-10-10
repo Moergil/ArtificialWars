@@ -55,7 +55,7 @@ public class RobotTWM1608 extends Entity implements Robot
 	
 	private static final int SEGMENT_DETECTOR_SEGMENTS_COUNT = 8;
 	private static final double SEGMENT_DETECTOR_DETECTING_THRESHOLD = 2.0 / 50;
-	private static final double GRADIENT_DETECTOR_ANGLE = (Math.PI / 4) * 2;
+	private static final double GRADIENT_DETECTOR_ANGLE = Math.PI / 2;
 	private static final double GRADIENT_DETECTOR_DETECTING_THRESHOLD = 1;
 	
 	private static final double MOVE_SPEED = 1;
@@ -129,7 +129,6 @@ public class RobotTWM1608 extends Entity implements Robot
 		}
 		
 		io.setDetectionSegment(chipDetectionSegment);
-		System.out.println(CommonValueFormatter.toBinary8(chipDetectionSegment) + " " + io.areSet(MEXTIOChip.Flag.DETECTION_SEGMENT));
 		
 		double excitation = gradientDetector.getExcitation();
 		byte chipDetectionGradient;
@@ -144,8 +143,10 @@ public class RobotTWM1608 extends Entity implements Robot
 		}
 		else
 		{
-			chipDetectionGradient = (byte)(excitation * Util.UNSIGNED_BYTE_MAX_VALUE_BITS);
+			chipDetectionGradient = (byte)(excitation * Util.UNSIGNED_BYTE_MAX_VALUE);
 		}
+		
+		System.out.println(excitation + " " + chipDetectionGradient);
 		
 		io.setDetectionGradient(chipDetectionGradient);
 		

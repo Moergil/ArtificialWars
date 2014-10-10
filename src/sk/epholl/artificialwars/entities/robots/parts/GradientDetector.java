@@ -1,5 +1,7 @@
 package sk.epholl.artificialwars.entities.robots.parts;
 
+import java.util.HashSet;
+
 
 public class GradientDetector implements RobotPart
 {
@@ -13,7 +15,7 @@ public class GradientDetector implements RobotPart
 	{
 		this.provider = provider;
 		
-		this.angleRange = angleRange;
+		this.angleRange = angleRange / 2;
 	}
 	
 	@Override
@@ -31,7 +33,7 @@ public class GradientDetector implements RobotPart
 		{
 			double signedAngle = spot.getSignedRelativeAngle();
 			
-			if (Math.abs(signedAngle) > angleRange / 2)
+			if (Math.abs(signedAngle) > angleRange)
 			{
 				continue;
 			}
