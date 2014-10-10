@@ -6,6 +6,8 @@ package sk.epholl.artificialwars.logic;
 public class Vector2D
 {
 	public static final Vector2D ORIGIN = new Vector2D(0, 0);
+	public static final Vector2D UNIT_CIRCLE_ZERO = new Vector2D(1, 0);
+	
 	public static final Vector2D NORTH = new Vector2D(0, 1);
 	public static final Vector2D EAST = new Vector2D(1, 0);
 	

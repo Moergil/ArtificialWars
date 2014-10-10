@@ -1,5 +1,7 @@
 package sk.epholl.artificialwars.entities.robots.parts;
 
+import java.util.Arrays;
+
 
 public class SegmentDetector implements RobotPart
 {
@@ -25,6 +27,8 @@ public class SegmentDetector implements RobotPart
 	@Override
 	public void update()
 	{
+		Arrays.fill(segment, false);
+		
 		for (DetectorSpot spot : provider.getDetectorSpots())
 		{
 			double angle = spot.getSignedRelativeAngle();
@@ -50,7 +54,7 @@ public class SegmentDetector implements RobotPart
 		int index = getIndex(angle);
 		
 		double value = width / distance;
-		
+
 		segment[index] = value > threshold;
 	}
 	
@@ -59,6 +63,11 @@ public class SegmentDetector implements RobotPart
 		double fullCircle = Math.PI * 2;
 		
 		double anglePerSegment = fullCircle / segment.length;
+		
+		if (angle < 0)
+		{
+			angle += Math.PI;
+		}
 		
 		return (int)(angle / anglePerSegment);
 	}

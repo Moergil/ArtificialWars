@@ -3,6 +3,7 @@ package sk.hackcraft.artificialwars.computersim.toolchain;
 import java.io.IOException;
 import java.io.OutputStream;
 
+
 import sk.hackcraft.artificialwars.computersim.Endianness;
 import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet;
 import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet.TEK1608MemoryAddressing;
@@ -43,6 +44,16 @@ public class AssemblerTEK1608 extends AbstractAssembler
 		
 		addVariableType("BYTE", Byte.BYTES);
 		addVariableType("WORD", Short.BYTES);
+		
+		// zero
+		addValueParser((value) -> {
+			if (!value.equals("0"))
+			{
+				throw new NumberFormatException("Not zero.");
+			}
+			
+			return 0;
+		});
 		
 		// hexa
 		addValueParser((value) -> {

@@ -128,6 +128,11 @@ public class MEXTIOChip extends MemoryChip
 		rotationOrderHibyte = (byte)(units >>> 8);
 	}
 	
+	public byte getFlags()
+	{
+		return flags;
+	}
+	
 	public byte getMoveOrderValue()
 	{
 		return moveOrderValue;

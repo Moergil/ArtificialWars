@@ -17,6 +17,7 @@ import sk.epholl.artificialwars.logic.GameLogic;
 import sk.epholl.artificialwars.logic.Vector2D;
 import sk.epholl.artificialwars.logic.Vector2DMath;
 import sk.hackcraft.artificialwars.computersim.Util;
+import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
 import sk.hackcraft.artificialwars.computersim.parts.MEXTIOChip;
 
 public class RobotTWM1608 extends Entity implements Robot
@@ -53,7 +54,7 @@ public class RobotTWM1608 extends Entity implements Robot
 	private final GradientDetector gradientDetector;
 	
 	private static final int SEGMENT_DETECTOR_SEGMENTS_COUNT = 8;
-	private static final double SEGMENT_DETECTOR_DETECTING_THRESHOLD = 2 / 50;
+	private static final double SEGMENT_DETECTOR_DETECTING_THRESHOLD = 2.0 / 50;
 	private static final double GRADIENT_DETECTOR_ANGLE = (Math.PI / 4) * 2;
 	private static final double GRADIENT_DETECTOR_DETECTING_THRESHOLD = 1;
 	
@@ -71,8 +72,7 @@ public class RobotTWM1608 extends Entity implements Robot
 		
 		computer = new ComputerTWM1000();
 		
-		//SpotsProvider provider = new ExterminatorDetectorSpotsProvider();
-		SpotsProvider provider = () -> new HashSet<>();
+		SpotsProvider provider = new ExterminatorDetectorSpotsProvider();
 		
 		this.segmentDetector = new SegmentDetector(provider, SEGMENT_DETECTOR_SEGMENTS_COUNT, SEGMENT_DETECTOR_DETECTING_THRESHOLD);
 		this.gradientDetector = new GradientDetector(provider, GRADIENT_DETECTOR_ANGLE);
@@ -129,6 +129,7 @@ public class RobotTWM1608 extends Entity implements Robot
 		}
 		
 		io.setDetectionSegment(chipDetectionSegment);
+		System.out.println(CommonValueFormatter.toBinary8(chipDetectionSegment) + " " + io.areSet(MEXTIOChip.Flag.DETECTION_SEGMENT));
 		
 		double excitation = gradientDetector.getExcitation();
 		byte chipDetectionGradient;
@@ -139,14 +140,16 @@ public class RobotTWM1608 extends Entity implements Robot
 		}
 		else if (excitation > 1)
 		{
-			chipDetectionGradient = Util.UNSIGNED_BYTE_MAX_VALUE_RAW;
+			chipDetectionGradient = Util.UNSIGNED_BYTE_MAX_VALUE_BITS;
 		}
 		else
 		{
-			chipDetectionGradient = (byte)(excitation * Util.UNSIGNED_BYTE_MAX_VALUE_RAW);
+			chipDetectionGradient = (byte)(excitation * Util.UNSIGNED_BYTE_MAX_VALUE_BITS);
 		}
 		
 		io.setDetectionGradient(chipDetectionGradient);
+		
+		updateCompass(io);
 
 		updateMovement(io);
 		updateRotation(io);
@@ -162,6 +165,26 @@ public class RobotTWM1608 extends Entity implements Robot
 		io.setFlags(MEXTIOChip.Flag.ROTATING, isRotating());
 		io.setFlags(MEXTIOChip.Flag.DETECTION_SEGMENT, isSegmentDetecting());
 		io.setFlags(MEXTIOChip.Flag.DETECTION_GRADIENT, isGradientDetecting());
+	}
+	
+	private void updateCompass(MEXTIOChip io)
+	{
+		Vector2D direction = getDirection();
+		
+		double angle = Vector2DMath.getRelativeSignedAngle(direction, Vector2D.NORTH);
+		double signum = Math.signum(angle);
+		
+		double chunk = Byte.MAX_VALUE / Math.PI;
+		
+		double bytesAngle = angle * chunk;
+		byte hibyte = (byte)bytesAngle;
+
+		double absBytesAngle = Math.abs(bytesAngle);
+		double rest = (absBytesAngle - Math.floor(absBytesAngle)) * signum;
+		double restBytesAngle = rest * Byte.MAX_VALUE;
+		byte lobyte = (byte)restBytesAngle;
+		
+		io.setAbsoluteRotation(hibyte, lobyte);
 	}
 	
 	private void updateMovement(MEXTIOChip io)
@@ -331,11 +354,7 @@ public class RobotTWM1608 extends Entity implements Robot
 					continue;
 				}
 				
-				if (e.getPlayer() == getPlayer())
-				{
-					continue;
-				}
-				
+				// TODO modify to use detector mechanics, like heat or radar waves
 				if (e.isDestructible())
 				{
 					targets.add(e);
@@ -344,13 +363,14 @@ public class RobotTWM1608 extends Entity implements Robot
 			
 			HashSet<DetectorSpot> spots = new HashSet<>();
 			
-			Vector2D exterminatorVector = getDirection();
+			Vector2D robotPosition = getCenterPosition();
+			Vector2D robotDirection = getDirection();
 			
 			for (Entity target : targets)
 			{
-				Vector2D targetVector = new Vector2D(exterminatorVector, target.getCenterPosition());
-				
-				double relativeRotation = Vector2DMath.getRelativeSignedAngle(exterminatorVector, targetVector);
+				Vector2D targetVector = new Vector2D(robotPosition, target.getCenterPosition());
+
+				double relativeRotation = Vector2DMath.getRelativeSignedAngle(robotDirection, targetVector);
 				double distance = target.getDistance(RobotTWM1608.this);
 				double width = Math.max(target.getWidth(), target.getHeight());
 				
