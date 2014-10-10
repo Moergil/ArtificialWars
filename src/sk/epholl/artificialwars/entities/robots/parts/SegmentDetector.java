@@ -1,6 +1,7 @@
 package sk.epholl.artificialwars.entities.robots.parts;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 
 public class SegmentDetector implements RobotPart
@@ -60,15 +61,17 @@ public class SegmentDetector implements RobotPart
 	
 	private int getIndex(double angle)
 	{
-		double fullCircle = Math.PI * 2;
+		double anglePerSegment = Math.PI / (segment.length / 2);
+	
+		int index = (int)(angle / anglePerSegment);
 		
-		double anglePerSegment = fullCircle / segment.length;
-		
-		if (angle < 0)
+		if (angle > 0)
 		{
-			angle += Math.PI;
+			return index;
 		}
-		
-		return (int)(angle / anglePerSegment);
+		else
+		{
+			return segment.length + index - 1;
+		}
 	}
 }

@@ -9,7 +9,7 @@ import sk.hackcraft.artificialwars.computersim.Pins;
  * D 1-8
  * CS 9
  */
-public class Serial8SegmentDisplay implements Device
+public class TextLineDisplay implements Device
 {
 	private static final int
 		WRITE_PIN = 0,
@@ -25,15 +25,15 @@ public class Serial8SegmentDisplay implements Device
 	private final boolean dataBits[] = new boolean[DATA_LEN];
 	private final int dataIndexes[] = PinUtil.createSequenceIndexes(DATA_START, DATA_LEN);
 
-	public Serial8SegmentDisplay(int segmentPartsCount)
+	public TextLineDisplay(int lineSize)
 	{
-		this.dataBuffer = new byte[segmentPartsCount];
+		this.dataBuffer = new byte[lineSize];
 	}
 	
 	@Override
 	public String getName()
 	{
-		return "Segment display 4 by 8"; 
+		return "Text display"; 
 	}
 	
 	@Override

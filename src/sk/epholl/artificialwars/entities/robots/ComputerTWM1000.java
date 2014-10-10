@@ -11,7 +11,7 @@ import sk.hackcraft.artificialwars.computersim.parts.ProbeMEXTIOChip;
 import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608;
 import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608.RegisterTEK1608;
 import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608;
-import sk.hackcraft.artificialwars.computersim.parts.Serial8SegmentDisplay;
+import sk.hackcraft.artificialwars.computersim.parts.TextLineDisplay;
 
 public class ComputerTWM1000 extends Computer
 {
@@ -27,7 +27,7 @@ public class ComputerTWM1000 extends Computer
 	private final ProcessorTEK1608 processor;
 	private final MemChip1024 memory;
 	private final MEXTIOChip io;
-	private final Serial8SegmentDisplay display;
+	private final TextLineDisplay display;
 	
 	private final ProbeProcessorTEK1608 processorProbe;
 	private final BusProbe busProbe;
@@ -106,7 +106,7 @@ public class ComputerTWM1000 extends Computer
 		bus.connectDevice(processor, new int[]{RW, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, D0, D1, D2, D3, D4, D5, D6, D7});
 		
 		// TODO debug
-		//processor.setInstructionListener((pc, opcode) -> System.out.printf("INS: %d %d %s%n", pc, opcode, TEK1608InstructionSet.getInstance().getOpcode(opcode).getInstructionName()));
+		processor.setInstructionListener((pc, opcode) -> System.out.printf("INS: $%04X $%02X %s%n", pc, opcode, TEK1608InstructionSet.getInstance().getOpcode(opcode).getInstructionName()));
 		
 		processorProbe = new ProbeProcessorTEK1608(processor);
 		
@@ -122,7 +122,7 @@ public class ComputerTWM1000 extends Computer
 		
 		ioProbe = new ProbeMEXTIOChip(io);
 		
-		display = new Serial8SegmentDisplay(8);
+		display = new TextLineDisplay(8);
 		// readwrite, address, data(0-7), chipSelect
 		bus.connectDevice(display, new int[]{RW, D0, D1, D2, D3, D4, D5, D6, D7, CS2});
 
@@ -148,7 +148,7 @@ public class ComputerTWM1000 extends Computer
 		return io;
 	}
 	
-	public Serial8SegmentDisplay getDisplay()
+	public TextLineDisplay getDisplay()
 	{
 		return display;
 	}

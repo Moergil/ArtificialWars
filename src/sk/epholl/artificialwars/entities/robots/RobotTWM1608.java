@@ -44,7 +44,7 @@ public class RobotTWM1608 extends Entity implements Robot
 	private final int GUN_COOLDOWN_TIME = 30;
 	private int actualGunCooldown = 0;
 	
-	private int computerFrequency = 1000;
+	private int computerFrequency = 5;
 	
 	private final ComputerTWM1000 computer;
 	
@@ -145,9 +145,7 @@ public class RobotTWM1608 extends Entity implements Robot
 		{
 			chipDetectionGradient = (byte)(excitation * Util.UNSIGNED_BYTE_MAX_VALUE);
 		}
-		
-		System.out.println(excitation + " " + chipDetectionGradient);
-		
+
 		io.setDetectionGradient(chipDetectionGradient);
 		
 		updateCompass(io);

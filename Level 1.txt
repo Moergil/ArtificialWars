@@ -8,5 +8,5 @@
 
 objective capture 550 250 300 300 0 1
 //robot 255 128 128 0 200 300 eph32 player.txt
-robot 255 128 128 0 200 300 twm1608 iotest.asm
-robot 255 128 128 1 210 330 eph32 dummy_robot.txt
+robot 255 128 128 0 200 300 twm1608 ht-1.asm
+robot 255 128 128 1 300 330 eph32 dummy_robot.txt
