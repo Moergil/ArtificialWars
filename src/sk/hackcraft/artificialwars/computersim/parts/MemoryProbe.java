@@ -18,6 +18,7 @@ public class MemoryProbe
 		
 		StringBuilder b = new StringBuilder();
 		
+		// TODO
 		for (int i = 0; i < len; i++)
 		{
 			b.append(memory.readFromChip(i + offset) + " ");

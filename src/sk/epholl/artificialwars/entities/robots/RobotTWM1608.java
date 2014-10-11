@@ -28,7 +28,7 @@ public class RobotTWM1608 extends Entity implements Robot
 		
 		RobotTWM1608 e = new RobotTWM1608(Color.BLACK, 0, game, 0);
 		
-		FirmwareLoader.loadFirmwareExterminator("ht-1.asm", e);
+		FirmwareLoader.loadFirmwareExterminator("test.asm", e);
 		
 		for (int i = 0; i < 1000; i++)
 		{
@@ -99,10 +99,10 @@ public class RobotTWM1608 extends Entity implements Robot
 	{
 		for (int i = 0; i < computerFrequency; i++)
 		{
-			//System.out.println(computer.getBusProbe());
-			//System.out.println(computer.getProcessorProbe());
+			System.out.println(computer.getBusProbe());
+			System.out.println(computer.getProcessorProbe());
 			//System.out.println(computer.getIoProbe());
-			//System.out.println(computer.getMemoryProbe().getMemory(0, 32, 8));
+			System.out.println(computer.getMemoryProbe().getMemory(490, 32, 8));
 			
 			computer.tick();
 		}

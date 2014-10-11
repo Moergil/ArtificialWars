@@ -32,7 +32,7 @@ public class ProcessorTEK1608 implements Device
 	
 	private static final Runnable NOP = () -> {};
 	
-	protected byte a, x, y, sp = (byte)0xff, sr;
+	protected byte a, x, y, sp = (byte)0xFF, sr;
 	protected short pc;
 	protected byte ir;
 
@@ -842,7 +842,7 @@ public class ProcessorTEK1608 implements Device
 	
 	private short getMemorySP()
 	{
-		return (short)(0x0100 + sp);
+		return (short)(0x0100 | (sp & 0x00FF));
 	}
 	
 	private interface Operation extends Runnable
@@ -1367,7 +1367,7 @@ public class ProcessorTEK1608 implements Device
 			b
 			.add(() -> {
 				setAddressBus(getMemorySP());
-				sp++;
+				sp--;
 				setDataBus(getter.get());
 				setWrite(true);
 			})
@@ -1378,7 +1378,8 @@ public class ProcessorTEK1608 implements Device
 			});
 		}
 	}
-	
+
+	// TODO debug not working
 	private class Pop extends AbstractOperation
 	{
 		private final RegisterValueSetter setter;
