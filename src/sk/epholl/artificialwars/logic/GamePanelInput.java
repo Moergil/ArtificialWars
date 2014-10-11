@@ -25,8 +25,8 @@ public class GamePanelInput
 		button.setActivationListener(() -> {game.pauseGame(); mainLogic.showMenu();});
 		buttons.add(button);
 		
-		button = new GameButton(110, 190, 545, 565, "Pause");
-		button.setActivationListener(() -> game.pauseGame());
+		button = new GameButton(110, 190, 545, 565, "Reset");
+		button.setActivationListener(() -> mainLogic.loadLevel(game.getLevelName()));
 		buttons.add(button);
 		
 		button = new GameButton(210, 290, 545, 565, "Step");

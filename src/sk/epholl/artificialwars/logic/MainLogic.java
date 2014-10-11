@@ -50,7 +50,7 @@ public class MainLogic implements Runnable
 
 	public void loadLevel(String name)
 	{
-		GameLogic logic = new GameLogic(new Random().nextLong());
+		GameLogic logic = new GameLogic(new Random().nextLong(), name);
 
 		LevelLoader parser = new LevelLoader(logic);
 		
