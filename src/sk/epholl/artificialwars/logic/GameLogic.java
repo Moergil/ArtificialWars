@@ -19,6 +19,7 @@ import sk.epholl.artificialwars.graphics.GamePanel;
 public class GameLogic
 {
 	private final long seed;
+	private final String levelName;
 	
 	private GamePanel panel;
 	private boolean gameRunning = true;
@@ -31,9 +32,10 @@ public class GameLogic
 
 	private Set<Entity> entities;
 
-	public GameLogic(long seed)
+	public GameLogic(long seed, String levelName)
 	{
 		this.seed = seed;
+		this.levelName = levelName;
 		
 		entities = new HashSet<>();
 
@@ -167,6 +169,11 @@ public class GameLogic
 	public String getOutputString()
 	{
 		return outputString;
+	}
+	
+	public String getLevelName()
+	{
+		return levelName;
 	}
 
 	private void logicCycle()

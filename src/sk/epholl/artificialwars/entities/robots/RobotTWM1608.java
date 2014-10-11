@@ -24,7 +24,7 @@ public class RobotTWM1608 extends Entity implements Robot
 {
 	public static void main(String[] args) throws Exception
 	{
-		GameLogic game = new GameLogic(0);
+		GameLogic game = new GameLogic(0, "");
 		
 		RobotTWM1608 e = new RobotTWM1608(Color.BLACK, 0, game, 0);
 		
