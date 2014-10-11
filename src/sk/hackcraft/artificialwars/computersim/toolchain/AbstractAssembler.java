@@ -340,11 +340,16 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 				continue;
 			}
 			
-			boolean implicitValue = param.isEmpty();
+			boolean implicitValue = ma.getOperandsWordsSize() == 0;
 
 			String operandValue;
 			if (!implicitValue)
 			{
+				if (mam.groupCount() < 1)
+				{
+					throw new CodeSyntaxException(line, "No parameter found when expected.");
+				}
+				
 				operandValue = mam.group(1);
 				
 				boolean finalized = false;

@@ -28,7 +28,7 @@ public class RobotTWM1608 extends Entity implements Robot
 		
 		RobotTWM1608 e = new RobotTWM1608(Color.BLACK, 0, game, 0);
 		
-		FirmwareLoader.loadFirmwareExterminator("iotest.asm", e);
+		FirmwareLoader.loadFirmwareExterminator("ht-1.asm", e);
 		
 		for (int i = 0; i < 1000; i++)
 		{
