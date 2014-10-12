@@ -1,11 +1,9 @@
-rnd 200
-swp
-posx
+setb 6
+direction:
+rnd 6
 add
-swp
-posy
-swp
-move
-wait 1
-jmpm 9
-jmp 1
+jmpz direction
+rot
+move 2
+wait 2
+jmp direction

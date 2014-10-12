@@ -7,7 +7,7 @@
 //robot red green blue player posX posY instructionFileName
 
 objective destroy 1
-robot 255 128 128 0 400 300 eph32 moerobot2.txt
+robot 255 128 128 0 400 300 eph32 player.txt
 robot 100 150 100 1 200 300 eph32 dummy_robot.txt
 robot 100 150 100 1 600 300 eph32 dummy_robot.txt
 robot 100 150 100 1 400 150 eph32 dummy_robot.txt
