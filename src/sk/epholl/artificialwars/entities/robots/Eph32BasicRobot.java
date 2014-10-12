@@ -54,6 +54,13 @@ public class Eph32BasicRobot extends Entity implements Robot
 	private int moveTicks;
 	private int rotateTicks;
 
+	/*
+	 * Takze, potrebujeme:
+	 * Move instrukcia, ktora zapne a vypne pohyb.
+	 * 
+	 * Rotate instrukcia: nejako nastavit rotaciu. Smer, bud instantne, alebo postupne.
+	 */
+	
 	public Eph32BasicRobot(Color color, int player, GameLogic game)
 	{
 		super(game);
@@ -164,40 +171,41 @@ public class Eph32BasicRobot extends Entity implements Robot
 
 		switch (instruction)
 		{
-			case -1:
+			case EPH32InstructionSet.SELF_DESTRUCT:
 			{
 				// self destruct
 				selfDestruct();
 				break;
 			}
-			case 0: // 10*P wait
+			case EPH32InstructionSet.WAIT: // 10*P wait
 				break;
-			case 1:
+				
+			case EPH32InstructionSet.ADD:
 			{
 				// A = A + B
 				regA += regB;
 				break;
 			}
-			case 2:
+			case EPH32InstructionSet.SUB:
 			{
 				// A = A - B
 				regA -= regB;
 				break;
 			}
-			case 3:
+			case EPH32InstructionSet.INC:
 			{
 				// A = A++
 				regA++;
 				break;
 			}
-			case 4:
+			case EPH32InstructionSet.DEC:
 			{
 				// A = A--
 				regA--;
 				break;
 			}
 
-			case 5:
+			case EPH32InstructionSet.SWP:
 			{
 				// A = B, B = A
 				int temp = regA;
@@ -205,114 +213,114 @@ public class Eph32BasicRobot extends Entity implements Robot
 				regB = temp;
 				break;
 			}
-			case 6:
+			case EPH32InstructionSet.SETAB:
 			{
 				// A = B
 				regA = regB;
 				break;
 			}
-			case 8:
+			case EPH32InstructionSet.SETA:
 			{
 				// A = P
 				regA = parameter;
 				break;
 			}
-			case 9:
+			case EPH32InstructionSet.SETB:
 			{
 				// B = P
 				regB = parameter;
 				break;
 			}
 
-			case 10:
+			case EPH32InstructionSet.FIRE:
 			{
 				// fire a shot to [A, B]
 				fire();
 				break;
 			}
-			case 15:
+			case EPH32InstructionSet.SCAN:
 			{
 				// find a robot to lock (if none found, null returned)
 				setLock();
 				break;
 			}
-			case 16:
+			case EPH32InstructionSet.LOCK:
 			{
 				// set A and B to actual accuracy lock coordinates
 				setLockToRegisters();
 				break;
 			}
 
-			case 20:
+			case EPH32InstructionSet.RND:
 			{
 				// A = random int in <-P, P>
 				regA = random.nextInt((parameter * 2) + 1) - parameter;
 				break;
 			}
-			case 21:
+			case EPH32InstructionSet.RNDB:
 			{
 				// A = random int in <-B, B>
 				regA = random.nextInt((regB * 2) + 1) - regB;
 				break;
 			}
 
-			case 30:
+			case EPH32InstructionSet.POSX:
 			{
 				// A = current pos X
 				regA = (int)getCenterPosition().getX();
 				break;
 			}
-			case 31:
+			case EPH32InstructionSet.POSY:
 			{
 				// A = current pos Y
 				regA = (int)getCenterPosition().getY();
 				break;
 			}
-			case 32:
+			case EPH32InstructionSet.MOVE:
 			{
 				// set movement, A is distance, B is relative signed angle
 				setMovementTo(regA, regB);
 				break;
 			}
-			case 40:
+			case EPH32InstructionSet.SETMP:
 			{
 				// set A to MP
 				memoryPointer = regA;
 				break;
 			}
-			case 41:
+			case EPH32InstructionSet.INCMP:
 			{
 				// MP++
 				memoryPointer++;
 				break;
 			}
-			case 42:
+			case EPH32InstructionSet.DECMP:
 			{
 				// MP--
 				memoryPointer--;
 				break;
 			}
-			case 45:
+			case EPH32InstructionSet.MEMSAVE:
 			{
 				// [MP] = A
 				memory[memoryPointer] = regA;
 				break;
 			}
-			case 46:
+			case EPH32InstructionSet.MEMLOAD:
 			{
 				// A = [MP]
 				regA = memory[memoryPointer];
 				break;
 			}
 
-			case 50:
+			case EPH32InstructionSet.JMP:
 			{
 				// IP = P
 				instructionPointer = parameter;
 				decrementInstructionPointer();
 				break;
 			}
-			case 51:
+			case EPH32InstructionSet.JMPZ:
 			{
 				// if (A == 0) IP = P
 				if (regA == 0)
@@ -322,7 +330,7 @@ public class Eph32BasicRobot extends Entity implements Robot
 				}
 				break;
 			}
-			case 52:
+			case EPH32InstructionSet.JMPC:
 			{
 				// if (isCollided()) IP = P
 				if (isColliding())
@@ -332,7 +340,7 @@ public class Eph32BasicRobot extends Entity implements Robot
 				}
 				break;
 			}
-			case 53:
+			case EPH32InstructionSet.JMPM:
 			{
 				// if (isMoving()) IP = P
 				if (isMoving())
@@ -342,7 +350,7 @@ public class Eph32BasicRobot extends Entity implements Robot
 				}
 				break;
 			}
-			case 54:
+			case EPH32InstructionSet.JMPL:
 			{
 				// if something was locked IP = P
 				if (lockSuccess)
@@ -369,45 +377,45 @@ public class Eph32BasicRobot extends Entity implements Robot
 		
 		switch (instructionMemory[instructionPointer])
 		{
-			case -1:
+			case EPH32InstructionSet.SELF_DESTRUCT:
 			{
 				instructionCooldown = 10;
 				break;
 			}
-			case 0:
+			case EPH32InstructionSet.WAIT:
 			{
 				instructionCooldown = 2 + parameterMemory[instructionPointer] * 10;
 				break;
 			}
-			case 10:
+			case EPH32InstructionSet.FIRE:
 			{
 				instructionCooldown = 5;
 				break;
 			}
-			case 15:
+			case EPH32InstructionSet.SCAN:
 			{
 				instructionCooldown = 10;
 				break;
 			}
-			case 16:
+			case EPH32InstructionSet.LOCK:
 			{
 				instructionCooldown = 5;
 				break;
 			}
-			case 32:
+			case EPH32InstructionSet.MOVE:
 			{
 				instructionCooldown = 7;
 				break;
 			}
 			default:
 			{
-				instructionCooldown = 1;
+				instructionCooldown = 0;
 			}
 		}
 
 		instructionCooldown *= DEFAULT_INSTRUCTION_COOLDOWN_MULTIPLICATOR;
 		if (isMoving())
-			instructionCooldown *= 9;
+			instructionCooldown *= 4;
 	}
 
 	public boolean setInstructionPointer(int newVal)

@@ -4,6 +4,36 @@ import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 
 public class EPH32InstructionSet extends InstructionSet
 {
+	public static final int SELF_DESTRUCT = -1;
+	public static final int WAIT = 0;
+	public static final int ADD = 1;
+	public static final int SUB = 2;
+	public static final int INC = 3;
+	public static final int DEC = 4;
+	public static final int SWP = 5;
+	public static final int SETAB = 6;
+	public static final int SETA = 8;
+	public static final int SETB = 9;
+	public static final int FIRE = 10;
+	public static final int SCAN = 15;
+	public static final int LOCK = 16;
+	public static final int RND = 20;
+	public static final int RNDB = 21;
+	public static final int POSX = 30;
+	public static final int POSY = 31;
+	public static final int MOVE = 32;
+	public static final int SETMP = 40;
+	public static final int INCMP = 41;
+	public static final int DECMP = 42;
+	public static final int MEMSAVE = 45;
+	public static final int MEMLOAD = 46;
+	public static final int JMP = 50;
+	public static final int JMPZ = 51;
+	public static final int JMPC = 52;
+	public static final int JMPM = 53;
+	public static final int JMPL = 54;
+	
+	
 	public static final int WORD_BYTES_SIZE = 4;
 	
 	private static final EPH32InstructionSet INSTANCE = new EPH32InstructionSet();
@@ -30,33 +60,33 @@ public class EPH32InstructionSet extends InstructionSet
 	{
 		super(WORD_BYTES_SIZE);
 		
-		add(0, "wait", EPH32MemoryAddressing.IMMEDIATE);
-		add(1, "add", EPH32MemoryAddressing.IMPLIED);
-		add(2, "sub", EPH32MemoryAddressing.IMPLIED);
-		add(3, "inc", EPH32MemoryAddressing.IMPLIED);
-		add(4, "dec", EPH32MemoryAddressing.IMPLIED);
-		add(5, "swp", EPH32MemoryAddressing.IMPLIED);
-		add(6, "setab", EPH32MemoryAddressing.IMPLIED);
-		add(8, "seta", EPH32MemoryAddressing.IMMEDIATE);
-		add(9, "setb", EPH32MemoryAddressing.IMMEDIATE);
-		add(10, "fire", EPH32MemoryAddressing.IMPLIED);
-		add(15, "scan", EPH32MemoryAddressing.IMPLIED);
-		add(16, "lock", EPH32MemoryAddressing.IMPLIED);
-		add(20, "rnd", EPH32MemoryAddressing.IMMEDIATE);
-		add(21, "rndb", EPH32MemoryAddressing.IMPLIED);
-		add(30, "posx", EPH32MemoryAddressing.IMPLIED);
-		add(31, "posy", EPH32MemoryAddressing.IMPLIED);
-		add(32, "move", EPH32MemoryAddressing.IMPLIED);
-		add(40, "setmp", EPH32MemoryAddressing.IMPLIED);
-		add(41, "incmp", EPH32MemoryAddressing.IMPLIED);
-		add(42, "decmp", EPH32MemoryAddressing.IMPLIED);
-		add(45, "memsave", EPH32MemoryAddressing.IMPLIED);
-		add(46, "memload", EPH32MemoryAddressing.IMPLIED);
-		add(50, "jmp", EPH32MemoryAddressing.IMMEDIATE);
-		add(51, "jmpz", EPH32MemoryAddressing.IMMEDIATE);
-		add(52, "jmpc", EPH32MemoryAddressing.IMMEDIATE);
-		add(53, "jmpm", EPH32MemoryAddressing.IMMEDIATE);
-		add(54, "jmpl", EPH32MemoryAddressing.IMMEDIATE);
+		add(WAIT, "wait", EPH32MemoryAddressing.IMMEDIATE);
+		add(ADD, "add", EPH32MemoryAddressing.IMPLIED);
+		add(SUB, "sub", EPH32MemoryAddressing.IMPLIED);
+		add(INC, "inc", EPH32MemoryAddressing.IMPLIED);
+		add(DEC, "dec", EPH32MemoryAddressing.IMPLIED);
+		add(SWP, "swp", EPH32MemoryAddressing.IMPLIED);
+		add(SETAB, "setab", EPH32MemoryAddressing.IMPLIED);
+		add(SETA, "seta", EPH32MemoryAddressing.IMMEDIATE);
+		add(SETB, "setb", EPH32MemoryAddressing.IMMEDIATE);
+		add(FIRE, "fire", EPH32MemoryAddressing.IMPLIED);
+		add(SCAN, "scan", EPH32MemoryAddressing.IMPLIED);
+		add(LOCK, "lock", EPH32MemoryAddressing.IMPLIED);
+		add(RND, "rnd", EPH32MemoryAddressing.IMMEDIATE);
+		add(RNDB, "rndb", EPH32MemoryAddressing.IMPLIED);
+		add(POSX, "posx", EPH32MemoryAddressing.IMPLIED);
+		add(POSY, "posy", EPH32MemoryAddressing.IMPLIED);
+		add(MOVE, "move", EPH32MemoryAddressing.IMPLIED);
+		add(SETMP, "setmp", EPH32MemoryAddressing.IMPLIED);
+		add(INCMP, "incmp", EPH32MemoryAddressing.IMPLIED);
+		add(DECMP, "decmp", EPH32MemoryAddressing.IMPLIED);
+		add(MEMSAVE, "memsave", EPH32MemoryAddressing.IMPLIED);
+		add(MEMLOAD, "memload", EPH32MemoryAddressing.IMPLIED);
+		add(JMP, "jmp", EPH32MemoryAddressing.IMMEDIATE);
+		add(JMPZ, "jmpz", EPH32MemoryAddressing.IMMEDIATE);
+		add(JMPC, "jmpc", EPH32MemoryAddressing.IMMEDIATE);
+		add(JMPM, "jmpm", EPH32MemoryAddressing.IMMEDIATE);
+		add(JMPL, "jmpl", EPH32MemoryAddressing.IMMEDIATE);
 	}
 	
 	private void add(int code, String name, EPH32MemoryAddressing ma)
