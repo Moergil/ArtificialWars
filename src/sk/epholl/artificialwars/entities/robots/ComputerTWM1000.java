@@ -91,7 +91,7 @@ public class ComputerTWM1000 extends Computer
 				}
 				else if (i == CS2)
 				{
-					builder.append(" CS");
+					builder.append("CS");
 				}
 		
 				builder.append(bits[i] ? "1" : "0");
@@ -141,6 +141,16 @@ public class ComputerTWM1000 extends Computer
 		byte memoryData[] = memory.getMemory();
 		
 		System.arraycopy(firmware, 0, memoryData, 0, firmware.length);
+	}
+	
+	public byte getMemoryValue(int address)
+	{
+		if (address < 0 || address >= memory.getMemory().length)
+		{
+			return 0;
+		}
+
+		return memory.getMemory()[address];
 	}
 	
 	public MEXTIOChip getIO()

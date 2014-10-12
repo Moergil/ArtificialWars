@@ -86,6 +86,12 @@ public class Eph32BasicRobot extends Entity implements Robot
 	}
 	
 	@Override
+	public int getRobotTypeId()
+	{
+		return StockRobotsId.Eph32BasicRobot;
+	}
+	
+	@Override
 	public void update(Set<Entity> nearbyEntities)
 	{
 		super.update(nearbyEntities);

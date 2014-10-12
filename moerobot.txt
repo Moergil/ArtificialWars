@@ -4,13 +4,13 @@
 ;;;;;;;;;;;;;;;;;;;;;
 
 begin:
-	movement move1 moveLoop1 reverseMove1 finishLabel1
+	movement move1 moveLoop1 reverseMove1 reverseLoopLabel1 finishLabel1
 	quickFire
-	movement move2 moveLoop2 reverseMove2 finishLabel2
+	movement move2 moveLoop2 reverseMove2 reverseLoopLabel1 finishLabel2
 	accurateAddFire
 	jmp begin
 	
-macro movement moveLabel loopLabel reverseLabel finishLabel
+macro movement moveLabel loopLabel reverseLabel reverseLoopLabel finishLabel
 	moveLabel:
 		rnd 8
 		swp
@@ -24,6 +24,8 @@ macro movement moveLabel loopLabel reverseLabel finishLabel
 		seta -30
 		setb 48
 		move
+		reverseLoopLabel:
+			jmpm reverseLoopLabel
 		jmp moveLabel
 	finishLabel:
 /macro

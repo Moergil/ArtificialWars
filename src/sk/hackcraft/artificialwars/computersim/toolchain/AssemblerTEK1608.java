@@ -17,6 +17,9 @@ public class AssemblerTEK1608 extends AbstractAssembler
 		addSegmentIdentifier(Segment.PROGRAM, "PRG");
 		addSegmentIdentifier(Segment.DATA, "DAT");
 
+		// TODO sometimes absolute is used instead of zeropage, because absolute
+		// addressing mode can match the value before zeropage
+		// not acute but should be fixed
 		addMemoryAddressingFormat(TEK1608MemoryAddressing.ACCUMULATOR, "A");
 		addMemoryAddressingFormat(TEK1608MemoryAddressing.ABSOLUTE, "%");
 		addMemoryAddressingFormat(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, "%,X");

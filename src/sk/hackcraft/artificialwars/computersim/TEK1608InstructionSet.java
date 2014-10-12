@@ -141,12 +141,12 @@ public class TEK1608InstructionSet extends InstructionSet
 		// INY increment index Y by one
 		add(0xC8, Name.INY, TEK1608MemoryAddressing.IMPLIED);
 		
-		// JMP jump to setInstruction(0x, new location
+		// JMP jump to address
 		add(0x4C, Name.JMP, TEK1608MemoryAddressing.ABSOLUTE);
 		add(0x6C, Name.JMP, TEK1608MemoryAddressing.INDIRECT);
 		
-		// JSR jump to setInstruction(0x, new location saving return address
-		add(0x20, Name.JSR, TEK1608MemoryAddressing.IMPLIED);
+		// JSR jump to subroutine
+		add(0x20, Name.JSR, TEK1608MemoryAddressing.ABSOLUTE);
 		
 		// LDA load accumulator with memory
 		add(0xA9, Name.LDA, TEK1608MemoryAddressing.IMMEDIATE);
