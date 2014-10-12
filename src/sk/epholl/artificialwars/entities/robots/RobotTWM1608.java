@@ -114,8 +114,6 @@ public class RobotTWM1608 extends Entity implements Robot
 			computer.tick();
 		}
 		
-		//System.out.println(computer.getDisplay());
-		
 		MEXTIOChip io = computer.getIO();
 		
 		updateGun(io);
@@ -134,7 +132,7 @@ public class RobotTWM1608 extends Entity implements Robot
 			
 			bit <<= 1;
 		}
-		
+
 		io.setDetectionSegment(chipDetectionSegment);
 		
 		double excitation = gradientDetector.getExcitation();

@@ -105,9 +105,6 @@ public class ComputerTWM1000 extends Computer
 		// readwrite, address(0-15), data(0-7)
 		bus.connectDevice(processor, new int[]{RW, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, D0, D1, D2, D3, D4, D5, D6, D7});
 		
-		// TODO debug
-		processor.setInstructionListener((pc, opcode) -> System.out.printf("INS: $%04X $%02X %s%n", pc, opcode, TEK1608InstructionSet.getInstance().getOpcode(opcode).getInstructionName()));
-		
 		processorProbe = new ProbeProcessorTEK1608(processor);
 		
 		memory = new MemChip1024();
