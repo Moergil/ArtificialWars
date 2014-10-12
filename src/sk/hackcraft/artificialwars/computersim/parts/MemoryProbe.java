@@ -3,6 +3,8 @@ package sk.hackcraft.artificialwars.computersim.parts;
 import java.util.ArrayList;
 import java.util.List;
 
+import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
+
 public class MemoryProbe
 {
 	private final MemoryChip memory;
@@ -16,12 +18,19 @@ public class MemoryProbe
 	{
 		List<String> output = new ArrayList<String>();
 		
-		StringBuilder b = new StringBuilder();
+		if (len == 0)
+		{
+			output.add("");
+			return output;
+		}
 		
-		// TODO
+		StringBuilder b = new StringBuilder();
+
 		for (int i = 0; i < len; i++)
 		{
-			b.append(memory.readFromChip(i + offset) + " ");
+			b
+			.append(CommonValueFormatter.toHexa2(memory.readFromChip(i + offset)))
+			.append(" ");
 			
 			if (i != 0 && i % lineCount == 0)
 			{

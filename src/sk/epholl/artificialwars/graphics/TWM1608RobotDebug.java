@@ -8,6 +8,8 @@ import sk.epholl.artificialwars.entities.robots.Robot;
 import sk.epholl.artificialwars.entities.robots.RobotTWM1608;
 import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet;
 import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet.TEK1608MemoryAddressing;
+import sk.hackcraft.artificialwars.computersim.Util;
+import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
 import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608.RegisterTEK1608;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 
@@ -61,7 +63,20 @@ public class TWM1608RobotDebug implements RobotDebug
 
 		g2d.drawString(actualInstruction, 500, 15);
 		
-		List<String> memory = computer.getMemoryProbe().getMemory(0, 32, 128);
+		List<String> memory = computer.getMemoryProbe().getMemory(0, 16, 128);
 		g2d.drawString(memory.get(0), 0, 30);
+		
+		int sp = computer.getProcessorProbe().getUnsignedByteValue(RegisterTEK1608.SP);
+		int spOffset = 256 + sp + 1;
+		int spLen = 512 - spOffset;
+		
+		if (spLen > 8)
+		{
+			spLen = 8;
+		}
+		
+		List<String> stackMemory = computer.getMemoryProbe().getMemory(spOffset, spLen, 128);
+		
+		g2d.drawString("SP " + CommonValueFormatter.toHexa2(sp) + ":" + stackMemory.get(0), 500, 30);
 	}
 }

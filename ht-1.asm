@@ -37,8 +37,6 @@ SD_8 = 128
 SD_FR_LEFT = 128
 SD_FR_RIGHT = 1
 
-LDA $00
-
 ; enabling noise
 LDA #FLAG_NOISE
 STA ADDR_FLG_S
