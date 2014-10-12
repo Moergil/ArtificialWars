@@ -6,8 +6,11 @@ import java.util.Random;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 
+import sk.epholl.artificialwars.entities.robots.StockRobotsId;
+import sk.epholl.artificialwars.graphics.Eph32BasicRobotDebug;
 import sk.epholl.artificialwars.graphics.GamePanel;
 import sk.epholl.artificialwars.graphics.MenuPanel;
+import sk.epholl.artificialwars.graphics.TWM1608RobotDebug;
 
 /**
  * @author epholl
@@ -70,6 +73,9 @@ public class MainLogic implements Runnable
 	{
 		GamePanel panel = new GamePanel();
 		panel.setGameLogic(logic, this);
+		
+		panel.addRobotDebug(StockRobotsId.Eph32BasicRobot, new Eph32BasicRobotDebug());
+		panel.addRobotDebug(StockRobotsId.RobotWTM1608, new TWM1608RobotDebug());
 
 		this.setScreenComponent(panel);
 

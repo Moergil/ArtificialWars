@@ -8,6 +8,8 @@ import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JPanel;
 
@@ -16,6 +18,7 @@ import sk.epholl.artificialwars.entities.Explosion;
 import sk.epholl.artificialwars.entities.objectives.Objective;
 import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
 import sk.epholl.artificialwars.entities.robots.Robot;
+import sk.epholl.artificialwars.entities.robots.RobotTWM1608;
 import sk.epholl.artificialwars.logic.GameLogic;
 import sk.epholl.artificialwars.logic.GamePanelInput;
 import sk.epholl.artificialwars.logic.MainLogic;
@@ -29,9 +32,11 @@ public class GamePanel extends JPanel
 	private GamePanelInput input;
 	
 	private Point mousePointer;
-	private Eph32BasicRobot selectedRobot = null;
+	private Robot selectedRobot;
 	
 	private final Font monospace = new Font(Font.MONOSPACED, Font.PLAIN, 12);
+	
+	private final Map<Integer, RobotDebug> robotDebugs = new HashMap<>();
 
 	public GamePanel()
 	{
@@ -102,9 +107,10 @@ public class GamePanel extends JPanel
 			
 			g2d.drawString(formatMousePointer(), 520, 560);
 			
-			Eph32BasicRobot robot = getSelectedRobot();
+			Robot robot = getSelectedRobot();
 			
 			Graphics2D g2d2 = (Graphics2D)g2d.create();
+			g2d2.translate(10, 490);
 			g2d2.setFont(monospace);
 			
 			if (robot == null)
@@ -113,11 +119,7 @@ public class GamePanel extends JPanel
 			}
 			else
 			{
-				String registers = robot.getRegistersString();
-				g2d2.drawString(registers, 520, 517);
-				
-				String line = robot.getActualLine();
-				g2d2.drawString(line, 520, 537);
+				drawRobotDebug(g2d2, robot);
 			}
 			
 			g2d2.dispose();
@@ -130,6 +132,21 @@ public class GamePanel extends JPanel
 
 		Toolkit.getDefaultToolkit().sync();
 		g.dispose();
+	}
+	
+	public void addRobotDebug(int identifier, RobotDebug robotDebug)
+	{
+		robotDebugs.put(identifier, robotDebug);
+	}
+	
+	private void drawRobotDebug(Graphics2D g2d, Robot robot)
+	{
+		RobotDebug robotDebug = robotDebugs.get(robot.getRobotTypeId());
+		
+		if (robotDebug != null)
+		{
+			robotDebug.draw(g2d, robot);
+		}
 	}
 	
 	private MouseAdapter createMouseListener()
@@ -170,7 +187,7 @@ public class GamePanel extends JPanel
 		}
 	}
 	
-	private Eph32BasicRobot getSelectedRobot()
+	private Robot getSelectedRobot()
 	{
 		return selectedRobot;
 	}

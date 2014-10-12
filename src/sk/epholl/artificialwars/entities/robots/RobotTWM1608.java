@@ -45,7 +45,7 @@ public class RobotTWM1608 extends Entity implements Robot
 	private final int GUN_COOLDOWN_TIME = 30;
 	private int actualGunCooldown = 0;
 	
-	private int computerFrequency = 5;
+	private int computerFrequency = 1;
 	
 	private final ComputerTWM1000 computer;
 	
@@ -79,9 +79,20 @@ public class RobotTWM1608 extends Entity implements Robot
 		this.gradientDetector = new GradientDetector(provider, GRADIENT_DETECTOR_ANGLE);
 	}
 	
+	@Override
+	public int getRobotTypeId()
+	{
+		return StockRobotsId.RobotWTM1608;
+	}
+	
 	public void loadFirmware(byte firmware[])
 	{
 		computer.loadFirmware(PROGRAM_OFFSET, firmware);
+	}
+	
+	public ComputerTWM1000 getComputer()
+	{
+		return computer;
 	}
 	
 	@Override
@@ -100,11 +111,6 @@ public class RobotTWM1608 extends Entity implements Robot
 	{
 		for (int i = 0; i < computerFrequency; i++)
 		{
-			System.out.println(computer.getBusProbe());
-			System.out.println(computer.getProcessorProbe());
-			//System.out.println(computer.getIoProbe());
-			System.out.println(computer.getMemoryProbe().getMemory(0x0200, 32, 8));
-			
 			computer.tick();
 		}
 		

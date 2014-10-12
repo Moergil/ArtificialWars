@@ -29,7 +29,11 @@ public class ProcessorTEK1608 implements Device
 		ADDRESS_PINS_START = READWRITE_PIN + 1,
 		ADDRESS_PINS_COUNT = 16,
 		DATA_PINS_START = ADDRESS_PINS_START + ADDRESS_PINS_COUNT,
-		DATA_PINS_COUNT = 8;
+		DATA_PINS_COUNT = 8,
+		RES_PIN = DATA_PINS_START + DATA_PINS_COUNT,
+		NMI_PIN = RES_PIN + 1,
+		IRQ_PIN = NMI_PIN + 1,
+		BRK_PIN = IRQ_PIN + 1;
 	
 	private static final Runnable EmptyRunnable = () -> {};
 	
@@ -473,6 +477,124 @@ public class ProcessorTEK1608 implements Device
 	{
 		memoryAddressingSetups.put(memoryAddressing, steps);
 	}
+	
+	@Override
+	public int getPinsCount()
+	{
+		return 26;
+	}
+	
+	@Override
+	public void update()
+	{
+		tick();
+	}
+	
+	private void tick()
+	{
+		if (currentOperation.isMemoryFinished())
+		{
+			Operation nextOperation;
+			if (currentOperation instanceof LoadInstruction)
+			{
+				int index = Byte.toUnsignedInt((byte)ir);
+				nextOperation = operations[index];
+				
+				// TODO handle illegal instruction
+				if (nextOperation == null)
+				{
+					String data = String.format("PC: %h IR: %h", pc, ir);
+					throw new IllegalStateException("Illegal instruction opcode: " + index + " " + data);
+				}
+				
+				pc += nextOperation.getBytesSize();
+				
+				if (instructionListener != null)
+				{
+					instructionListener.instructionLoaded(pc, index);
+				}
+			}
+			else
+			{
+				Interrupt interrupt = getInterrupt();
+				
+				// process interrupts TODO
+				
+				nextOperation = loadInstruction;
+			}
+			
+			if (!currentOperation.isFinished())
+			{
+				runCurrentOperation();
+			}
+			
+			currentOperation = nextOperation;
+			currentOperation.prepare();
+		}
+		
+		runCurrentOperation();
+	}
+	
+	private Interrupt getInterrupt()
+	{
+		// process interrupts TODO
+		//pins.readPin(RES_PIN);
+		return null;
+	}
+	
+	private void runCurrentOperation()
+	{
+		currentOperation.run();
+	}
+
+	@Override
+	public void setBusConnection(Pins pins)
+	{
+		this.pins = pins;
+	}
+	
+	private void setAddressBus(int address)
+	{
+		PinUtil.codeValue(address, addressBits);
+		pins.setPins(addressIndexes, addressBits);
+	}
+	
+	private void setDataBus(byte data)
+	{
+		PinUtil.codeValue(data, dataBits);
+		pins.setPins(dataIndexes, dataBits);
+	}
+	
+	private void clearDataBus()
+	{
+		setDataBus((byte)0);
+	}
+	
+	private int readDataBus()
+	{
+		pins.readPins(dataIndexes, dataBits);
+		return (int)PinUtil.decodeValue(dataBits);
+	}
+
+	private void setWrite(boolean value)
+	{
+		pins.setPin(READWRITE_PIN, value);
+	}
+	
+	private short getMemorySP()
+	{
+		return (short)(0x0100 | (sp & 0x00FF));
+	}
+	
+	private void incrSP()
+	{
+		sp--;
+	}
+	
+	private void decrSP()
+	{
+		sp++;
+	}
 
 	private void add(byte value)
 	{
@@ -740,113 +862,6 @@ public class ProcessorTEK1608 implements Device
 	private byte storeY()
 	{
 		return y;
-	}
-	
-	@Override
-	public int getPinsCount()
-	{
-		return 26;
-	}
-	
-	@Override
-	public void update()
-	{
-		tick();
-	}
-	
-	private void tick()
-	{
-		if (currentOperation.isMemoryFinished())
-		{
-			Operation nextOperation;
-			if (currentOperation instanceof LoadInstruction)
-			{
-				int index = Byte.toUnsignedInt((byte)ir);
-				nextOperation = operations[index];
-				
-				// TODO handle illegal instruction
-				if (nextOperation == null)
-				{
-					String data = String.format("PC: %h IR: %h", pc, ir);
-					throw new IllegalStateException("Illegal instruction opcode: " + index + " " + data);
-				}
-				
-				pc += nextOperation.getBytesSize();
-				
-				if (instructionListener != null)
-				{
-					instructionListener.instructionLoaded(pc, index);
-				}
-			}
-			else
-			{
-				nextOperation = loadInstruction;
-			}
-			
-			if (!currentOperation.isFinished())
-			{
-				runCurrentOperation();
-			}
-			
-			currentOperation = nextOperation;
-			currentOperation.prepare();
-		}
-		
-		runCurrentOperation();
-	}
-	
-	private void runCurrentOperation()
-	{
-		currentOperation.run();
-	}
-
-	@Override
-	public void setBusConnection(Pins pins)
-	{
-		this.pins = pins;
-	}
-	
-	private void setAddressBus(int address)
-	{
-		PinUtil.codeValue(address, addressBits);
-		pins.setPins(addressIndexes, addressBits);
-	}
-	
-	private void setDataBus(byte data)
-	{
-		PinUtil.codeValue(data, dataBits);
-		pins.setPins(dataIndexes, dataBits);
-	}
-	
-	private void clearDataBus()
-	{
-		setDataBus((byte)0);
-	}
-	
-	private int readDataBus()
-	{
-		pins.readPins(dataIndexes, dataBits);
-		return (int)PinUtil.decodeValue(dataBits);
-	}
-
-	private void setWrite(boolean value)
-	{
-		pins.setPin(READWRITE_PIN, value);
-	}
-	
-	private short getMemorySP()
-	{
-		return (short)(0x0100 | (sp & 0x00FF));
-	}
-	
-	private void incrSP()
-	{
-		sp--;
-	}
-	
-	private void decrSP()
-	{
-		sp++;
 	}
 	
 	private interface Operation extends Runnable
@@ -1513,6 +1528,26 @@ public class ProcessorTEK1608 implements Device
 		public int getBytesSize()
 		{
 			return 1;
+		}
+	}
+	
+	private enum Interrupt
+	{
+		RES(1),
+		NMI(2),
+		IRQ(4),
+		BRK(8);
+		
+		private final int value;
+		
+		private Interrupt(int value)
+		{
+			this.value = value;
+		}
+		
+		public int getValue()
+		{
+			return value;
 		}
 	}
 }

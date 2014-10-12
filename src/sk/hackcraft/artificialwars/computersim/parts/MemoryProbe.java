@@ -30,6 +30,11 @@ public class MemoryProbe
 			}
 		}
 		
+		if (b.length() > 0)
+		{
+			output.add(b.toString());
+		}
+		
 		return output;
 	}
 }

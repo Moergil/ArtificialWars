@@ -197,7 +197,7 @@ public abstract class InstructionSet
 		@Override
 		public int getBytesSize()
 		{
-			return wordsSize / getWordsSize();
+			return wordsSize / getWordBytesSize();
 		}
 		
 		@Override

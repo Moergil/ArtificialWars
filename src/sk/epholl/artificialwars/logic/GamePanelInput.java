@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
+import sk.epholl.artificialwars.entities.robots.Robot;
 import sk.epholl.artificialwars.graphics.GameButton;
 
 public class GamePanelInput
@@ -60,26 +61,18 @@ public class GamePanelInput
 		return buttons;
 	}
 	
-	public Eph32BasicRobot checkRobotClicked(int x, int y)
+	public Robot checkRobotClicked(int x, int y)
 	{
 		Set<Entity> entities = gameLogic.getEntities();
 		
-		Set<Eph32BasicRobot> robots = entities
-				.stream()
-				.filter((entity) -> entity instanceof Eph32BasicRobot)
-				.map((entity) -> (Eph32BasicRobot)entity)
-				.collect(Collectors.toSet());
-
 		Vector2D pointer = new Vector2D(x, y);
 		
-		for (Eph32BasicRobot robot: robots)
-		{
-			if (robot.isCollidingWith(pointer))
-			{
-				return robot;
-			}
-		}
-		
-		return null;
+		return entities
+				.stream()
+				.filter((entity) -> entity instanceof Robot)
+				.filter((entity) -> entity.isCollidingWith(pointer))
+				.map((entity) -> (Robot)entity)
+				.findAny()
+				.orElse(null);
 	}
 }

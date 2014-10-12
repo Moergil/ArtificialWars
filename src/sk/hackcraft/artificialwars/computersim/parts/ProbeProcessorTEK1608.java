@@ -15,7 +15,9 @@ public class ProbeProcessorTEK1608 implements AbstractProcessorProbe<ProbeProces
 		Y(1),
 		SP(1),
 		PC(2),
-		SR(1);
+		SR(1),
+		IR(1),
+		MAR(2);
 		
 		private final int bytesSize;
 		
@@ -51,6 +53,8 @@ public class ProbeProcessorTEK1608 implements AbstractProcessorProbe<ProbeProces
 		formatters.put(RegisterTEK1608.SP, CommonValueFormatter::toHexa2);
 		formatters.put(RegisterTEK1608.PC, CommonValueFormatter::toHexa4);
 		formatters.put(RegisterTEK1608.SR, CommonValueFormatter::toBinary8);
+		formatters.put(RegisterTEK1608.IR, CommonValueFormatter::toHexa2);
+		formatters.put(RegisterTEK1608.MAR, CommonValueFormatter::toHexa4);
 	}
 	
 	public RegisterTEK1608[] getRegisters()
@@ -74,6 +78,10 @@ public class ProbeProcessorTEK1608 implements AbstractProcessorProbe<ProbeProces
 				return processor.pc;
 			case SR:
 				return processor.sr;
+			case IR:
+				return processor.ir;
+			case MAR:
+				return (short)processor.mar;
 			default:
 				throw new IllegalArgumentException("Getting register " + register + " value not supported.");
 		}
@@ -87,6 +95,16 @@ public class ProbeProcessorTEK1608 implements AbstractProcessorProbe<ProbeProces
 	public short getShortValue(RegisterTEK1608 register)
 	{
 		return get(register);
+	}
+	
+	public int getUnsignedByteValue(RegisterTEK1608 register)
+	{
+		return Byte.toUnsignedInt((byte)get(register));
+	}
+	
+	public int getUnsignedShortValue(RegisterTEK1608 register)
+	{
+		return Short.toUnsignedInt(get(register));
 	}
 	
 	public void setValue(RegisterTEK1608 register, int value)
@@ -111,6 +129,11 @@ public class ProbeProcessorTEK1608 implements AbstractProcessorProbe<ProbeProces
 			case SR:
 				processor.sr = (byte)value;
 				break;
+			case IR:
+				processor.ir = (byte)value;
+				break;
+			case MAR:
+				processor.mar = (short)value;
 			default:
 				throw new IllegalArgumentException("Setting register " + register + " value not supported.");
 		}
