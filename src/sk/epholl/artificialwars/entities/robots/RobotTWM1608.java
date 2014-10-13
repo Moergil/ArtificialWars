@@ -60,7 +60,7 @@ public class RobotTWM1608 extends Entity implements Robot
 	private static final double GRADIENT_DETECTOR_DETECTING_THRESHOLD = 1;
 	
 	private static final double MOVE_SPEED = 1;
-	private static final double ROTATION_SPEED = Math.PI / 64;
+	private static final double ROTATION_SPEED = Math.PI / 128;
 	
 	public RobotTWM1608(Color color, int player, GameLogic game, long seed)
 	{
@@ -75,7 +75,9 @@ public class RobotTWM1608 extends Entity implements Robot
 		
 		SpotsProvider provider = new ExterminatorDetectorSpotsProvider();
 		
-		this.segmentDetector = new SegmentDetector(provider, SEGMENT_DETECTOR_SEGMENTS_COUNT, SEGMENT_DETECTOR_DETECTING_THRESHOLD);
+		// TODO debug
+		//this.segmentDetector = new SegmentDetector(provider, SEGMENT_DETECTOR_SEGMENTS_COUNT, SEGMENT_DETECTOR_DETECTING_THRESHOLD);
+		this.segmentDetector = new SegmentDetector(provider, SEGMENT_DETECTOR_SEGMENTS_COUNT, 0);
 		this.gradientDetector = new GradientDetector(provider, GRADIENT_DETECTOR_ANGLE);
 	}
 	
@@ -238,17 +240,6 @@ public class RobotTWM1608 extends Entity implements Robot
 	private boolean isGunReady()
 	{
 		return actualGunCooldown == 0;
-	}
-	
-	@Override
-	public boolean isMoving()
-	{
-		return super.isMoving();
-	}
-	
-	private boolean isRotating()
-	{
-		return false;
 	}
 	
 	private boolean isSegmentDetecting()
