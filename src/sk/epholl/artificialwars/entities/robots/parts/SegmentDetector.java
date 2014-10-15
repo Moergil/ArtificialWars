@@ -8,14 +8,14 @@ public class SegmentDetector implements RobotPart
 {
 	private final SpotsProvider provider;
 	
-	private final boolean segment[];
+	private final double segment[];
 	private final double threshold;
 
 	public SegmentDetector(SpotsProvider provider, int segmentsCount, double threshold)
 	{
 		this.provider = provider;
 		
-		this.segment = new boolean[segmentsCount];
+		this.segment = new double[segmentsCount];
 		this.threshold = threshold;
 	}
 	
@@ -28,7 +28,7 @@ public class SegmentDetector implements RobotPart
 	@Override
 	public void update()
 	{
-		Arrays.fill(segment, false);
+		Arrays.fill(segment, 0);
 		
 		for (DetectorSpot spot : provider.getDetectorSpots())
 		{
@@ -47,7 +47,7 @@ public class SegmentDetector implements RobotPart
 	
 	public boolean isActivated(int index)
 	{
-		return segment[index];
+		return segment[index] > threshold;
 	}
 	
 	private void setValue(double angle, double distance, double width)
@@ -56,7 +56,7 @@ public class SegmentDetector implements RobotPart
 		
 		double value = width / distance;
 
-		segment[index] = value > threshold;
+		segment[index] += value;
 	}
 	
 	private int getIndex(double angle)

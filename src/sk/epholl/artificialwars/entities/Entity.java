@@ -291,6 +291,11 @@ public abstract class Entity
 	{
 		return moveSpeed != 0;
 	}
+	
+	public boolean isRotating()
+	{
+		return rotateSpeed != 0;
+	}
 
 	public void beHit(Projectile shot)
 	{

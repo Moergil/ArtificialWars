@@ -285,7 +285,7 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 			{
 				for (int i = 0; i < operandValues.length; i++)
 				{
-					String operandName = operandNames[i];
+					String operandName = "%" + operandNames[i] + "%";
 					String operandValue = Matcher.quoteReplacement(operandValues[i]);
 
 					macroLine = macroLine.modify((content) -> content.replaceAll(operandName, operandValue));

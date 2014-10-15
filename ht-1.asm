@@ -37,6 +37,14 @@ SD_8 = 128
 SD_FR_LEFT = 128
 SD_FR_RIGHT = 1
 
+SD_LEFT_HALF = 15
+SD_RIGHT_HALF = 240
+
+ADDR_ROTATE_DIRECTION = $10
+
+SKIP_BRANCH = 1
+SKIP_RET = 1
+
 ; enabling noise
 LDA #FLAG_NOISE
 STA ADDR_FLG_S
@@ -44,60 +52,84 @@ STA ADDR_FLG_S
 LDA #5
 STA $00
 
-ROTATION:
-	LDA #0
-	STA $02
-	LDA $00
-	STA ADDR_ORD_ROTH
+JORTS = 1
 
-	LDA #SD_FR_LEFT
-	ORA #SD_FR_RIGHT
-	AND ADDR_DET_SEGM
+FAST_ROTATE_STEP = $10
 
-	BEQ RANDOM_ROT
+TRACKING_SUB:
+	; check if segment detector have some targets
+	LDA ADDR_FLAGS
+	AND #FLAG_DET_SEGM
+	; just wait for targets if nothing is detected
+	BEQ TRACKING_SUB
 
-	LDA #SD_FR_LEFT
-	AND ADDR_DET_SEGM
+	; cache segment value for quicker access from zeropage
+	MOVE ADDR_DET_SEGM $00
 
-	BEQ TURN_RIGHT
-
-	TURN_LEFT:
-	LDA #250
-	JMP STORE_ROT
-
-	TURN_RIGHT:
-	LDA #5
-
-	STORE_ROT:
-	STA $00
-	LDA #10
-	STA $01
-	LDA #1
-	STA $02
-	JMP INITIATE_MOVE
-
-	RANDOM_ROT:
-	LDA ADDR_NOISE
-	AND #%10001111
-	STA $00
-	LDA #20
-	STA $01
-
-	INITIATE_MOVE:
-		LDA $01
+	; this macro will check if segment is excited
+	; and if yes, it will store rotation value
+	; to A and initiate rotation to that value
+	MACRO DET_ROTATION SEGM ROT SKIP_LBL
+		LDA $00
+		AND #%SEGM%
+		BEQ %SKIP_LBL%
+		LDA #%ROT%
+		JMP TRACKING_SUB_ROT_SET
+		%SKIP_LBL%:
+	/MACRO
+	
+	; checking from front segments to back ones
+	DET_ROTATION SD_1 $10 SKIP_1
+	DET_ROTATION SD_8 $F0 SKIP_2
+	DET_ROTATION SD_2 $30 SKIP_3
+	DET_ROTATION SD_7 $D0 SKIP_4
+	DET_ROTATION SD_3 $50 SKIP_5
+	DET_ROTATION SD_6 $B0 SKIP_6
+	DET_ROTATION SD_4 $70 SKIP_7
+	DET_ROTATION SD_5 $90 SKIP_8
+	
+	; no target found, so just loop again
+	JMP TRACKING_SUB
+	
+	; rotate to excited segment direction
+	; HACK also add some noise to precise rotation, more sofisticated later
+	; HACK move a bit to the target, more sofisticated later
+	TRACKING_SUB_ROT_SET:
+		STA ADDR_ORD_ROTH
+		LDA ADDR_NOISE
+		STA ADDR_ORD_ROTL
+		LDA #10
 		STA ADDR_ORD_MOVE
-		JMP MOVING
-
-	MOVING:
+	
+	; wait for rotation end
+	TRACKING_SUB_WHILE_ROT:
 		LDA ADDR_FLAGS
-		AND #FLAG_MOVING
-		BNE MOVING
+		AND #FLAG_ROTATING
+		BNE TRACKING_SUB_WHILE_ROT
 
-	LDA $02
-	BEQ ROTATION ; dont shot if value at $02 is 0
-
+	; suppose that we are now pointing to target,
+	; so just fire one shot if gun is ready
 	LDA #FLAG_ORD_FIRE
 	STA ADDR_FLG_S
 
-JMP ROTATION
-END:
+	JMP TRACKING_SUB
+
+MACRO MOVE FROM TO
+	LDA %FROM%
+	STA %TO%
+/MACRO
+
+MACRO PUSH ADDR
+	LDA %ADDR%
+	PHA
+/MACRO
+
+MACRO POP ADDR
+	PLA
+	STA %ADDR%
+/MACRO
+
+MACRO INF_WAIT
+	INF_WAIT_LOOP:
+	JMP INF_WAIT_LOOP
+/MACRO
