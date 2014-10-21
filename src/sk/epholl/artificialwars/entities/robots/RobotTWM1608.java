@@ -1,6 +1,8 @@
 package sk.epholl.artificialwars.entities.robots;
 
 import java.awt.Color;
+import java.io.IOError;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
@@ -13,39 +15,23 @@ import sk.epholl.artificialwars.entities.robots.parts.DetectorSpot;
 import sk.epholl.artificialwars.entities.robots.parts.GradientDetector;
 import sk.epholl.artificialwars.entities.robots.parts.SegmentDetector;
 import sk.epholl.artificialwars.entities.robots.parts.SpotsProvider;
-import sk.epholl.artificialwars.logic.GameLogic;
+import sk.epholl.artificialwars.logic.Simulation;
 import sk.epholl.artificialwars.logic.Vector2D;
 import sk.epholl.artificialwars.logic.Vector2DMath;
 import sk.hackcraft.artificialwars.computersim.Util;
 import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
+import sk.hackcraft.artificialwars.computersim.parts.ComputerTWM1000;
 import sk.hackcraft.artificialwars.computersim.parts.MEXTIOChip;
 
 public class RobotTWM1608 extends Entity implements Robot
-{
-	public static void main(String[] args) throws Exception
-	{
-		GameLogic game = new GameLogic(0, "");
-		
-		RobotTWM1608 e = new RobotTWM1608(Color.BLACK, 0, game, 0);
-		
-		FirmwareLoader.loadFirmwareExterminator("test.asm", e);
-		//FirmwareLoader.loadFirmwareExterminator("fibonacci.asm", e);
-		
-		for (int i = 0; i < 1000; i++)
-		{
-			e.turn();
-		}
-		
-		System.out.println("end.");
-	}
-	
+{	
 	private final Random random;
 	private int player;
 	private int hitpoints = 5;
 	private final int GUN_COOLDOWN_TIME = 30;
 	private int actualGunCooldown = 0;
 	
-	private int computerFrequency = 1;
+	private int computerFrequency = 10;
 	
 	private final ComputerTWM1000 computer;
 	
@@ -55,14 +41,13 @@ public class RobotTWM1608 extends Entity implements Robot
 	private final GradientDetector gradientDetector;
 	
 	private static final int SEGMENT_DETECTOR_SEGMENTS_COUNT = 8;
-	private static final double SEGMENT_DETECTOR_DETECTING_THRESHOLD = 2.0 / 50;
+	private static final double SEGMENT_DETECTOR_DETECTING_THRESHOLD = 0.1;
 	private static final double GRADIENT_DETECTOR_ANGLE = Math.PI / 2;
-	private static final double GRADIENT_DETECTOR_DETECTING_THRESHOLD = 1;
 	
 	private static final double MOVE_SPEED = 1;
 	private static final double ROTATION_SPEED = Math.PI / 128;
 	
-	public RobotTWM1608(Color color, int player, GameLogic game, long seed)
+	public RobotTWM1608(Color color, int player, Simulation game, long seed)
 	{
 		super(game);
 		
@@ -76,8 +61,7 @@ public class RobotTWM1608 extends Entity implements Robot
 		SpotsProvider provider = new ExterminatorDetectorSpotsProvider();
 		
 		// TODO debug
-		//this.segmentDetector = new SegmentDetector(provider, SEGMENT_DETECTOR_SEGMENTS_COUNT, SEGMENT_DETECTOR_DETECTING_THRESHOLD);
-		this.segmentDetector = new SegmentDetector(provider, SEGMENT_DETECTOR_SEGMENTS_COUNT, 0);
+		this.segmentDetector = new SegmentDetector(provider, SEGMENT_DETECTOR_SEGMENTS_COUNT, SEGMENT_DETECTOR_DETECTING_THRESHOLD);
 		this.gradientDetector = new GradientDetector(provider, GRADIENT_DETECTOR_ANGLE);
 	}
 	
@@ -87,7 +71,8 @@ public class RobotTWM1608 extends Entity implements Robot
 		return StockRobotsId.RobotWTM1608;
 	}
 	
-	public void loadFirmware(byte firmware[])
+	@Override
+	public void setFirmware(byte firmware[]) throws IOException
 	{
 		computer.loadFirmware(PROGRAM_OFFSET, firmware);
 	}
@@ -109,7 +94,7 @@ public class RobotTWM1608 extends Entity implements Robot
 	}
 	
 	@Override
-	public void turn()
+	public void act()
 	{
 		for (int i = 0; i < computerFrequency; i++)
 		{
@@ -171,6 +156,7 @@ public class RobotTWM1608 extends Entity implements Robot
 		io.setFlags(MEXTIOChip.Flag.ROTATING, isRotating());
 		io.setFlags(MEXTIOChip.Flag.DETECTION_SEGMENT, isSegmentDetecting());
 		io.setFlags(MEXTIOChip.Flag.DETECTION_GRADIENT, isGradientDetecting());
+		io.setFlags(MEXTIOChip.Flag.COLLIDING, isColliding());
 	}
 	
 	private void updateCompass(MEXTIOChip io)
@@ -257,7 +243,7 @@ public class RobotTWM1608 extends Entity implements Robot
 	
 	private boolean isGradientDetecting()
 	{
-		return gradientDetector.getExcitation() > GRADIENT_DETECTOR_DETECTING_THRESHOLD;
+		return gradientDetector.getExcitation() > 0;
 	}
 	
 	private void updateGun(MEXTIOChip io)
@@ -350,6 +336,7 @@ public class RobotTWM1608 extends Entity implements Robot
 				}
 				
 				// TODO modify to use detector mechanics, like heat or radar waves
+				// TODO modify this condition to be politically correct
 				if (e.isDestructible())
 				{
 					targets.add(e);
@@ -363,7 +350,7 @@ public class RobotTWM1608 extends Entity implements Robot
 			
 			for (Entity target : targets)
 			{
-				Vector2D targetVector = new Vector2D(robotPosition, target.getCenterPosition());
+				Vector2D targetVector = new Vector2D(robotPosition, target.getCenterPosition()).normalise();
 
 				double relativeRotation = Vector2DMath.getRelativeSignedAngle(robotDirection, targetVector);
 				double distance = target.getDistance(RobotTWM1608.this);

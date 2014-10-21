@@ -3,22 +3,17 @@ package sk.epholl.artificialwars.entities;
 import java.awt.Color;
 
 import sk.epholl.artificialwars.logic.Simulation;
-import sk.epholl.artificialwars.logic.Vector2D;
 
-public class Obstacle extends Entity
+public class Area extends Entity
 {
-	public static final Color DEFAULT_OBSTACLE_COLOR = new Color(200, 150, 150);
-
-	public Obstacle(int x, int y, int width, int height, Simulation game)
+	public Area(Simulation game, int width, int height)
 	{
 		super(game);
 
 		setWidth(width);
 		setHeight(height);
 		
-		setCornerPosition(x, y);
-
-		this.color = DEFAULT_OBSTACLE_COLOR;
+		color = new Color(0, 0.7f, 0.3f, 0.1f);
 	}
 
 	@Override
@@ -36,12 +31,17 @@ public class Obstacle extends Entity
 	@Override
 	public boolean isCollidable()
 	{
-		return true;
+		return false;
 	}
 
 	@Override
 	public boolean isSolid()
 	{
-		return true;
+		return false;
+	}
+	
+	public boolean isInside(Entity entity)
+	{
+		return isCollidingWith(entity, getCenterPosition());
 	}
 }

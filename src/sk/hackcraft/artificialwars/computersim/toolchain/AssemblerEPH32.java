@@ -4,9 +4,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import sk.epholl.artificialwars.entities.instructionsets.EPH32InstructionSet;
-import sk.epholl.artificialwars.entities.instructionsets.EPH32InstructionSet.EPH32MemoryAddressing;
 import sk.hackcraft.artificialwars.computersim.Endianness;
+import sk.hackcraft.artificialwars.computersim.parts.EPH32InstructionSet;
+import sk.hackcraft.artificialwars.computersim.parts.EPH32InstructionSet.EPH32MemoryAddressing;
 
 public class AssemblerEPH32 extends AbstractAssembler
 {

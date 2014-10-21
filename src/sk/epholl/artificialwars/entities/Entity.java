@@ -4,7 +4,7 @@ import java.awt.Color;
 import java.util.HashSet;
 import java.util.Set;
 
-import sk.epholl.artificialwars.logic.GameLogic;
+import sk.epholl.artificialwars.logic.Simulation;
 import sk.epholl.artificialwars.logic.Vector2D;
 
 // TODO passive and active entities, like movement and collision checkings
@@ -14,7 +14,7 @@ public abstract class Entity
 
 	private double moveSpeed, rotateSpeed;
 
-	protected final GameLogic game;
+	protected final Simulation game;
 
 	protected Color color = Color.BLACK;
 	private int width = 10;
@@ -23,7 +23,7 @@ public abstract class Entity
 	private boolean colliding = false;
 	private boolean destroyed = false;
 
-	public Entity(GameLogic game)
+	public Entity(Simulation game)
 	{
 		this.centerPosition = Vector2D.ORIGIN;
 		this.direction = Vector2D.NORTH;
@@ -98,7 +98,7 @@ public abstract class Entity
 	{
 	}
 
-	public void turn()
+	public void act()
 	{
 	}
 	
@@ -111,6 +111,11 @@ public abstract class Entity
 	private Set<Entity> getCollisions(Vector2D centerPosition, Set<Entity> entities)
 	{
 		Set<Entity> collidingEntities = new HashSet<>();
+		
+		if (!isCollidable())
+		{
+			return collidingEntities;
+		}
 		
 		for (Entity collisionEntity : entities)
 		{
@@ -194,7 +199,7 @@ public abstract class Entity
 		return color;
 	}
 
-	public GameLogic getGame()
+	public Simulation getGame()
 	{
 		return game;
 	}
@@ -225,12 +230,7 @@ public abstract class Entity
 	}
 
 	public boolean isCollidingWith(Entity e, Vector2D centerPosition)
-	{
-		if (!e.isCollidable())
-		{
-			return false;
-		}
-		
+	{		
 		double halfWidth = width / 2;
 		double halfHeight = height / 2;
 		

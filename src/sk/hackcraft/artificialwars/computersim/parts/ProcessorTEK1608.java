@@ -9,8 +9,7 @@ import jdk.nashorn.internal.ir.visitor.NodeOperatorVisitor;
 import sk.hackcraft.artificialwars.computersim.Device;
 import sk.hackcraft.artificialwars.computersim.PinUtil;
 import sk.hackcraft.artificialwars.computersim.Pins;
-import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet;
-import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet.TEK1608MemoryAddressing;
+import sk.hackcraft.artificialwars.computersim.parts.TEK1608InstructionSet.TEK1608MemoryAddressing;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.MemoryAddressing;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.Opcode;
@@ -235,7 +234,7 @@ public class ProcessorTEK1608 implements Device
 		setInitialInstruction(0x10, (ma) -> new JumpWhen(Flag.NEGATIVE, false));
 		
 		// BRK force break TODO
-		//null,
+		setInitialInstruction(0x00, (ma) -> new Break());
 		
 		// BVC branch on overflow clear
 		setInitialInstruction(0x50, (ma) -> new JumpWhen(Flag.OVERFLOW, false));
@@ -507,7 +506,7 @@ public class ProcessorTEK1608 implements Device
 					throw new IllegalStateException("Illegal instruction opcode: " + index + " " + data);
 				}
 				
-				pc += nextOperation.getBytesSize();
+				pc += instructionSet.getOpcode(index).getBytesSize();
 				
 				if (instructionListener != null)
 				{
@@ -866,8 +865,6 @@ public class ProcessorTEK1608 implements Device
 	
 	private interface Operation extends Runnable
 	{
-		int getBytesSize();
-		
 		void prepare();
 		
 		boolean isMemoryFinished();
@@ -876,8 +873,6 @@ public class ProcessorTEK1608 implements Device
 	
 	private abstract class AbstractOperation implements Operation
 	{
-		private final int bytesSize;
-		
 		private final Runnable[] addressSteps, executionSteps;
 		
 		private Runnable[] activeSteps;
@@ -888,8 +883,6 @@ public class ProcessorTEK1608 implements Device
 		
 		public AbstractOperation(MemoryAddressing memoryAddressing)
 		{
-			this.bytesSize = memoryAddressing.getOperandsWordsSize() + 1;
-			
 			this.addressSteps = memoryAddressingSetups.get(memoryAddressing);
 
 			StepsBuilder builder = new StepsBuilder();
@@ -900,11 +893,6 @@ public class ProcessorTEK1608 implements Device
 			steps = addressSteps.length + executionSteps.length;
 			
 			prepareActiveSteps();
-		}
-
-		public int getBytesSize()
-		{
-			return bytesSize;
 		}
 		
 		public void prepare()
@@ -1002,12 +990,6 @@ public class ProcessorTEK1608 implements Device
 		public void run()
 		{
 			steps[step++].run();
-		}
-
-		@Override
-		public int getBytesSize()
-		{
-			return 0;
 		}
 
 		@Override
@@ -1136,12 +1118,6 @@ public class ProcessorTEK1608 implements Device
 		{
 			super(transfer);
 		}
-		
-		@Override
-		public int getBytesSize()
-		{
-			return 1;
-		}
 	}
 	
 	private class ModifyRegister extends OneTickRunnableOperation
@@ -1149,12 +1125,6 @@ public class ProcessorTEK1608 implements Device
 		public ModifyRegister(Runnable modifier)
 		{
 			super(modifier);
-		}
-		
-		@Override
-		public int getBytesSize()
-		{
-			return 1;
 		}
 	}
 	
@@ -1173,12 +1143,6 @@ public class ProcessorTEK1608 implements Device
 		public void run()
 		{
 			setFlag(flag, value);
-		}
-		
-		@Override
-		public int getBytesSize()
-		{
-			return 1;
 		}
 	}
 	
@@ -1263,12 +1227,6 @@ public class ProcessorTEK1608 implements Device
 		}
 
 		@Override
-		public int getBytesSize()
-		{
-			return 2;
-		}
-
-		@Override
 		public void prepare()
 		{
 		}
@@ -1337,12 +1295,6 @@ public class ProcessorTEK1608 implements Device
 		public void run()
 		{
 			steps[step++].run();
-		}
-
-		@Override
-		public int getBytesSize()
-		{
-			return bytesSize;
 		}
 
 		@Override
@@ -1469,12 +1421,6 @@ public class ProcessorTEK1608 implements Device
 		}
 
 		@Override
-		public int getBytesSize()
-		{
-			return bytesSize;
-		}
-
-		@Override
 		public void prepare()
 		{
 			step = 0;
@@ -1524,10 +1470,14 @@ public class ProcessorTEK1608 implements Device
 	
 	private class NoOperation extends OneTickOperation
 	{
-		@Override
-		public int getBytesSize()
+	}
+	
+	private class Break extends OneTickOperation
+	{
+		public void run()
 		{
-			return 1;
+			// TODO
+			//System.out.println("Break!");
 		}
 	}
 	

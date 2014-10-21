@@ -4,10 +4,11 @@ import java.awt.Color;
 import java.util.Set;
 
 import sk.epholl.artificialwars.entities.Entity;
-import sk.epholl.artificialwars.logic.GameLogic;
+import sk.epholl.artificialwars.logic.Simulation;
+import sk.epholl.artificialwars.logic.Updateable;
 import sk.epholl.artificialwars.logic.Vector2D;
 
-public abstract class Objective extends Entity
+public abstract class Objective
 {
 	public enum State
 	{
@@ -15,61 +16,58 @@ public abstract class Objective extends Entity
 		SUCCESS,
 		FAIL;
 	}
+	
+	@FunctionalInterface
+	public interface StateChangedListener
+	{
+		void stateChanged(State newState);
+	}
+	
+	public interface Evaluator
+	{
+		State evaluate();
+	}
 
-	public static final Color DEFAULT_OBJECTIVE_COLOR = new Color(128, 200, 128, 32);
+	private State state = State.IN_PROGRESS;
+	
+	private String description = "";
+	
+	private Evaluator evaluator;
+	private StateChangedListener stateChangedListener;
+	
+	public void setStateChangedListener(StateChangedListener stateChangedListener)
+	{
+		this.stateChangedListener = stateChangedListener;
+	}
+	
+	public void setDescription(String description)
+	{
+		this.description = description;
+	}
+	
+	public String getDescription()
+	{
+		return description;
+	}
+	
+	public void setEvaluator(Evaluator evaluator)
+	{
+		this.evaluator = evaluator;
+	}
 
-	private State state;
-
-	public Objective(GameLogic game)
+	public void check()
 	{
-		super(game);
-
-		this.color = DEFAULT_OBJECTIVE_COLOR;
-		
-		state = State.IN_PROGRESS;
-	}
-	
-	public abstract String getDescription();
-	
-	@Override
-	public boolean isSolid()
-	{
-		return false;
-	}
-	
-	@Override
-	public boolean isDestructible()
-	{
-		return false;
-	}
-	
-	@Override
-	public boolean isCollidable()
-	{
-		return false;
-	}
-	
-	@Override
-	public boolean hasPlayer()
-	{
-		return false;
-	}
-	
-	@Deprecated
-	/*
-	 * Rework so objectives will not be entities, but they will use special entities for collisions and such
-	 */
-	public abstract boolean isPhysical();
-	
-	@Override
-	public void update(Set<Entity> nearbyEntities)
-	{
-		super.update(nearbyEntities);
-		
-		state = evaluate(game);
-		if (state != State.IN_PROGRESS)
+		if (evaluator == null)
 		{
-			game.objectiveReached(this);
+			return;
+		}
+
+		State newState = evaluator.evaluate();
+		
+		if (newState != state)
+		{
+			state = newState;
+			stateChangedListener.stateChanged(newState);
 		}
 	}
 	
@@ -77,12 +75,10 @@ public abstract class Objective extends Entity
 	{
 		return state;
 	}
-	
-	protected abstract State evaluate(GameLogic game);
 
 	@Override
 	public String toString()
 	{
-		return getDescription();
+		return "Objective: " + description;
 	}
 }

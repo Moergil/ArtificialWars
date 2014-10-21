@@ -3,19 +3,19 @@ package sk.epholl.artificialwars.entities;
 import java.awt.Color;
 import java.util.Set;
 
-import sk.epholl.artificialwars.logic.GameLogic;
+import sk.epholl.artificialwars.logic.Simulation;
 import sk.epholl.artificialwars.logic.Vector2D;
 
 public class Explosion extends Doodad
 {
-	public static final Explosion create(GameLogic game, Vector2D position)
+	public static final Explosion create(Simulation game, Vector2D position)
 	{
 		return create(game, position, Vector2D.ORIGIN, 0);
 	}
 	
 	private final int cascade;
 	
-	public static final Explosion create(GameLogic game, Vector2D position, Vector2D direction, double moveSpeed)
+	public static final Explosion create(Simulation game, Vector2D position, Vector2D direction, double moveSpeed)
 	{
 		Explosion explosion = new Explosion(game, 1);
 		explosion.setMoveSpeed(moveSpeed);
@@ -25,7 +25,7 @@ public class Explosion extends Doodad
 		return explosion;
 	}
 	
-	public Explosion(GameLogic game, int cascade)
+	public Explosion(Simulation game, int cascade)
 	{
 		super(game, new Color(255, 0, 0, 100), 3 * cascade);
 		

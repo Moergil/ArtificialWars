@@ -12,11 +12,24 @@ import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.CodeSynta
 import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.ProgramException;
 import sk.hackcraft.artificialwars.computersim.toolchain.Preprocessor;
 
-public class FirmwareLoader
+public class FirmwareCompiler
 {
-	public static void loadFirmwareRobot(String fileName, Eph32BasicRobot robot) throws ProgramException, IOException
+	public static byte[] compileFirmware(String robotType, String firmwareFileName) throws ProgramException, IOException
 	{
-		System.out.println("Loading " + fileName);
+		switch (robotType)
+		{
+			case "eph32":
+				return compileEph32(firmwareFileName);
+			case "twm1608":
+				return compileTWM1608(firmwareFileName);
+			default:
+				throw new IllegalArgumentException(robotType + " is not known.");
+		}
+	}
+	
+	private static byte[] compileEph32(String firmwareFileName) throws ProgramException, IOException
+	{
+		System.out.println("Loading " + firmwareFileName);
 		
 		Preprocessor preprocessor = new Preprocessor(";", "macro", "/macro");
 		
@@ -28,7 +41,7 @@ public class FirmwareLoader
 		
 		AssemblerEPH32 assembler = new AssemblerEPH32(programSegmentStartAddress, dataSegmentStartAddress, programMemorySize, dataMemorySize);
 		
-		try (InputStream input = new FileInputStream(fileName);)
+		try (InputStream input = new FileInputStream(firmwareFileName);)
 		{
 			ByteArrayOutputStream preprocessorOutput = new ByteArrayOutputStream();
 			preprocessor.process(input, preprocessorOutput);
@@ -37,19 +50,18 @@ public class FirmwareLoader
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
 			assembler.process(assemblerInput, output);
 			
-			byte firmware[] = output.toByteArray();
-			robot.loadFirmware(firmware, 0);
+			return output.toByteArray();
 		}
 	}
 	
-	public static void loadFirmwareExterminator(String firmwareFile, RobotTWM1608 exterminator) throws ProgramException, IOException
+	public static byte[] compileTWM1608(String firmwareFileName) throws ProgramException, IOException
 	{
-		System.out.println("Loading " + firmwareFile);
+		System.out.println("Loading " + firmwareFileName);
 		
 		Preprocessor preprocessor = new Preprocessor(";", "MACRO", "/MACRO");
 		AssemblerTEK1608 assembler = new AssemblerTEK1608();
 		
-		try (InputStream input = new FileInputStream(firmwareFile);)
+		try (InputStream input = new FileInputStream(firmwareFileName);)
 		{
 			ByteArrayOutputStream preprocessorOutput = new ByteArrayOutputStream();
 			preprocessor.process(input, preprocessorOutput);
@@ -58,8 +70,7 @@ public class FirmwareLoader
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
 			assembler.process(assemblerInput, output);
 			
-			byte objectCode[] = output.toByteArray();
-			exterminator.loadFirmware(objectCode);
+			return output.toByteArray();
 		}
 	}
 }

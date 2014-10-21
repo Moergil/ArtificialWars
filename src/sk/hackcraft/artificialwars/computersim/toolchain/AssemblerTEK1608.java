@@ -4,9 +4,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 
+
 import sk.hackcraft.artificialwars.computersim.Endianness;
-import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet;
-import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet.TEK1608MemoryAddressing;
+import sk.hackcraft.artificialwars.computersim.parts.TEK1608InstructionSet;
+import sk.hackcraft.artificialwars.computersim.parts.TEK1608InstructionSet.TEK1608MemoryAddressing;
 
 public class AssemblerTEK1608 extends AbstractAssembler
 {	

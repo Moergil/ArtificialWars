@@ -1,4 +1,4 @@
-package sk.epholl.artificialwars.entities.instructionsets;
+package sk.hackcraft.artificialwars.computersim.parts;
 
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 

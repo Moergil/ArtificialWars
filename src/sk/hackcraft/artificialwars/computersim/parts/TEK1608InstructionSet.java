@@ -1,4 +1,4 @@
-package sk.hackcraft.artificialwars.computersim;
+package sk.hackcraft.artificialwars.computersim.parts;
 
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 
@@ -67,7 +67,7 @@ public class TEK1608InstructionSet extends InstructionSet
 		add(0x10, Name.BPL, TEK1608MemoryAddressing.RELATIVE);
 		
 		// BRK force break
-		// TODO,
+		add(0x00, Name.BRK, TEK1608MemoryAddressing.IMPLIED);
 		
 		// BVC branch on overflow clear
 		add(0x50, Name.BVC, TEK1608MemoryAddressing.RELATIVE);

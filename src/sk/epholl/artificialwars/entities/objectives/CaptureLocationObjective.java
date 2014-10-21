@@ -3,40 +3,32 @@ package sk.epholl.artificialwars.entities.objectives;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import sk.epholl.artificialwars.entities.Area;
 import sk.epholl.artificialwars.entities.Entity;
-import sk.epholl.artificialwars.logic.GameLogic;
+import sk.epholl.artificialwars.logic.Simulation;
 
 public class CaptureLocationObjective extends Objective
 {
 	private final int playerId, amount;
+	private final Area area;
 	
-	public CaptureLocationObjective(GameLogic game, int playerId, int amount)
+	public CaptureLocationObjective(Simulation game, int playerId, int amount, Area area)
 	{
-		super(game);
-
 		this.playerId = playerId;
 		this.amount = amount;
+		this.area = area;
+		
+		setDescription(String.format("Command at least %d units in target location.", amount));
+		
+		setEvaluator(() -> evaluate(game));
 	}
-	
-	@Override
-	public String getDescription()
-	{
-		return String.format("Command at least %d units in target location.", amount);
-	}
-	
-	@Override
-	public boolean isPhysical()
-	{
-		return true;
-	}
-	
-	@Override
-	protected State evaluate(GameLogic game)
+
+	protected State evaluate(Simulation game)
 	{
 		int count = (int)game.getEntities()
 				.stream()
 				.filter((entity) -> entity.hasPlayer() && entity.getPlayer() == playerId)
-				.filter((entity) -> this.isCollidingWith(entity, getCenterPosition()))
+				.filter((entity) -> area.isCollidingWith(entity, area.getCenterPosition()))
 				.count();
 		
 		if (count >= amount)

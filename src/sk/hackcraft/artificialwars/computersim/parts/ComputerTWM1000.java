@@ -1,18 +1,13 @@
-package sk.epholl.artificialwars.entities.robots;
+package sk.hackcraft.artificialwars.computersim.parts;
 
 import sk.hackcraft.artificialwars.computersim.Bus;
 import sk.hackcraft.artificialwars.computersim.Computer;
-import sk.hackcraft.artificialwars.computersim.TEK1608InstructionSet;
-import sk.hackcraft.artificialwars.computersim.parts.BusProbe;
-import sk.hackcraft.artificialwars.computersim.parts.MEXTIOChip;
-import sk.hackcraft.artificialwars.computersim.parts.MemChip1024;
-import sk.hackcraft.artificialwars.computersim.parts.MemoryProbe;
-import sk.hackcraft.artificialwars.computersim.parts.ProbeMEXTIOChip;
-import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608;
+import sk.hackcraft.artificialwars.computersim.PinUtil;
+import sk.hackcraft.artificialwars.computersim.Util;
 import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608.RegisterTEK1608;
-import sk.hackcraft.artificialwars.computersim.parts.ProcessorTEK1608;
-import sk.hackcraft.artificialwars.computersim.parts.TextLineDisplay;
 
+// TODO remap IO from $0400 to $4000
+// TODO add another memchip as 1kB is starting to be not sufficient enough
 public class ComputerTWM1000 extends Computer
 {
 	public static final int

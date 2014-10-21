@@ -3,7 +3,7 @@ package sk.epholl.artificialwars.entities;
 import java.awt.Color;
 import java.util.Set;
 
-import sk.epholl.artificialwars.logic.GameLogic;
+import sk.epholl.artificialwars.logic.Simulation;
 import sk.epholl.artificialwars.logic.Vector2D;
 
 /**
@@ -15,7 +15,7 @@ public class Doodad extends Entity
 
 	private int doodadDuration;
 
-	public Doodad(GameLogic game, Color color, int size)
+	public Doodad(Simulation game, Color color, int size)
 	{
 		super(game);
 		this.color = color;

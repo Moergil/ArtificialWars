@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 
+// TODO add support for macros inside macros; some tree based priority processing
 public class Preprocessor extends CodeProcessor<CodeProcessorState>
 {
 	private String lineComment;

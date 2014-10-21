@@ -15,10 +15,10 @@ import sk.epholl.artificialwars.entities.Doodad;
 import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Explosion;
 import sk.epholl.artificialwars.entities.Projectile;
-import sk.epholl.artificialwars.entities.instructionsets.EPH32InstructionSet;
-import sk.epholl.artificialwars.logic.GameLogic;
+import sk.epholl.artificialwars.logic.Simulation;
 import sk.epholl.artificialwars.logic.Vector2D;
 import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
+import sk.hackcraft.artificialwars.computersim.parts.EPH32InstructionSet;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 
 /**
@@ -55,13 +55,14 @@ public class Eph32BasicRobot extends Entity implements Robot
 	private int rotateTicks;
 
 	/*
+	 * TODO
 	 * Takze, potrebujeme:
 	 * Move instrukcia, ktora zapne a vypne pohyb.
 	 * 
 	 * Rotate instrukcia: nejako nastavit rotaciu. Smer, bud instantne, alebo postupne.
 	 */
 	
-	public Eph32BasicRobot(Color color, int player, GameLogic game)
+	public Eph32BasicRobot(Color color, int player, Simulation game)
 	{
 		super(game);
 		
@@ -121,7 +122,7 @@ public class Eph32BasicRobot extends Entity implements Robot
 	}
 
 	@Override
-	public void turn()
+	public void act()
 	{
 		if (!instructionCooldownDone())
 		{
@@ -440,7 +441,8 @@ public class Eph32BasicRobot extends Entity implements Robot
 		parameterMemory[pointer] = parameter;
 	}
 	
-	public void loadFirmware(byte[] firmware, int offset) throws IOException
+	@Override
+	public void setFirmware(byte[] firmware) throws IOException
 	{
 		ByteArrayInputStream bais = new ByteArrayInputStream(firmware);
 		DataInput input = new DataInputStream(bais);
@@ -453,8 +455,8 @@ public class Eph32BasicRobot extends Entity implements Robot
 			int instruction = input.readInt();
 			int parameter = input.readInt();
 			
-			instructionMemory[i + offset] = instruction;
-			parameterMemory[i + offset] = parameter;
+			instructionMemory[i] = instruction;
+			parameterMemory[i] = parameter;
 		}
 		
 		for (int i = 0; i < dataSize; i++)

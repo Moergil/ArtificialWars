@@ -48,7 +48,8 @@ public class MEXTIOChip extends MemoryChip
 			DETECTION_SEGMENT = 8, // enemy detected on segments
 			DETECTION_GRADIENT = 16, // enemy detected on gradient
 			FIRE_ORDER = 32, // fire order. cleared after firing
-			NOISE = 64; // if true, noise is regenerated, stays on the same value otherwise
+			NOISE = 64, // if true, noise is regenerated, stays on the same value otherwise
+			COLLIDING = (byte)128; // true if robot is colliding (can't move to order direction), false otherwise
 	}
 	
 	private static final byte flagsWriteMask = Flag.FIRE_ORDER | Flag.NOISE;

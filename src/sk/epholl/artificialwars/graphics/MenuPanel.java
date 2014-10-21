@@ -11,8 +11,8 @@ import java.util.Set;
 
 import javax.swing.JPanel;
 
-import sk.epholl.artificialwars.entities.instructionsets.EPH32InstructionSet;
 import sk.epholl.artificialwars.logic.MainLogic;
+import sk.hackcraft.artificialwars.computersim.parts.EPH32InstructionSet;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.Instruction;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.MemoryAddressing;
 
@@ -38,7 +38,7 @@ public class MenuPanel extends JPanel
 			int down = up + height;
 
 			MenuButton button = new MenuButton(left, right, up, down, text);
-			button.setActivationListener(() -> mainLogic.loadLevel(text + ".txt"));
+			button.setActivationListener(() -> mainLogic.createGame(text + ".txt"));
 			buttons.add(button);
 			
 			y = down + spacing;

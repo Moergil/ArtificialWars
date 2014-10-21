@@ -1,32 +1,21 @@
 package sk.epholl.artificialwars.entities.objectives;
 
-import sk.epholl.artificialwars.logic.GameLogic;
+import sk.epholl.artificialwars.logic.Simulation;
 
 public class DestroyEnemyObjective extends Objective
 {
 	private final int enemyPlayerId;
 	
-	public DestroyEnemyObjective(GameLogic game, int playerId)
+	public DestroyEnemyObjective(Simulation game, int playerId)
 	{
-		super(game);
-		
 		this.enemyPlayerId = playerId;
+		
+		setDescription("Destroy all enemy robots.");
+		
+		setEvaluator(() -> evaluate(game));
 	}
 
-	@Override
-	public String getDescription()
-	{
-		return String.format("Kill all enemy units.");
-	}
-	
-	@Override
-	public boolean isPhysical()
-	{
-		return false;
-	}
-
-	@Override
-	protected State evaluate(GameLogic game)
+	protected State evaluate(Simulation game)
 	{
 		long count = game.getEntities()
 				.stream()

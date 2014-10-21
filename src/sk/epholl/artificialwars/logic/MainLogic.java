@@ -1,6 +1,9 @@
 package sk.epholl.artificialwars.logic;
 
 import java.awt.Container;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.util.Random;
 
 import javax.swing.JComponent;
@@ -19,11 +22,20 @@ public class MainLogic implements Runnable
 {
 	private JFrame gameWindow;
 
-	public MainLogic()
+	private WindowListener windowListener;
+	
+	public MainLogic(String levelName)
 	{
 		gameWindow = createGameWindow();
 
-		showMenu();
+		if (levelName == null)
+		{
+			showMenu();
+		}
+		else
+		{
+			createGame(levelName);
+		}
 	}
 
 	private JFrame createGameWindow()
@@ -37,6 +49,14 @@ public class MainLogic implements Runnable
 
 		return frame;
 	}
+	
+	private void setWindowListener(WindowListener listener)
+	{
+		gameWindow.removeWindowListener(windowListener);
+		
+		this.windowListener = listener;
+		gameWindow.addWindowListener(listener);
+	}
 
 	@Override
 	public void run()
@@ -46,40 +66,33 @@ public class MainLogic implements Runnable
 
 	public void showMenu()
 	{
+		setWindowListener(null);
+		
 		MenuPanel menu = new MenuPanel(this);
 
 		setScreenComponent(menu);
 	}
 
-	public void loadLevel(String name)
+	public void createGame(String levelName)
 	{
-		GameLogic logic = new GameLogic(new Random().nextLong(), name);
-
-		LevelLoader parser = new LevelLoader(logic);
-		
-		try
-		{
-			parser.loadLevel(name);
-		}
-		catch (Exception e)
-		{
-			throw new RuntimeException("Error loading level: ", e);
-		}
-
-		createGame(logic);
-	}
-
-	public void createGame(GameLogic logic)
-	{
-		GamePanel panel = new GamePanel();
-		panel.setGameLogic(logic, this);
+		// TODO
+		long seed = 1;
+		GamePanel panel = new GamePanel(this, levelName, seed);
+		panel.restart();
 		
 		panel.addRobotDebug(StockRobotsId.Eph32BasicRobot, new Eph32BasicRobotDebug());
 		panel.addRobotDebug(StockRobotsId.RobotWTM1608, new TWM1608RobotDebug());
 
 		this.setScreenComponent(panel);
-
-		logic.startGame();
+	
+		setWindowListener(new WindowAdapter()
+		{
+			@Override
+			public void windowClosing(WindowEvent e)
+			{
+				panel.dispose();
+			}
+		});
 	}
 
 	public void setScreenComponent(JComponent struct)

@@ -9,37 +9,38 @@ import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
 import sk.epholl.artificialwars.entities.robots.Robot;
 import sk.epholl.artificialwars.graphics.GameButton;
+import sk.epholl.artificialwars.graphics.GamePanel;
 
 public class GamePanelInput
 {
 	private ArrayList<GameButton> buttons = new ArrayList<GameButton>();
 	
-	private GameLogic gameLogic;
+	private SimulationRunner runner;
 
-	public GamePanelInput(GameLogic game, MainLogic mainLogic)
+	public GamePanelInput(SimulationRunner runner)
 	{
 		GameButton button;
 		
-		this.gameLogic = game;
+		this.runner = runner;
 
 		button = new GameButton(10, 90, 545, 565, "Menu");
-		button.setActivationListener(() -> {game.pauseGame(); mainLogic.showMenu();});
+		button.setActivationListener(() -> runner.dispose());
 		buttons.add(button);
 		
 		button = new GameButton(110, 190, 545, 565, "Reset");
-		button.setActivationListener(() -> mainLogic.loadLevel(game.getLevelName()));
+		button.setActivationListener(() -> runner.restart());
 		buttons.add(button);
 		
 		button = new GameButton(210, 290, 545, 565, "Step");
-		button.setActivationListener(() -> {game.pauseGame(); game.singleStep();});
+		button.setActivationListener(() -> runner.step());
 		buttons.add(button);
-		
+
 		button = new GameButton(310, 390, 545, 565, "Slow");
-		button.setActivationListener(() -> {game.setTimerDelay(40); game.continueGame();});
+		button.setActivationListener(() -> runner.run(100));
 		buttons.add(button);
 		
 		button = new GameButton(410, 490, 545, 565, "Fast");
-		button.setActivationListener(() -> {game.setTimerDelay(5); game.continueGame();});
+		button.setActivationListener(() -> runner.run(1));
 		buttons.add(button);
 	}
 
@@ -63,7 +64,7 @@ public class GamePanelInput
 	
 	public Robot checkRobotClicked(int x, int y)
 	{
-		Set<Entity> entities = gameLogic.getEntities();
+		Set<Entity> entities = runner.getSimulation().getEntities();
 		
 		Vector2D pointer = new Vector2D(x, y);
 		
