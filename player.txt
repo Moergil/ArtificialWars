@@ -1,10 +1,30 @@
-seta 1000
+;seta 1000
+;start:
+;scan
+;lock
+;jmpl firing
+;jmp start
+;firing:
+;fire
+;fire
+;jmp start 
+
+setb 12
+move 2
+seta 1
+
+
 start:
-scan
-lock
-jmpl firing
+rot
+wait 1
+
+sub
+jmpz reset
+add
+
+inc
 jmp start
-firing:
-fire
-fire
-jmp start 
+
+reset:
+seta 1
+jmp start

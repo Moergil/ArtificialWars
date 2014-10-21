@@ -15,6 +15,7 @@ import sk.epholl.artificialwars.entities.Doodad;
 import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Explosion;
 import sk.epholl.artificialwars.entities.Projectile;
+import sk.epholl.artificialwars.entities.instructionsets.EPH32DirectionVector;
 import sk.epholl.artificialwars.logic.Simulation;
 import sk.epholl.artificialwars.logic.Vector2D;
 import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
@@ -50,9 +51,6 @@ public class Eph32BasicRobot extends Entity implements Robot
 	private int instructionCooldown;
 	
 	private final double MOVE_SPEED = 1, ROTATION_SPEED = Math.PI / 64;
-	
-	private int moveTicks;
-	private int rotateTicks;
 
 	/*
 	 * TODO
@@ -100,24 +98,6 @@ public class Eph32BasicRobot extends Entity implements Robot
 		if (hitpoints <= 0)
 		{
 			destroy();
-		}
-
-		if (moveTicks == 0)
-		{
-			setMoveSpeed(0);
-		}
-		else
-		{
-			moveTicks--;
-		}
-		
-		if (rotateTicks == 0)
-		{
-			setRotateSpeed(0);
-		}
-		else
-		{
-			rotateTicks--;
 		}
 	}
 
@@ -279,8 +259,18 @@ public class Eph32BasicRobot extends Entity implements Robot
 			}
 			case EPH32InstructionSet.MOVE:
 			{
-				// set movement, A is distance, B is relative signed angle
-				setMovementTo(regA, regB);
+				if (parameter < -1 || parameter > 2)
+					selfDestruct();
+				else
+					setMoveSpeed((double)parameter /2d);
+				break;
+			}
+			case EPH32InstructionSet.ROT:
+			{
+				if (regA < 1 || regA > 12)
+					selfDestruct();
+				else
+					setRotation(regA);
 				break;
 			}
 			case EPH32InstructionSet.SETMP:
@@ -385,7 +375,7 @@ public class Eph32BasicRobot extends Entity implements Robot
 			}
 			case EPH32InstructionSet.WAIT:
 			{
-				instructionCooldown = 2 + parameterMemory[instructionPointer] * 10;
+				instructionCooldown = parameterMemory[instructionPointer];
 				break;
 			}
 			case EPH32InstructionSet.FIRE:
@@ -465,13 +455,10 @@ public class Eph32BasicRobot extends Entity implements Robot
 		}
 	}
 	
-	private void setMovementTo(int moveTicks, int rotateTicks)
+	private void setRotation(int directionOClock)
 	{
-		setMoveSpeed(MOVE_SPEED * (int)Math.signum(moveTicks));
-		setRotateSpeed(ROTATION_SPEED * (int)Math.signum(rotateTicks) * -1);
-		
-		this.moveTicks = Math.abs(moveTicks);
-		this.rotateTicks = Math.abs(rotateTicks);
+		Vector2D clockVector = EPH32DirectionVector.getClockDirection(directionOClock).getVector();
+		setDirection(clockVector);
 	}
 
 	@Override

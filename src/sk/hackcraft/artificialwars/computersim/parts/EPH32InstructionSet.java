@@ -22,6 +22,7 @@ public class EPH32InstructionSet extends InstructionSet
 	public static final int POSX = 30;
 	public static final int POSY = 31;
 	public static final int MOVE = 32;
+	public static final int ROT = 33;
 	public static final int SETMP = 40;
 	public static final int INCMP = 41;
 	public static final int DECMP = 42;
@@ -76,7 +77,8 @@ public class EPH32InstructionSet extends InstructionSet
 		add(RNDB, "rndb", EPH32MemoryAddressing.IMPLIED);
 		add(POSX, "posx", EPH32MemoryAddressing.IMPLIED);
 		add(POSY, "posy", EPH32MemoryAddressing.IMPLIED);
-		add(MOVE, "move", EPH32MemoryAddressing.IMPLIED);
+		add(MOVE, "move", EPH32MemoryAddressing.IMMEDIATE);
+		add(ROT, "rot", EPH32MemoryAddressing.IMPLIED);
 		add(SETMP, "setmp", EPH32MemoryAddressing.IMPLIED);
 		add(INCMP, "incmp", EPH32MemoryAddressing.IMPLIED);
 		add(DECMP, "decmp", EPH32MemoryAddressing.IMPLIED);

@@ -1,9 +1,0 @@
-start:
-scan
-lock
-jmpl firing
-jmp start
-firing:
-fire
-fire
-jmp start 
