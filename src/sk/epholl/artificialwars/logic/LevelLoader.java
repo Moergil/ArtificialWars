@@ -187,7 +187,7 @@ public class LevelLoader
 			{
 				int player = scanner.nextInt();
 				
-				Objective objective = new DestroyEnemyObjective(logic, player);
+				Objective objective = new DestroyEnemyObjective(player);
 				logic.addObjective(objective);
 				
 				break;

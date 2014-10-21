@@ -14,16 +14,15 @@ public class CaptureLocationObjective extends Objective
 	
 	public CaptureLocationObjective(Simulation game, int playerId, int amount, Area area)
 	{
+		super(String.format("Command at least %d units in target location.", amount));
+		
 		this.playerId = playerId;
 		this.amount = amount;
 		this.area = area;
-		
-		setDescription(String.format("Command at least %d units in target location.", amount));
-		
-		setEvaluator(() -> evaluate(game));
 	}
 
-	protected State evaluate(Simulation game)
+	@Override
+	protected Result evaluate(Simulation game)
 	{
 		int count = (int)game.getEntities()
 				.stream()
@@ -33,11 +32,11 @@ public class CaptureLocationObjective extends Objective
 		
 		if (count >= amount)
 		{
-			return State.SUCCESS;
+			return Result.SUCCESS;
 		}
 		else
 		{
-			return State.IN_PROGRESS;
+			return null;
 		}
 	}
 }

@@ -49,6 +49,8 @@ public class GamePanel extends JPanel implements SimulationRunner
 	private final Font monospace = new Font(Font.MONOSPACED, Font.PLAIN, 12);
 	
 	private final Map<Integer, RobotDebug> robotDebugs = new HashMap<>();
+	
+	private boolean finished, success;
 
 	public GamePanel(MainLogic mainLogic, String levelName, long seed)
 	{
@@ -67,7 +69,7 @@ public class GamePanel extends JPanel implements SimulationRunner
 		input = new GamePanelInput(this);
 		
 		logicTimer = new Timer(0, (e) -> {
-			simulation.step();
+			update();
 		});
 		
 		graphicsTimer = new Timer(0, (e) -> {
@@ -95,6 +97,9 @@ public class GamePanel extends JPanel implements SimulationRunner
 	public void restart()
 	{
 		pause();
+		
+		finished = false;
+		success = false;
 		
 		simulation = new Simulation(seed);
 		
@@ -130,9 +135,48 @@ public class GamePanel extends JPanel implements SimulationRunner
 	@Override
 	public void step()
 	{
-		pause();
+		update();
 		
+		pause();
+	}
+	
+	private void update()
+	{
+		if (finished)
+		{
+			pause();
+			return;
+		}
+
 		simulation.step();
+		
+		checkObjectives();
+	}
+	
+	private void checkObjectives()
+	{
+		boolean allSuccess = true;
+		for (Objective objective : simulation.getObjectives())
+		{
+			if (objective.getState() == Objective.Result.FAIL)
+			{
+				finished = true;
+				success = false;
+				return;
+			}
+			
+			if (objective.getState() != Objective.Result.SUCCESS)
+			{
+				allSuccess = false;
+				break;
+			}
+		}
+		
+		if (allSuccess)
+		{
+			finished = true;
+			success = true;
+		}
 	}
 
 	@Override
@@ -173,8 +217,25 @@ public class GamePanel extends JPanel implements SimulationRunner
 		g2d.setColor(Color.yellow);
 
 		g2d.drawString("Time: " + simulation.getCycleCount(), 20, 537);
-		// TODO
-		g2d.drawString("TODO rozbite", 120, 537);
+		
+		if (finished)
+		{
+			String result = (success) ? "Victory!" : "Defeat.";
+			g2d.drawString(result, 120, 537);
+		}
+		else
+		{
+			for (Objective objective : simulation.getObjectives())
+			{
+				objective.update(simulation);
+
+				if (objective.getState() == null)
+				{
+					g2d.drawString(objective.getDescription(), 120, 537);
+					break;
+				}
+			}
+		}
 		
 		g2d.drawString(formatMousePointer(), 520, 560);
 		

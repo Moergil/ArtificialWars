@@ -6,16 +6,15 @@ public class DestroyEnemyObjective extends Objective
 {
 	private final int enemyPlayerId;
 	
-	public DestroyEnemyObjective(Simulation game, int playerId)
+	public DestroyEnemyObjective(int playerId)
 	{
+		super("Destroy all enemy robots.");
+		
 		this.enemyPlayerId = playerId;
-		
-		setDescription("Destroy all enemy robots.");
-		
-		setEvaluator(() -> evaluate(game));
 	}
 
-	protected State evaluate(Simulation game)
+	@Override
+	protected Result evaluate(Simulation game)
 	{
 		long count = game.getEntities()
 				.stream()
@@ -24,11 +23,11 @@ public class DestroyEnemyObjective extends Objective
 		
 		if (count == 0)
 		{
-			return State.SUCCESS;
+			return Result.SUCCESS;
 		}
 		else
 		{
-			return State.IN_PROGRESS;
+			return null;
 		}
 	}
 }

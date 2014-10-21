@@ -10,37 +10,17 @@ import sk.epholl.artificialwars.logic.Vector2D;
 
 public abstract class Objective
 {
-	public enum State
+	public enum Result
 	{
-		IN_PROGRESS,
 		SUCCESS,
 		FAIL;
 	}
-	
-	@FunctionalInterface
-	public interface StateChangedListener
-	{
-		void stateChanged(State newState);
-	}
-	
-	public interface Evaluator
-	{
-		State evaluate();
-	}
 
-	private State state = State.IN_PROGRESS;
+	private Result state;
 	
-	private String description = "";
+	private final String description;
 	
-	private Evaluator evaluator;
-	private StateChangedListener stateChangedListener;
-	
-	public void setStateChangedListener(StateChangedListener stateChangedListener)
-	{
-		this.stateChangedListener = stateChangedListener;
-	}
-	
-	public void setDescription(String description)
+	public Objective(String description)
 	{
 		this.description = description;
 	}
@@ -49,32 +29,21 @@ public abstract class Objective
 	{
 		return description;
 	}
-	
-	public void setEvaluator(Evaluator evaluator)
-	{
-		this.evaluator = evaluator;
-	}
 
-	public void check()
+	public void update(Simulation simulation)
 	{
-		if (evaluator == null)
+		if (state == null)
 		{
-			return;
-		}
-
-		State newState = evaluator.evaluate();
-		
-		if (newState != state)
-		{
-			state = newState;
-			stateChangedListener.stateChanged(newState);
+			state = evaluate(simulation);
 		}
 	}
 	
-	public State getState()
+	public Result getState()
 	{
 		return state;
 	}
+	
+	protected abstract Result evaluate(Simulation simulation);
 
 	@Override
 	public String toString()

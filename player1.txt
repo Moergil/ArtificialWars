@@ -1,1 +1,9 @@
+scan
+lock
+fire
+fire
+fire
+fire
+fire
+jmp 0
 wait 1

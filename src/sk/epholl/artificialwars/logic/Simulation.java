@@ -23,8 +23,6 @@ public class Simulation
 
 	private final Set<Entity> entities;
 	private final List<Objective> objectives;
-	
-	private Objective.State simulationState = Objective.State.IN_PROGRESS;  
 
 	public Simulation(long seed)
 	{
@@ -47,44 +45,11 @@ public class Simulation
 	{
 		logicCycle();
 		cycleCount++;
-
-		checkObjectives();
 	}
 	
 	public void addObjective(Objective objective)
 	{
 		objectives.add(objective);
-		
-		objective.setStateChangedListener((newState) -> {checkObjectives();});
-	}
-	
-	private void checkObjectives()
-	{
-		boolean allSuccess = true;
-		for (Objective objective : objectives)
-		{
-			if (objective.getState() == Objective.State.FAIL)
-			{
-				simulationState = Objective.State.FAIL;
-				return;
-			}
-			
-			if (objective.getState() != Objective.State.SUCCESS)
-			{
-				allSuccess = false;
-				break;
-			}
-		}
-		
-		if (allSuccess)
-		{
-			simulationState = Objective.State.SUCCESS;
-		}
-	}
-	
-	public Objective.State getObjectivesState()
-	{
-		return simulationState;
 	}
 
 	@Deprecated
@@ -107,6 +72,11 @@ public class Simulation
 	public Set<Entity> getEntities()
 	{
 		return entities;
+	}
+	
+	public List<Objective> getObjectives()
+	{
+		return objectives;
 	}
 
 	public void addEntity(Entity e)
