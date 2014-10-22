@@ -10,13 +10,13 @@ import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.ProgramEx
 
 public class RobotFactory
 {
-	private static final String ROBOTS_PATH = "robots/%s.rbt";
+	private static final String ROBOTS_PATH = "robots/%s";
 	
 	private final FirmwaresCache firmwaresCache;
 	
-	public static AbstractRobot loadAbstractRobot(String robotName) throws IOException
+	public static AbstractRobot loadAbstractRobot(String robotFileName) throws IOException
 	{
-		String robotPath = String.format(ROBOTS_PATH, robotName);
+		String robotPath = String.format(ROBOTS_PATH, robotFileName);
 		return AbstractRobot.loadFromFile(robotPath);
 	}
 	
@@ -45,9 +45,9 @@ public class RobotFactory
 		firmwaresCache.setResolver(RobotFactory::loadFirmware);
 	}
 	
-	public Robot loadRobot(Simulation simulation, String robotName) throws IOException, ProgramException
+	public Robot loadRobot(Simulation simulation, String robotFileName) throws IOException, ProgramException
 	{
-		AbstractRobot abstractRobot = RobotFactory.loadAbstractRobot(robotName);
+		AbstractRobot abstractRobot = RobotFactory.loadAbstractRobot(robotFileName);
 		byte firmware[] = firmwaresCache.get(abstractRobot.getArchitecture(), abstractRobot.getCodeFileName());
 
 		return RobotFactory.loadStandardRobot(simulation, abstractRobot, firmware);

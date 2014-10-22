@@ -94,7 +94,7 @@ public class LevelLoader
 
 		try
 		{
-			Robot robot = robotFactory.loadRobot(simulation, robotName);
+			Robot robot = robotFactory.loadRobot(simulation, robotName + ".rbt");
 			
 			robot.setColor(color);
 			robot.setPlayer(player);

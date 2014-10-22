@@ -12,15 +12,28 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOError;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.prefs.Preferences;
 
 import javax.swing.BoxLayout;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.ListModel;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
+import javax.swing.event.ListDataListener;
+
+import sk.epholl.artificialwars.logic.RobotFactory;
+import sk.epholl.artificialwars.logic.RobotCreator.AbstractRobot;
+import sk.epholl.artificialwars.util.FileName;
 
 public class ArenaPropertiesPanel extends JPanel
 {
@@ -31,19 +44,23 @@ public class ArenaPropertiesPanel extends JPanel
 		PLAYER_2 = "player_2",
 		LEVEL = "level";
 
-	private final JTextField robot1FileNameField, robot2FileNameField;
-	private final JTextField levelFileNameField;
+	private final JComboBox<ComboBoxEntry> robot1FileSelect, robot2FileSelect;
+	private final JComboBox<ComboBoxEntry> levelFileSelect;
+	
+	private final DefaultComboBoxModel<ComboBoxEntry> robot1FileSelectListModel, robot2FileSelectListModel;
+	private final DefaultComboBoxModel<ComboBoxEntry> levelFileSelectListModel;
 	
 	private JButton backButton, startButton;
 	
 	private final File propertiesFile;
+	
+	private Map<String, ComboBoxEntry> entries = new HashMap<>();
 	
 	public ArenaPropertiesPanel()
 	{
 		setLayout(new GridBagLayout());
 		
 		JPanel innerPanel = new JPanel();
-		innerPanel.setPreferredSize(new Dimension(400, 200));
 		innerPanel.setLayout(new GridBagLayout());
 		
 		add(innerPanel, new GridBagConstraints());
@@ -61,10 +78,12 @@ public class ArenaPropertiesPanel extends JPanel
 		c.gridwidth = 2;
 		innerPanel.add(robot1FileLabel, c);
 
-		robot1FileNameField = new JTextField();
+		robot1FileSelectListModel = new DefaultComboBoxModel<>();
+		robot1FileSelect = new JComboBox<>(robot1FileSelectListModel);
+		robot1FileSelect.setEditable(false);
 		
 		c.gridx++;
-		innerPanel.add(robot1FileNameField, c);
+		innerPanel.add(robot1FileSelect, c);
 		
 		JLabel robot2FileNameLabel = new JLabel("Robot 2 file:");
 		
@@ -72,10 +91,12 @@ public class ArenaPropertiesPanel extends JPanel
 		c.gridy++;
 		innerPanel.add(robot2FileNameLabel, c);
 		
-		robot2FileNameField = new JTextField();
+		robot2FileSelectListModel = new DefaultComboBoxModel<>();
+		robot2FileSelect = new JComboBox<>(robot2FileSelectListModel);
+		robot2FileSelect.setEditable(false);
 		
 		c.gridx++;
-		innerPanel.add(robot2FileNameField, c);
+		innerPanel.add(robot2FileSelect, c);
 		
 		JLabel levelFileNameLabel = new JLabel("Level file:"); 
 
@@ -83,10 +104,12 @@ public class ArenaPropertiesPanel extends JPanel
 		c.gridy++;
 		innerPanel.add(levelFileNameLabel, c);
 		
-		levelFileNameField = new JTextField();
+		levelFileSelectListModel = new DefaultComboBoxModel<>();
+		levelFileSelect = new JComboBox<>(levelFileSelectListModel);
+		levelFileSelect.setEditable(false);
 
 		c.gridx++;
-		innerPanel.add(levelFileNameField, c);
+		innerPanel.add(levelFileSelect, c);
 		
 		backButton = new JButton("Back");
 		
@@ -103,6 +126,87 @@ public class ArenaPropertiesPanel extends JPanel
 		propertiesFile = new File(CONFIG_FILE_NAME);
 	}
 	
+	public void loadAvailableFiles()
+	{
+		File[] robotFiles = new File("./robots").listFiles();
+		
+		if (robotFiles == null)
+		{
+			return;
+		}
+		
+		for (File file : robotFiles)
+		{
+			if (!file.isFile())
+			{
+				continue;
+			}
+			
+			String fileName = file.getName();
+
+			if (!FileName.isRobotFile(fileName))
+			{
+				continue;
+			}
+
+			try
+			{
+				String robotName = getRobotName(fileName);
+				
+				ComboBoxEntry entry = new ComboBoxEntry(fileName, robotName);
+				robot1FileSelectListModel.addElement(entry);
+				robot2FileSelectListModel.addElement(entry);
+				
+				entries.put(robotName, entry);
+			}
+			catch (IOException e)
+			{
+				System.err.println("Can't parse robot file " + fileName);
+			}
+		}
+		
+		File arenaLevelFiles[] = new File(".").listFiles();
+		
+		if (arenaLevelFiles == null)
+		{
+			return;
+		}
+		
+		for (File file : arenaLevelFiles)
+		{
+			if (!file.isFile())
+			{
+				continue;
+			}
+			
+			String fileName = file.getName();
+			
+			if (!FileName.isLevelFile(fileName) || !FileName.isLevelType(fileName, "dm"))
+			{
+				continue;
+			}
+			
+			String levelName = getLevelName(file.getName());
+			
+			ComboBoxEntry entry = new ComboBoxEntry(fileName, levelName);
+			levelFileSelectListModel.addElement(entry);
+			
+			entries.put(levelName, entry);
+		}
+	}
+	
+	private String getRobotName(String fileName) throws IOException
+	{
+		AbstractRobot abstractRobot = RobotFactory.loadAbstractRobot(fileName);
+		
+		return abstractRobot.getName();
+	}
+	
+	private String getLevelName(String fileName)
+	{
+		return FileName.removeExtension(fileName);
+	}
+	
 	public void loadDefaultValues() throws IOException
 	{
 		if (!propertiesFile.exists())
@@ -117,14 +221,19 @@ public class ArenaPropertiesPanel extends JPanel
 			properties.load(input);
 			
 			String player1 = properties.getProperty(PLAYER_1);
-			robot1FileNameField.setText(player1);
+			robot1FileSelect.setSelectedItem(getComboBoxEntry(player1));
 			
 			String player2 = properties.getProperty(PLAYER_2);
-			robot2FileNameField.setText(player2);
+			robot2FileSelect.setSelectedItem(getComboBoxEntry(player2));
 			
 			String levelName = properties.getProperty(LEVEL);
-			levelFileNameField.setText(levelName);
+			levelFileSelect.setSelectedItem(getComboBoxEntry(levelName));
 		}
+	}
+	
+	private ComboBoxEntry getComboBoxEntry(String key)
+	{
+		return entries.get(key);
 	}
 	
 	public void saveDefaultValues() throws IOException
@@ -133,9 +242,9 @@ public class ArenaPropertiesPanel extends JPanel
 		
 		try (FileOutputStream output = new FileOutputStream(propertiesFile))
 		{
-			properties.setProperty(PLAYER_1, robot1FileNameField.getText());
-			properties.setProperty(PLAYER_2, robot2FileNameField.getText());
-			properties.setProperty(LEVEL, levelFileNameField.getText());
+			properties.setProperty(PLAYER_1, getRobot(1).getName());
+			properties.setProperty(PLAYER_2, getRobot(2).getName());
+			properties.setProperty(LEVEL, getLevel().getName());
 			
 			properties.store(output, "Arena Default Values");
 		}
@@ -151,21 +260,54 @@ public class ArenaPropertiesPanel extends JPanel
 		startButton.addActionListener(startListener);
 	}
 
-	public String getLevelName()
+	public ComboBoxEntry getLevel()
 	{
-		return levelFileNameField.getText();
+		return (ComboBoxEntry)levelFileSelect.getSelectedItem();
 	}
 
-	public String getRobotName(int i)
+	public ComboBoxEntry getRobot(int i)
 	{
+		ComboBoxEntry entry;
+		
 		switch (i)
 		{
 			case 1:
-				return robot1FileNameField.getText();
+				entry = (ComboBoxEntry)robot1FileSelect.getSelectedItem();
+				break;
 			case 2:
-				return robot2FileNameField.getText();
+				entry = (ComboBoxEntry)robot2FileSelect.getSelectedItem();
+				break;
 			default:
 				throw new IllegalArgumentException("Robot index is out of range: " + i);
+		}
+		
+		return entry;
+	}
+	
+	public static class ComboBoxEntry
+	{
+		private final String fileName, name;
+
+		public ComboBoxEntry(String fileName, String name)
+		{
+			this.fileName = fileName;
+			this.name = name;
+		}
+		
+		public String getFileName()
+		{
+			return fileName;
+		}
+		
+		public String getName()
+		{
+			return name;
+		}
+		
+		@Override
+		public String toString()
+		{
+			return name;
 		}
 	}
 }

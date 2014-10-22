@@ -98,10 +98,8 @@ public class MainLogic implements Runnable
 	
 	public void createArenaGame(String levelName, String robot1Name, String robot2Name)
 	{
-		String fullLevelName = "dm_" + levelName + ".lvl";
-
 		long seed = masterSeed;
-		GamePanel panel = new GamePanel(this, fullLevelName, seed);
+		GamePanel panel = new GamePanel(this, levelName, seed);
 		
 		panel.setSimulationCreatedListener((simulation) -> prepareArena(simulation, robot1Name, robot2Name));
 		
@@ -197,6 +195,7 @@ public class MainLogic implements Runnable
 		
 		try
 		{
+			panel.loadAvailableFiles();
 			panel.loadDefaultValues();
 		}
 		catch (IOException e)
@@ -215,11 +214,11 @@ public class MainLogic implements Runnable
 				System.out.println(exc.getMessage());
 			}
 			
-			String levelName = panel.getLevelName();
-			String robot1Name = panel.getRobotName(1);
-			String robot2Name = panel.getRobotName(2);
+			String levelFileName = panel.getLevel().getFileName();
+			String robot1FileName = panel.getRobot(1).getFileName();
+			String robot2FileName = panel.getRobot(2).getFileName();
 			
-			createArenaGame(levelName, robot1Name, robot2Name);
+			createArenaGame(levelFileName, robot1FileName, robot2FileName);
 		});
 		
 		setScreenComponent(panel);
