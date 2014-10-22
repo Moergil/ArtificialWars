@@ -31,7 +31,7 @@ public class RobotTWM1608 extends Robot
 	private final int GUN_COOLDOWN_TIME = 30;
 	private int actualGunCooldown = 0;
 	
-	private int computerFrequency = 10;
+	private int computerFrequency = 100;
 	
 	private final ComputerTWM1000 computer;
 	
@@ -352,6 +352,11 @@ public class RobotTWM1608 extends Robot
 				double relativeRotation = Vector2DMath.getRelativeSignedAngle(robotDirection, targetVector);
 				double distance = target.getDistance(RobotTWM1608.this);
 				double width = Math.max(target.getWidth(), target.getHeight());
+				
+				if (target instanceof Projectile)
+				{
+					width *= 4;
+				}
 				
 				spots.add(new DetectorSpot(relativeRotation, distance, width));
 			}

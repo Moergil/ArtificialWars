@@ -85,7 +85,7 @@ public class Projectile extends Entity
 	@Override
 	public boolean isDestructible()
 	{
-		return false;
+		return true;
 	}
 
 	@Override

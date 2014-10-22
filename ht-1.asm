@@ -101,11 +101,11 @@ TRACKING_SUB:
 	JMP TRACKING_SUB
 	
 	; rotate to excited segment direction
+	; A contains value of which robot should be rotated
 	; HACK also add some noise to precise rotation, more sofisticated later
 	; HACK move a bit to the target, more sofisticated later
 	TRACKING_SUB_ROT_SET:
 		STA ADDR_ORD_ROTH
-		MOVE ADDR_NOISE ADDR_ORD_ROTL
 	
 	; wait for rotation end
 	TRACKING_SUB_WHILE_ROT:

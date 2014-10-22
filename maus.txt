@@ -1,0 +1,23 @@
+;;;;;;;;;;;;;;;;;;;;;
+; Mauser-9000 bot   ;
+; coded by @Moergil ;
+;;;;;;;;;;;;;;;;;;;;;
+
+seta 12
+rot
+move 2
+scan
+
+main_loop:
+	lock
+	fire
+	jmpc collided
+	jmp main_loop
+
+collided:
+	scan
+	rnd 5
+	setb 6
+	add
+	rot
+	jmp main_loop

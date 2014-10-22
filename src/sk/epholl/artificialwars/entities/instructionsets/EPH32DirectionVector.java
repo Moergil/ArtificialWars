@@ -46,7 +46,7 @@ public enum EPH32DirectionVector
 	
 	private EPH32DirectionVector(double x, double y)
 	{
-		this.vector = new Vector2D(x, y);
+		this.vector = new Vector2D(x, y).normalise();
 	}
 	
 	public Vector2D getVector()

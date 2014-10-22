@@ -52,32 +52,11 @@ ROT_RIGHT = $01
 ROT_LEFT = $FF
 
 ; zeropage adresses
+TMP = $00
 LAST_GRADIENT_ADDR = $10
 ROT_DIR_ADDR = $11
 FLAGS_CACHE = $12
 STATE_FLAGS = $13
-
-EVADES_TABLE = $20
-
-;;;;; setting memory values ;;;;;
-
-; setting evade rotation angles table
-MACRO SET_EVADE_ANGLE ANGLE
-	LDA #%ANGLE%
-	ADC #$40
-	STA EVADES_TABLE,X
-	INX
-/MACRO
-
-LDX 0
-SET_EVADE_ANGLE SD_A_1
-SET_EVADE_ANGLE SD_A_2
-SET_EVADE_ANGLE SD_A_3
-SET_EVADE_ANGLE SD_A_4
-SET_EVADE_ANGLE SD_A_5
-SET_EVADE_ANGLE SD_A_6
-SET_EVADE_ANGLE SD_A_7
-SET_EVADE_ANGLE SD_A_8
 
 ; enabling noise
 MOVE #FLAG_NOISE ADDR_FLG_S
@@ -96,11 +75,15 @@ MAIN_LOOP:
 
 	CHECK_DANGER:
 		ANDV FLAGS_CACHE #FLAG_DET_SEGM
-		BEQ FINDING_GRADIENT ; nothing is near, so we can search for targets
+		;BEQ FINDING_GRADIENT ; nothing is near, so we can search for targets
+		BEQ MAIN_LOOP ; debug
 
 		; something is quite near, so we will try to evade
 		JSR SR_EVADE
-		JMP MAIN_LOOP
+
+	JMP MAIN_LOOP
+
+	;;;; WIP ;;;;
 
 	; continuosly rotate to one direction and check,
 	; if gradient detector is activated
@@ -123,7 +106,7 @@ BRK
 	ADJUSTING_GRADIENT:
 		MOVE #ROT_RIGHT ROT_DIR_ADDR
 		MOVE #$10 ADDR_ORD_ROTH
-		MOVE #FLAG_ORD_FIRE ADDR_FLG_S
+		;MOVE #FLAG_ORD_FIRE ADDR_FLG_S
 		; TODO
 		; do rotation for example per $10 steps
 		; check often value of detector
@@ -144,46 +127,52 @@ BRK
 ; this will determine angle and move value to evade
 ; subroutine will return after maneuver is executed
 SR_EVADE:
+	; caching detection segment value
+	MOVE ADDR_DET_SEGM TMP
+
 	; macro for checking if segment is activated
 	; and setting angle and move speed for escape from threat
-	MACRO DET_ROTATION SEGM SKIP_LBL
-		LDA $00
+	; if segment is excited, rotation value is saved to A and macro will jump
+	; to evading loop init label
+	MACRO DET_ROTATION SEGM ROT MOV SKIP_LBL
+		LDA TMP
 		AND #SD_%SEGM%
 		BEQ %SKIP_LBL%
 
-		LDX #%SEGM%
-		; initiate rotation
-		LDA EVADES_TABLE,X
-		STA ADDR_ORD_ROTH
-		; initiate movement
-		LDA #$40
-		STA ADDR_ORD_MOVE
-
+		LDA #%ROT%
+		STA TMP
+		LDA #%MOV%
 		JMP EVADING_LOOP_INIT
 
 		%SKIP_LBL%:
 	/MACRO
 
-	MOVE ADDR_DET_SEGM $00
-
 	; checking segments
 	; prioritized are front and back ones
-	DET_ROTATION 1 SKIP_1
-	DET_ROTATION 8 SKIP_2
-	DET_ROTATION 4 SKIP_3
-	DET_ROTATION 5 SKIP_4
-	DET_ROTATION 2 SKIP_5
-	DET_ROTATION 7 SKIP_6
-	DET_ROTATION 3 SKIP_7
-	DET_ROTATION 6 SKIP_8
+	; as soon as some segment is excited,
+	; program will jump to evading loop init label
+	; parameters are relative rotation and movement direction
+	DET_ROTATION 1 $A0 $D0 SKIP_1
+	DET_ROTATION 8 $20 $D0 SKIP_2
+	DET_ROTATION 4 $20 $4F SKIP_3
+	DET_ROTATION 5 $A0 $4F SKIP_4
+	DET_ROTATION 2 $90 $C0 SKIP_5
+	DET_ROTATION 7 $10 $C0 SKIP_6
+	DET_ROTATION 3 $10 $3F SKIP_7
+	DET_ROTATION 6 $90 $3F SKIP_8
 
 	EVADING_LOOP_INIT:
+		; initiating movement and rotation
+		STA ADDR_ORD_MOVE
+		MOVE TMP ADDR_ORD_ROTH
+
+		; saving moving and rotating flags for check
 		LDA #FLAG_MOVING
 		ORA #FLAG_ROTATING
-		STA $00
+		STA TMP
 
 	EVADING_LOOP:
-		ANDV ADDR_FLAGS $00
+		ANDV ADDR_FLAGS TMP
 		BNE EVADING_LOOP
 	RTS
 

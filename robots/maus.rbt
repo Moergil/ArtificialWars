@@ -1,0 +1,4 @@
+# Draken robot properties
+name=Maus
+arch=eph32
+code=maus.txt

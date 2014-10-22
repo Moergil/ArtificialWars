@@ -6,6 +6,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -28,9 +29,6 @@ import sk.epholl.artificialwars.logic.objectives.CommandAtLeastUnitsObjective;
 import sk.epholl.artificialwars.logic.objectives.DestroyEnemyObjective;
 import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.ProgramException;
 
-/**
- * @author epholl
- */
 public class MainLogic implements Runnable
 {
 	private JFrame gameWindow;
@@ -39,17 +37,34 @@ public class MainLogic implements Runnable
 	
 	private long masterSeed = 1;
 	
-	public MainLogic(String levelName)
+	public MainLogic(LaunchParams p)
 	{
 		gameWindow = createGameWindow();
 
-		if (levelName == null)
+		if (p.getLevelName() == null)
 		{
 			showMenu();
 		}
 		else
 		{
-			createGame(levelName);
+			String levelName = p.getLevelName();
+			if (p.isArena())
+			{
+				List<String> robotsNames = p.getRobotsNames();
+				
+				if (robotsNames.size() < 2)
+				{
+					System.exit(2);
+				}
+				
+				String robot1Name = robotsNames.get(0);
+				String robot2Name = robotsNames.get(1);
+				createArenaGame(levelName, robot1Name, robot2Name);
+			}
+			else
+			{
+				createGame(levelName);
+			}
 		}
 	}
 
@@ -169,7 +184,7 @@ public class MainLogic implements Runnable
 			});
 			
 			spawn.setCreationFailedListener((r) -> {
-				System.out.printf("Creating robot %s failed: %s%n", robotName, r);
+				new ErrorWindow("Error", String.format("Creating robot %s failed: %s%n", robotName, r)).show();
 			});
 		}
 		

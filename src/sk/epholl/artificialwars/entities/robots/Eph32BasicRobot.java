@@ -257,7 +257,7 @@ public class Eph32BasicRobot extends Robot
 				if (parameter < -1 || parameter > 2)
 					selfDestruct();
 				else
-					setMoveSpeed((double)parameter /2d);
+					setMoveSpeed(parameter / 2.0);
 				break;
 			}
 			case EPH32InstructionSet.ROT:
