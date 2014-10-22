@@ -1,11 +1,32 @@
 package sk.epholl.artificialwars.entities.robots;
 
+import java.awt.Color;
 import java.io.IOError;
 import java.io.IOException;
 
-public interface Robot
+import sk.epholl.artificialwars.entities.Entity;
+import sk.epholl.artificialwars.logic.Simulation;
+
+public abstract class Robot extends Entity
 {
-	int getRobotTypeId();
+	protected int player;
 	
-	void setFirmware(byte firmware[]) throws IOException;
+	public Robot(Simulation game)
+	{
+		super(game);
+	}
+	
+	public void setColor(Color color)
+	{
+		this.color = color;
+	}
+	
+	public void setPlayer(int player)
+	{
+		this.player = player;
+	}
+
+	abstract public int getRobotTypeId();
+	
+	abstract public void setFirmware(byte firmware[]) throws IOException;
 }

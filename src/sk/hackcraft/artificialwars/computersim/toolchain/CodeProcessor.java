@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,17 +25,17 @@ public abstract class CodeProcessor<S extends CodeProcessorState>
 		}
 	});
 	
-	public byte[] process(byte input[]) throws ProgramException, IOException
+	public byte[] process(String name, byte input[]) throws ProgramException, IOException
 	{
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(input);
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		
-		process(inputStream, outputStream);
+		process(name, inputStream, outputStream);
 		
 		return outputStream.toByteArray();
 	}
 	
-	public abstract void process(InputStream input, OutputStream output) throws ProgramException, IOException;
+	public abstract void process(String name, InputStream input, OutputStream output) throws ProgramException, IOException;
 
 	protected abstract S started();
 	
@@ -77,19 +78,29 @@ public abstract class CodeProcessor<S extends CodeProcessorState>
 		{
 			int lineNumberEnd = line.indexOf(DEFAULT_DELIMITER);
 			
-			int number = Integer.parseInt(line.substring(0, lineNumberEnd));
-			String content = line.substring(lineNumberEnd + 1);
+			Scanner scanner = new Scanner(line);
 			
-			return new Line(number, content);
+			String fileName = scanner.next();
+			int number = scanner.nextInt();
+			String content = scanner.nextLine();
+			
+			return new Line(fileName, number, content);
 		}
 		
+		private final String fileName;
 		private final int number;
 		private final String content;
 		
-		public Line(int number, String content)
+		public Line(String fileName, int number, String content)
 		{
+			this.fileName = fileName;
 			this.number = number;
 			this.content = content;
+		}
+		
+		public String getFileName()
+		{
+			return fileName;
 		}
 		
 		public int getNumber()
@@ -105,13 +116,13 @@ public abstract class CodeProcessor<S extends CodeProcessorState>
 		public Line modify(Function<String, String> modifier)
 		{
 			String modifiedContent = modifier.apply(content);
-			return new Line(number, modifiedContent);
+			return new Line(fileName, number, modifiedContent);
 		}
 		
 		@Override
 		public String toString()
 		{
-			return String.format("%d %s", number, content);
+			return String.format("%s %d %s", fileName, number, content);
 		}
 	}
 	
@@ -142,7 +153,7 @@ public abstract class CodeProcessor<S extends CodeProcessorState>
 		@Override
 		public String getMessage()
 		{
-			return String.format("Error on line %d: %s", line.getNumber(), super.getMessage());
+			return String.format("In %s:%d, %s", line.getFileName(), line.getNumber(), super.getMessage());
 		}
 	}
 	

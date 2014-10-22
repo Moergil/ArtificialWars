@@ -17,18 +17,27 @@ public class GamePanelInput
 	
 	private SimulationRunner runner;
 
-	public GamePanelInput(SimulationRunner runner)
+	public GamePanelInput(MainLogic mainLogic, SimulationRunner runner)
 	{
 		GameButton button;
 		
 		this.runner = runner;
 
 		button = new GameButton(10, 90, 545, 565, "Menu");
-		button.setActivationListener(() -> runner.dispose());
+		button.setActivationListener(() -> {runner.dispose(); mainLogic.showMenu();});
 		buttons.add(button);
 		
 		button = new GameButton(110, 190, 545, 565, "Reset");
-		button.setActivationListener(() -> runner.restart());
+		button.setActivationListener(() -> {
+			try
+			{
+				runner.restart();
+			}
+			catch (Exception e)
+			{
+				mainLogic.showMenu();
+			}
+		});
 		buttons.add(button);
 		
 		button = new GameButton(210, 290, 545, 565, "Step");

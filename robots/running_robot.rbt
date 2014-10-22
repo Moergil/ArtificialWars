@@ -1,0 +1,4 @@
+# Killer robot properties
+name=Running Robot
+arch=eph32
+code=running_robot.txt

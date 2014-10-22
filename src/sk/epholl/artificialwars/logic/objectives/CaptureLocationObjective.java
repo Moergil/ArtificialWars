@@ -1,4 +1,4 @@
-package sk.epholl.artificialwars.entities.objectives;
+package sk.epholl.artificialwars.logic.objectives;
 
 import java.util.Set;
 import java.util.stream.Collectors;

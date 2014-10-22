@@ -139,7 +139,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 	}
 	
 	@Override
-	public void process(InputStream input, OutputStream output) throws ProgramException, IOException
+	public void process(String name, InputStream input, OutputStream output) throws ProgramException, IOException
 	{
 		// TODO add checks for errors when reusing constants, variables or labels
 		AssemblerState state = started();

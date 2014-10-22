@@ -1,0 +1,4 @@
+# Killer robot properties
+name=Killer
+arch=eph32
+code=player1.txt

@@ -119,6 +119,11 @@ public abstract class Entity
 		
 		for (Entity collisionEntity : entities)
 		{
+			if (!collisionEntity.isCollidable())
+			{
+				continue;
+			}
+
 			if (collisionEntity != this && this.isCollidingWith(collisionEntity, centerPosition))
 			{
 				collidingEntities.add(collisionEntity);

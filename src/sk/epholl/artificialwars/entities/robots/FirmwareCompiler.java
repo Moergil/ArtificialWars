@@ -23,7 +23,7 @@ public class FirmwareCompiler
 			case "twm1608":
 				return compileTWM1608(firmwareFileName);
 			default:
-				throw new IllegalArgumentException(robotType + " is not known.");
+				throw new ProgramException("No compiler available for robot type " + robotType);
 		}
 	}
 	
@@ -44,17 +44,17 @@ public class FirmwareCompiler
 		try (InputStream input = new FileInputStream(firmwareFileName);)
 		{
 			ByteArrayOutputStream preprocessorOutput = new ByteArrayOutputStream();
-			preprocessor.process(input, preprocessorOutput);
+			preprocessor.process(firmwareFileName, input, preprocessorOutput);
 			
 			ByteArrayInputStream assemblerInput = new ByteArrayInputStream(preprocessorOutput.toByteArray());
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
-			assembler.process(assemblerInput, output);
+			assembler.process(firmwareFileName, assemblerInput, output);
 			
 			return output.toByteArray();
 		}
 	}
 	
-	public static byte[] compileTWM1608(String firmwareFileName) throws ProgramException, IOException
+	private static byte[] compileTWM1608(String firmwareFileName) throws ProgramException, IOException
 	{
 		System.out.println("Loading " + firmwareFileName);
 		
@@ -64,11 +64,11 @@ public class FirmwareCompiler
 		try (InputStream input = new FileInputStream(firmwareFileName);)
 		{
 			ByteArrayOutputStream preprocessorOutput = new ByteArrayOutputStream();
-			preprocessor.process(input, preprocessorOutput);
+			preprocessor.process(firmwareFileName, input, preprocessorOutput);
 			
 			ByteArrayInputStream assemblerInput = new ByteArrayInputStream(preprocessorOutput.toByteArray());
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
-			assembler.process(assemblerInput, output);
+			assembler.process(firmwareFileName, assemblerInput, output);
 			
 			return output.toByteArray();
 		}

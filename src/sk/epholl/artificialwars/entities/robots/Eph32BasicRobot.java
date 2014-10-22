@@ -26,14 +26,12 @@ import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
  * @author epholl
  */
 //TODO treba abstraktnu triedu Robot, ktora by reprezentovala entitu typu robot
-public class Eph32BasicRobot extends Entity implements Robot
+public class Eph32BasicRobot extends Robot
 {
 	public static final int DEFAULT_HITPOINTS = 5;
 	public static final int DEFAULT_INSTRUCTION_COOLDOWN_MULTIPLICATOR = 2;
 	
 	private final Random random;
-
-	private int player;
 
 	private int hitpoints;
 
@@ -60,14 +58,11 @@ public class Eph32BasicRobot extends Entity implements Robot
 	 * Rotate instrukcia: nejako nastavit rotaciu. Smer, bud instantne, alebo postupne.
 	 */
 	
-	public Eph32BasicRobot(Color color, int player, Simulation game)
+	public Eph32BasicRobot(Simulation game)
 	{
 		super(game);
 		
 		this.random = new Random(game.getSeed());
-
-		this.color = color;
-		this.player = player;
 
 		setWidth(6);
 		setHeight(6);

@@ -1,0 +1,4 @@
+# Killer robot properties
+name=Basic Stationary Robot
+arch=eph32
+code=basic_stationary_robot.txt

@@ -17,4 +17,4 @@ obstacle 250 150 10 200
 obstacle 150 150 100 10
 // central bottom
 obstacle 150 340 100 10
-robot 255 128 128 0 200 300 eph32 player.txt
+robot 255 128 128 0 200 300 player1

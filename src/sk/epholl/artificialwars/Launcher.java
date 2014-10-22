@@ -6,6 +6,6 @@ public class Launcher
 {
 	public static void main(String[] args)
 	{
-		new MainLogic("Level 1.txt").run();
+		new MainLogic(null).run();
 	}
 }

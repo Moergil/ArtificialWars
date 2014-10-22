@@ -44,6 +44,10 @@ public class MenuPanel extends JPanel
 			y = down + spacing;
 		}
 		
+		MenuButton arenaButton = new MenuButton(60, 140, 450, 480, "Arena");
+		arenaButton.setActivationListener(() -> mainLogic.showArenaProperties());
+		buttons.add(arenaButton);
+		
 		MenuButton exitButton = new MenuButton(60, 140, 500, 530, "Exit");
 		exitButton.setActivationListener(() -> System.exit(0));
 		buttons.add(exitButton);

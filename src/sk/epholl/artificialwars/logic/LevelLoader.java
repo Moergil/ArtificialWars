@@ -14,24 +14,28 @@ import java.util.StringTokenizer;
 import sk.epholl.artificialwars.entities.Area;
 import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Obstacle;
-import sk.epholl.artificialwars.entities.objectives.CaptureLocationObjective;
-import sk.epholl.artificialwars.entities.objectives.DestroyEnemyObjective;
-import sk.epholl.artificialwars.entities.objectives.Objective;
+import sk.epholl.artificialwars.entities.Spawn;
 import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
 import sk.epholl.artificialwars.entities.robots.FirmwareCompiler;
+import sk.epholl.artificialwars.entities.robots.Robot;
 import sk.epholl.artificialwars.entities.robots.RobotTWM1608;
-import sk.epholl.artificialwars.graphics.CompilationErrorWindow;
+import sk.epholl.artificialwars.graphics.ErrorWindow;
+import sk.epholl.artificialwars.logic.RobotCreator.AbstractRobot;
+import sk.epholl.artificialwars.logic.objectives.CaptureLocationObjective;
+import sk.epholl.artificialwars.logic.objectives.CommandAtLeastUnitsObjective;
+import sk.epholl.artificialwars.logic.objectives.DestroyEnemyObjective;
+import sk.epholl.artificialwars.logic.objectives.Objective;
 import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.ProgramException;
 
 public class LevelLoader
 {
-	private Simulation logic;
+	private Simulation simulation;
 	
-	private final Map<String, byte[]> firmwares = new HashMap<>();
+	private final RobotFactory robotFactory = new RobotFactory();
 
 	public LevelLoader(Simulation logic)
 	{
-		this.logic = logic;
+		this.simulation = logic;
 	}
 
 	public void loadLevel(String fileName) throws IOException, IllegalArgumentException
@@ -62,6 +66,9 @@ public class LevelLoader
 						case "robot":
 							parseRobot(scanner);
 							break;
+						case "spawn":
+							parseSpawn(scanner);
+							break;
 						default:
 							throw new IllegalArgumentException("Unknown entity: " + key);
 					}
@@ -83,66 +90,23 @@ public class LevelLoader
 
 		Color color = new Color(red, green, blue);
 		
-		String type = scanner.next();
-		String firmwareFileName = scanner.next();
-		
+		String robotName = scanner.next();
+
 		try
 		{
-			switch (type)
-			{
-				case "eph32":
-				{
-					Eph32BasicRobot robot = new Eph32BasicRobot(color, player, logic);
-					robot.setCenterPosition(x, y);
-					
-					robot.setFirmware(getFirmware(type, firmwareFileName));
-					
-					logic.addEntity(robot);
-					break;
-				}
-				case "twm1608":
-				{
-					RobotTWM1608 robot = new RobotTWM1608(color, player, logic, logic.getSeed());
-					robot.setCenterPosition(x, y);
-					
-					robot.setFirmware(getFirmware(type, firmwareFileName));
-					
-					logic.addEntity(robot);
-					break;
-				}
-				default:
-					throw new IllegalArgumentException("Invalid robot type: " + type);
-			}
+			Robot robot = robotFactory.loadRobot(simulation, robotName);
+			
+			robot.setColor(color);
+			robot.setPlayer(player);
+			
+			robot.setCenterPosition(x, y);
+			
+			simulation.addEntity(robot);
 		}
 		catch (ProgramException e)
 		{
-			new CompilationErrorWindow().show(e);
-			
-			throw new IOException("Can't load robot: " + type + " " + firmwareFileName);
+			throw new IOException(String.format("Can't load robot %s: %s", robotName, e.getMessage()));
 		}
-	}
-	
-	private byte[] getFirmware(String robotType, String firmwareName) throws ProgramException
-	{
-		String key = robotType + ":" + firmwareName;
-		
-		byte firmware[] = firmwares.get(key);
-		
-		if (firmware == null)
-		{
-			try
-			{
-				firmware = FirmwareCompiler.compileFirmware(robotType, firmwareName);
-			}
-			catch (IOException e)
-			{
-				throw new ProgramException(e.getMessage());
-			}
-			
-			firmwares.put(key, firmware);
-		}
-		
-		return firmware;
 	}
 
 	private void parseObstacle(Scanner scanner)
@@ -153,9 +117,9 @@ public class LevelLoader
 		int width = scanner.nextInt();
 		int height = scanner.nextInt();
 		
-		Obstacle obstacle = new Obstacle(x, y, width, height, logic);
+		Obstacle obstacle = new Obstacle(x, y, width, height, simulation);
 		
-		logic.addEntity(obstacle);
+		simulation.addEntity(obstacle);
 	}
 
 	private void parseObjective(Scanner scanner)
@@ -174,12 +138,12 @@ public class LevelLoader
 				int player = scanner.nextInt();
 				int unitsAmount = scanner.nextInt();
 				
-				Area captureArea = new Area(logic, w, h);
+				Area captureArea = new Area(simulation, w, h);
 				captureArea.setCenterPosition(x, y);
-				logic.addEntity(captureArea);
+				simulation.addEntity(captureArea);
 				
-				CaptureLocationObjective objective = new CaptureLocationObjective(logic, player, unitsAmount, captureArea);
-				logic.addObjective(objective);
+				CaptureLocationObjective objective = new CaptureLocationObjective(simulation, player, unitsAmount, captureArea);
+				simulation.addObjective(objective);
 				
 				break;
 			}
@@ -188,12 +152,35 @@ public class LevelLoader
 				int player = scanner.nextInt();
 				
 				Objective objective = new DestroyEnemyObjective(player);
-				logic.addObjective(objective);
+				simulation.addObjective(objective);
+				
+				break;
+			}
+			case "command":
+			{
+				int player = scanner.nextInt();
+				int unitsCount = scanner.nextInt();
+				
+				CommandAtLeastUnitsObjective objective = new CommandAtLeastUnitsObjective(player, unitsCount);
+				simulation.addObjective(objective);
 				
 				break;
 			}
 			default:
 				throw new IllegalArgumentException("Invalid objective type: " + type);
 		}
+	}
+	
+	private void parseSpawn(Scanner scanner)
+	{
+		int id, x, y;
+		
+		id = scanner.nextInt();
+		x = scanner.nextInt();
+		y = scanner.nextInt();
+		
+		Spawn spawn = new Spawn(simulation, id);
+		spawn.setCenterPosition(x, y);
+		simulation.addSpawn(spawn);
 	}
 }

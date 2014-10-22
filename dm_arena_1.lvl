@@ -6,5 +6,5 @@
 
 //robot red green blue player posX posY instructionFileName
 
-objective capture 550 250 300 300 0 1
-robot 255 128 128 0 200 300 player1
+spawn 1 200 300
+spawn 2 400 300

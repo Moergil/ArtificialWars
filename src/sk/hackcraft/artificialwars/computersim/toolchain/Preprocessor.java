@@ -43,7 +43,7 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 	}
 	
 	@Override
-	public void process(InputStream input, OutputStream output) throws CodeSyntaxException, IOException
+	public void process(String name, InputStream input, OutputStream output) throws CodeSyntaxException, IOException
 	{
 		PreprocessorState state = started();
 		
@@ -63,7 +63,7 @@ public class Preprocessor extends CodeProcessor<CodeProcessorState>
 				continue;
 			}
 
-			Line line = new Line(lineNumber, cleanedLine);
+			Line line = new Line(name, lineNumber, cleanedLine);
 			
 			if (state.isParsingMacro())
 			{

@@ -1,4 +1,4 @@
-package sk.epholl.artificialwars.entities.objectives;
+package sk.epholl.artificialwars.logic.objectives;
 
 import sk.epholl.artificialwars.logic.Simulation;
 

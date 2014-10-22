@@ -17,7 +17,6 @@ import javax.swing.Timer;
 
 import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Explosion;
-import sk.epholl.artificialwars.entities.objectives.Objective;
 import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
 import sk.epholl.artificialwars.entities.robots.Robot;
 import sk.epholl.artificialwars.entities.robots.RobotTWM1608;
@@ -27,11 +26,18 @@ import sk.epholl.artificialwars.logic.GamePanelInput;
 import sk.epholl.artificialwars.logic.MainLogic;
 import sk.epholl.artificialwars.logic.SimulationRunner;
 import sk.epholl.artificialwars.logic.Vector2D;
+import sk.epholl.artificialwars.logic.objectives.Objective;
 
 public class GamePanel extends JPanel implements SimulationRunner
 {
 	private static final long serialVersionUID = 5460028729487426583L;
 
+	@FunctionalInterface
+	public interface SimulationCreatedListener
+	{
+		void created(Simulation simulation) throws Exception;
+	}
+	
 	private final MainLogic mainLogic;
 	
 	private final long seed;
@@ -51,6 +57,8 @@ public class GamePanel extends JPanel implements SimulationRunner
 	private final Map<Integer, RobotDebug> robotDebugs = new HashMap<>();
 	
 	private boolean finished, success;
+	
+	private SimulationCreatedListener simulationCreatedListener = (s) -> {};
 
 	public GamePanel(MainLogic mainLogic, String levelName, long seed)
 	{
@@ -66,7 +74,7 @@ public class GamePanel extends JPanel implements SimulationRunner
 		this.addMouseListener(mouseAdapter);
 		this.addMouseMotionListener(mouseAdapter);
 		
-		input = new GamePanelInput(this);
+		input = new GamePanelInput(mainLogic, this);
 		
 		logicTimer = new Timer(0, (e) -> {
 			update();
@@ -78,6 +86,11 @@ public class GamePanel extends JPanel implements SimulationRunner
 		
 		graphicsTimer.setDelay(16);
 		graphicsTimer.start();
+	}
+	
+	public void setSimulationCreatedListener(SimulationCreatedListener listener)
+	{
+		this.simulationCreatedListener = listener;
 	}
 	
 	@Override
@@ -94,7 +107,7 @@ public class GamePanel extends JPanel implements SimulationRunner
 	}
 	
 	@Override
-	public void restart()
+	public void restart() throws Exception
 	{
 		pause();
 		
@@ -103,15 +116,17 @@ public class GamePanel extends JPanel implements SimulationRunner
 		
 		simulation = new Simulation(seed);
 		
-		LevelLoader parser = new LevelLoader(simulation);
-		
 		try
 		{
+			LevelLoader parser = new LevelLoader(simulation);
 			parser.loadLevel(levelName);
+			
+			simulationCreatedListener.created(simulation);
 		}
 		catch (Exception e)
 		{
-			throw new RuntimeException("Error loading level: ", e);
+			new ErrorWindow("Error", e.getMessage()).show();
+			throw e;
 		}
 	}
 	
@@ -122,8 +137,6 @@ public class GamePanel extends JPanel implements SimulationRunner
 		simulation = null;
 		
 		graphicsTimer.stop();
-		
-		mainLogic.showMenu();
 	}
 	
 	@Override

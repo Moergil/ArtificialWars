@@ -23,10 +23,10 @@ import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
 import sk.hackcraft.artificialwars.computersim.parts.ComputerTWM1000;
 import sk.hackcraft.artificialwars.computersim.parts.MEXTIOChip;
 
-public class RobotTWM1608 extends Entity implements Robot
+public class RobotTWM1608 extends Robot
 {	
 	private final Random random;
-	private int player;
+
 	private int hitpoints = 5;
 	private final int GUN_COOLDOWN_TIME = 30;
 	private int actualGunCooldown = 0;
@@ -47,12 +47,9 @@ public class RobotTWM1608 extends Entity implements Robot
 	private static final double MOVE_SPEED = 1;
 	private static final double ROTATION_SPEED = Math.PI / 128;
 	
-	public RobotTWM1608(Color color, int player, Simulation game, long seed)
+	public RobotTWM1608(Simulation game, long seed)
 	{
 		super(game);
-		
-		this.color = color;
-		this.player = player;
 		
 		this.random = new Random(seed);
 		

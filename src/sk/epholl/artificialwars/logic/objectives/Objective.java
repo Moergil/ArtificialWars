@@ -1,4 +1,4 @@
-package sk.epholl.artificialwars.entities.objectives;
+package sk.epholl.artificialwars.logic.objectives;
 
 import java.awt.Color;
 import java.util.Set;
@@ -32,10 +32,7 @@ public abstract class Objective
 
 	public void update(Simulation simulation)
 	{
-		if (state == null)
-		{
-			state = evaluate(simulation);
-		}
+		state = evaluate(simulation);
 	}
 	
 	public Result getState()

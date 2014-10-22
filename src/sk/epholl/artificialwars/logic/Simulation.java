@@ -4,16 +4,19 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.swing.Timer;
 
 import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Obstacle;
-import sk.epholl.artificialwars.entities.objectives.Objective;
+import sk.epholl.artificialwars.entities.Spawn;
 import sk.epholl.artificialwars.graphics.GamePanel;
+import sk.epholl.artificialwars.logic.objectives.Objective;
 
 public class Simulation
 {
@@ -21,15 +24,13 @@ public class Simulation
 
 	private int cycleCount;
 
-	private final Set<Entity> entities;
-	private final List<Objective> objectives;
+	private final Set<Entity> entities = new HashSet<>();
+	private final Map<Integer, Spawn> spawns = new HashMap<>();
+	private final List<Objective> objectives = new ArrayList<>();
 
 	public Simulation(long seed)
 	{
 		this.seed = seed;
-		
-		entities = new HashSet<>();
-		objectives = new ArrayList<>();
 
 		cycleCount = 0;
 		
@@ -87,6 +88,8 @@ public class Simulation
 	public void removeEntity(Entity e)
 	{
 		entities.remove(e);
+		
+		spawns.remove(e);
 	}
 
 	public int getCycleCount()
@@ -115,5 +118,16 @@ public class Simulation
 				entities.remove(entity);
 			}
 		}
+	}
+
+	public void addSpawn(Spawn spawn)
+	{
+		spawns.put(spawn.getId(), spawn);
+		entities.add(spawn);
+	}
+	
+	public Map<Integer, Spawn> getSpawns()
+	{
+		return spawns;
 	}
 }

@@ -1,0 +1,4 @@
+# Draken robot properties
+name=Draken
+arch=twm1608
+code=ht-1.asm

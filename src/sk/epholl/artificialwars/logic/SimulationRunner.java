@@ -2,7 +2,7 @@ package sk.epholl.artificialwars.logic;
 
 public interface SimulationRunner 
 {
-	void restart();
+	void restart() throws Exception;
 	void dispose();
 
 	void pause();
