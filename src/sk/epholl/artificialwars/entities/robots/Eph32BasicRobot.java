@@ -1,17 +1,14 @@
 package sk.epholl.artificialwars.entities.robots;
 
-import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import sk.epholl.artificialwars.entities.Doodad;
 import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Explosion;
 import sk.epholl.artificialwars.entities.Projectile;
@@ -20,7 +17,6 @@ import sk.epholl.artificialwars.logic.Simulation;
 import sk.epholl.artificialwars.logic.Vector2D;
 import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
 import sk.hackcraft.artificialwars.computersim.parts.EPH32InstructionSet;
-import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 
 /**
  * @author epholl

@@ -3,13 +3,10 @@ package sk.epholl.artificialwars.logic;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import sk.epholl.artificialwars.entities.Entity;
-import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
 import sk.epholl.artificialwars.entities.robots.Robot;
 import sk.epholl.artificialwars.graphics.GameButton;
-import sk.epholl.artificialwars.graphics.GamePanel;
 
 public class GamePanelInput
 {

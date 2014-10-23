@@ -1,7 +1,5 @@
 package sk.epholl.artificialwars.logic;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,12 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.swing.Timer;
-
 import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Obstacle;
 import sk.epholl.artificialwars.entities.Spawn;
-import sk.epholl.artificialwars.graphics.GamePanel;
 import sk.epholl.artificialwars.logic.objectives.Objective;
 
 public class Simulation

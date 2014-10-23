@@ -2,25 +2,14 @@ package sk.epholl.artificialwars.logic;
 
 import java.awt.Color;
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Scanner;
-import java.util.StringTokenizer;
 
 import sk.epholl.artificialwars.entities.Area;
-import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.entities.Obstacle;
 import sk.epholl.artificialwars.entities.Spawn;
-import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
-import sk.epholl.artificialwars.entities.robots.FirmwareCompiler;
 import sk.epholl.artificialwars.entities.robots.Robot;
-import sk.epholl.artificialwars.entities.robots.RobotTWM1608;
-import sk.epholl.artificialwars.graphics.ErrorWindow;
-import sk.epholl.artificialwars.logic.RobotCreator.AbstractRobot;
 import sk.epholl.artificialwars.logic.objectives.CaptureLocationObjective;
 import sk.epholl.artificialwars.logic.objectives.CommandAtLeastUnitsObjective;
 import sk.epholl.artificialwars.logic.objectives.DestroyEnemyObjective;

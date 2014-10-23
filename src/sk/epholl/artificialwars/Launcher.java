@@ -1,11 +1,9 @@
 package sk.epholl.artificialwars;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import sk.epholl.artificialwars.logic.LaunchParams;
 import sk.epholl.artificialwars.logic.MainLogic;
-import sk.epholl.artificialwars.util.FileName;
 
 public class Launcher
 {

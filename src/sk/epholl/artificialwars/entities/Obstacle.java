@@ -3,7 +3,6 @@ package sk.epholl.artificialwars.entities;
 import java.awt.Color;
 
 import sk.epholl.artificialwars.logic.Simulation;
-import sk.epholl.artificialwars.logic.Vector2D;
 
 public class Obstacle extends Entity
 {

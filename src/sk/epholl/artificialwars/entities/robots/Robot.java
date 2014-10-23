@@ -1,7 +1,6 @@
 package sk.epholl.artificialwars.entities.robots;
 
 import java.awt.Color;
-import java.io.IOError;
 import java.io.IOException;
 
 import sk.epholl.artificialwars.entities.Entity;

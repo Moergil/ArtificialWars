@@ -9,8 +9,6 @@ import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JTextArea;
 
-import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.ProgramException;
-
 public class ErrorWindow
 {
 	private final String title, content;

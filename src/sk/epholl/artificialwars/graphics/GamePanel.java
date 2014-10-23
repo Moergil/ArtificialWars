@@ -10,21 +10,17 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
 import sk.epholl.artificialwars.entities.Entity;
-import sk.epholl.artificialwars.entities.Explosion;
-import sk.epholl.artificialwars.entities.robots.Eph32BasicRobot;
 import sk.epholl.artificialwars.entities.robots.Robot;
-import sk.epholl.artificialwars.entities.robots.RobotTWM1608;
-import sk.epholl.artificialwars.logic.LevelLoader;
-import sk.epholl.artificialwars.logic.Simulation;
 import sk.epholl.artificialwars.logic.GamePanelInput;
+import sk.epholl.artificialwars.logic.LevelLoader;
 import sk.epholl.artificialwars.logic.MainLogic;
+import sk.epholl.artificialwars.logic.Simulation;
 import sk.epholl.artificialwars.logic.SimulationRunner;
 import sk.epholl.artificialwars.logic.Vector2D;
 import sk.epholl.artificialwars.logic.objectives.Objective;

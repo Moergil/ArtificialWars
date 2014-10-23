@@ -5,12 +5,10 @@ import java.util.List;
 
 import sk.epholl.artificialwars.entities.robots.Robot;
 import sk.epholl.artificialwars.entities.robots.RobotTWM1608;
-import sk.hackcraft.artificialwars.computersim.Util;
 import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
 import sk.hackcraft.artificialwars.computersim.parts.ComputerTWM1000;
-import sk.hackcraft.artificialwars.computersim.parts.TEK1608InstructionSet;
 import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608.RegisterTEK1608;
-import sk.hackcraft.artificialwars.computersim.parts.TEK1608InstructionSet.TEK1608MemoryAddressing;
+import sk.hackcraft.artificialwars.computersim.parts.TEK1608InstructionSet;
 import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet;
 
 public class TWM1608RobotDebug implements RobotDebug

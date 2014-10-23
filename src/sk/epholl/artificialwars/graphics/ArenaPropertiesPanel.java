@@ -1,8 +1,5 @@
 package sk.epholl.artificialwars.graphics;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -10,29 +7,19 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOError;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.prefs.Preferences;
 
-import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.ListModel;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingConstants;
-import javax.swing.event.ListDataListener;
 
-import sk.epholl.artificialwars.logic.RobotFactory;
 import sk.epholl.artificialwars.logic.RobotCreator.AbstractRobot;
+import sk.epholl.artificialwars.logic.RobotFactory;
 import sk.epholl.artificialwars.util.FileName;
 
 public class ArenaPropertiesPanel extends JPanel

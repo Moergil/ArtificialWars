@@ -2,8 +2,6 @@ package sk.hackcraft.artificialwars.computersim.parts;
 
 import sk.hackcraft.artificialwars.computersim.Bus;
 import sk.hackcraft.artificialwars.computersim.Computer;
-import sk.hackcraft.artificialwars.computersim.PinUtil;
-import sk.hackcraft.artificialwars.computersim.Util;
 import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608.RegisterTEK1608;
 
 // TODO remap IO from $0400 to $4000

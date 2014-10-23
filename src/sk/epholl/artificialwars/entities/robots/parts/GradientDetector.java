@@ -1,6 +1,5 @@
 package sk.epholl.artificialwars.entities.robots.parts;
 
-import java.util.HashSet;
 
 
 public class GradientDetector implements RobotPart

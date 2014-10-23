@@ -1,12 +1,6 @@
 package sk.epholl.artificialwars.logic.objectives;
 
-import java.awt.Color;
-import java.util.Set;
-
-import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.logic.Simulation;
-import sk.epholl.artificialwars.logic.Updateable;
-import sk.epholl.artificialwars.logic.Vector2D;
 
 public abstract class Objective
 {

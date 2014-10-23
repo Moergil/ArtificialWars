@@ -10,24 +10,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import javax.swing.JComponent;
 import javax.swing.JFrame;
 
 import sk.epholl.artificialwars.entities.Spawn;
-import sk.epholl.artificialwars.entities.robots.FirmwareCompiler;
 import sk.epholl.artificialwars.entities.robots.Robot;
 import sk.epholl.artificialwars.entities.robots.StockRobotsId;
 import sk.epholl.artificialwars.graphics.ArenaPropertiesPanel;
 import sk.epholl.artificialwars.graphics.Eph32BasicRobotDebug;
 import sk.epholl.artificialwars.graphics.ErrorWindow;
 import sk.epholl.artificialwars.graphics.GamePanel;
+import sk.epholl.artificialwars.graphics.GamePanel.SimulationCreatedListener;
 import sk.epholl.artificialwars.graphics.MenuPanel;
 import sk.epholl.artificialwars.graphics.TWM1608RobotDebug;
-import sk.epholl.artificialwars.graphics.GamePanel.SimulationCreatedListener;
 import sk.epholl.artificialwars.logic.RobotCreator.AbstractRobot;
 import sk.epholl.artificialwars.logic.objectives.ArenaObjective;
-import sk.epholl.artificialwars.logic.objectives.CommandAtLeastUnitsObjective;
-import sk.epholl.artificialwars.logic.objectives.DestroyEnemyObjective;
 import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.ProgramException;
 
 public class MainLogic implements Runnable

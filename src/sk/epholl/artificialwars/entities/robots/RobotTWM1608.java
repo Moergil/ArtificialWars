@@ -1,7 +1,5 @@
 package sk.epholl.artificialwars.entities.robots;
 
-import java.awt.Color;
-import java.io.IOError;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -19,7 +17,6 @@ import sk.epholl.artificialwars.logic.Simulation;
 import sk.epholl.artificialwars.logic.Vector2D;
 import sk.epholl.artificialwars.logic.Vector2DMath;
 import sk.hackcraft.artificialwars.computersim.Util;
-import sk.hackcraft.artificialwars.computersim.debug.CommonValueFormatter;
 import sk.hackcraft.artificialwars.computersim.parts.ComputerTWM1000;
 import sk.hackcraft.artificialwars.computersim.parts.MEXTIOChip;
 

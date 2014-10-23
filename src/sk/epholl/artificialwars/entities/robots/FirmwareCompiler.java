@@ -8,7 +8,6 @@ import java.io.InputStream;
 
 import sk.hackcraft.artificialwars.computersim.toolchain.AssemblerEPH32;
 import sk.hackcraft.artificialwars.computersim.toolchain.AssemblerTEK1608;
-import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.CodeSyntaxException;
 import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.ProgramException;
 import sk.hackcraft.artificialwars.computersim.toolchain.Preprocessor;
 

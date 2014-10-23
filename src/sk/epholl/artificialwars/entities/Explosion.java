@@ -1,7 +1,6 @@
 package sk.epholl.artificialwars.entities;
 
 import java.awt.Color;
-import java.util.Set;
 
 import sk.epholl.artificialwars.logic.Simulation;
 import sk.epholl.artificialwars.logic.Vector2D;

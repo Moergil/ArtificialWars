@@ -1,11 +1,8 @@
 package sk.epholl.artificialwars.logic;
 
 import java.io.IOException;
-import java.util.Map;
 
-import sk.epholl.artificialwars.entities.robots.FirmwareCompiler;
 import sk.epholl.artificialwars.entities.robots.Robot;
-import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.ProgramException;
 
 public abstract class AbstractRobotCreator<R extends Robot> implements RobotCreator<R>
 {

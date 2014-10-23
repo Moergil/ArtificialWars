@@ -2,12 +2,8 @@ package sk.epholl.artificialwars;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-
-import sk.epholl.artificialwars.logic.LaunchParams;
 
 public class Arguments
 {

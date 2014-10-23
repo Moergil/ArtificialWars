@@ -1,7 +1,6 @@
 package sk.epholl.artificialwars.entities.robots.parts;
 
 import java.util.Arrays;
-import java.util.HashSet;
 
 
 public class SegmentDetector implements RobotPart

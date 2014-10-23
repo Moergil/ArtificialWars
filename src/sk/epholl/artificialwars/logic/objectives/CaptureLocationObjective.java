@@ -1,10 +1,6 @@
 package sk.epholl.artificialwars.logic.objectives;
 
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import sk.epholl.artificialwars.entities.Area;
-import sk.epholl.artificialwars.entities.Entity;
 import sk.epholl.artificialwars.logic.Simulation;
 
 public class CaptureLocationObjective extends Objective

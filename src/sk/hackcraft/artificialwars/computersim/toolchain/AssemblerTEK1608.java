@@ -3,8 +3,6 @@ package sk.hackcraft.artificialwars.computersim.toolchain;
 import java.io.IOException;
 import java.io.OutputStream;
 
-
-
 import sk.hackcraft.artificialwars.computersim.Endianness;
 import sk.hackcraft.artificialwars.computersim.parts.TEK1608InstructionSet;
 import sk.hackcraft.artificialwars.computersim.parts.TEK1608InstructionSet.TEK1608MemoryAddressing;
