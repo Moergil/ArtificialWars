@@ -61,92 +61,97 @@ public class Arguments
 		return value.substring(1);
 	}
 	
-	public Fetcher start()
+	public String[] values(String argument, Getter<String[]> mapper)
 	{
-		return new Fetcher();
+		if (indexes.containsKey(argument))
+		{
+			int index = indexes.get(argument);
+			
+			int paramsCount = paramsCounts.get(argument);
+			
+			List<String> subData = data.subList(index + 1, index + 1 + paramsCount);
+			String subArray[] = subData.toArray(new String[subData.size()]);
+			
+			mapper.get(subData.toArray(new String[subData.size()]));
+			
+			return subArray;
+		}
+		else
+		{
+			return null;
+		}
 	}
 	
-	public class Fetcher
-	{		
-		public Fetcher values(String argument, Getter<String[]> mapper)
+	public String[] values(String argument, int paramsCount, Getter<String[]> mapper)
+	{
+		if (indexes.containsKey(argument))
 		{
-			if (indexes.containsKey(argument))
-			{
-				int index = indexes.get(argument);
-				
-				int paramsCount = paramsCounts.get(argument);
-				
-				List<String> subData = data.subList(index + 1, index + 1 + paramsCount);
-				
-				mapper.get(subData.toArray(new String[subData.size()]));
-			}
+			int index = indexes.get(argument);
 			
-			return this;
-		}
-		
-		public Fetcher values(String argument, int paramsCount, Getter<String[]> mapper)
-		{
-			if (indexes.containsKey(argument))
-			{
-				int index = indexes.get(argument);
-				
-				int nameParamsCount = paramsCounts.get(argument);
-				paramsCount = Math.min(paramsCount, nameParamsCount);
-				
-				List<String> subData = data.subList(index + 1, index + 1 + paramsCount);
-				
-				mapper.get(subData.toArray(new String[subData.size()]));
-			}
+			int nameParamsCount = paramsCounts.get(argument);
+			paramsCount = Math.min(paramsCount, nameParamsCount);
 			
-			return this;
+			List<String> subData = data.subList(index + 1, index + 1 + paramsCount);
+			String subArray[] = subData.toArray(new String[subData.size()]);
+			
+			mapper.get(subArray);
+			
+			return subArray;
 		}
-		
-		public <V> Fetcher value(String argument, Mapper<V> mapper, Getter<V> getter)
+		else
 		{
-			if (indexes.containsKey(argument) && paramsCounts.get(argument) > 0)
-			{
-				int index = indexes.get(argument) + 1;
+			return null;
+		}
+	}
+	
+	public <V> V value(String argument, Mapper<V> mapper, Getter<V> getter)
+	{
+		if (indexes.containsKey(argument) && paramsCounts.get(argument) > 0)
+		{
+			int index = indexes.get(argument) + 1;
 
-				try
-				{
-					V value = mapper.map(data.get(index));
-					getter.get(value);
-				}
-				catch (Exception e)
-				{
-					System.err.println("Can't process argument: " + argument);
-				}
+			try
+			{
+				V value = mapper.map(data.get(index));
+				getter.get(value);
+				
+				return value;
 			}
-			
-			return this;
+			catch (Exception e)
+			{
+				System.err.println("Can't process argument: " + argument);
+			}
 		}
 		
-		public <V> Fetcher value(String argument, Getter<String> getter)
-		{
-			return value(argument, (s) -> s, getter);
-		}
+		return null;
+	}
+	
+	public String value(String argument, Getter<String> getter)
+	{
+		return value(argument, (s) -> s, getter);
+	}
+	
+	public Long valueLong(String argument, Getter<Long> getter)
+	{
+		return value(argument, (s) -> Long.valueOf(s), getter);
+	}
+	
+	public Integer valueInt(String argument, Getter<Integer> getter)
+	{
+		return value(argument, (s) -> Integer.valueOf(s), getter);
+	}
+	
+	public Double valueDouble(String argument, Getter<Double> getter)
+	{
+		return value(argument, (s) -> Double.valueOf(s), getter);
+	}
+	
+	public Boolean contains(String argument, Getter<Boolean> mapper)
+	{
+		boolean contains = indexes.containsKey(argument);
+		mapper.get(contains);
 		
-		public <V> Fetcher valueLong(String argument, Getter<Long> getter)
-		{
-			return value(argument, (s) -> Long.valueOf(s), getter);
-		}
-		
-		public <V> Fetcher valueInt(String argument, Getter<Integer> getter)
-		{
-			return value(argument, (s) -> Integer.valueOf(s), getter);
-		}
-		
-		public <V> Fetcher valueDouble(String argument, Getter<Double> getter)
-		{
-			return value(argument, (s) -> Double.valueOf(s), getter);
-		}
-		
-		public Fetcher contains(String argument, Getter<Boolean> mapper)
-		{
-			mapper.get(indexes.containsKey(argument));
-			
-			return this;
-		}
+		return contains;
 	}
 	
 	@FunctionalInterface
