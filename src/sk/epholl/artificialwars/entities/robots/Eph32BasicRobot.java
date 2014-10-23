@@ -34,7 +34,8 @@ public class Eph32BasicRobot extends Robot
 	private int regA, regB;
 	
 	private final int LOCK_OFFSET, LOCK_ACCURACY_TIME;
-	private int lockX, lockY, lockTime;
+	private int lockTime;
+	private Entity lockedTarget;
 	private boolean lockSuccess;
 
 	private int[] instructionMemory;
@@ -43,8 +44,6 @@ public class Eph32BasicRobot extends Robot
 	private int memoryPointer;
 	private int instructionPointer;
 	private int instructionCooldown;
-	
-	private final double MOVE_SPEED = 1, ROTATION_SPEED = Math.PI / 64;
 
 	/*
 	 * TODO
@@ -71,7 +70,7 @@ public class Eph32BasicRobot extends Robot
 		memory = new int[4];
 
 		LOCK_OFFSET = 30;
-		LOCK_ACCURACY_TIME = 250;
+		LOCK_ACCURACY_TIME = 100;
 		lockTime = 0;
 	}
 	
@@ -564,7 +563,7 @@ public class Eph32BasicRobot extends Robot
 				continue;
 			}
 			
-			if (e.isDestructible())
+			if (e.isDestructible() && e instanceof Robot)
 			{
 				targets.add(e);
 			}
@@ -573,24 +572,34 @@ public class Eph32BasicRobot extends Robot
 		if (targets.isEmpty())
 		{
 			lockSuccess = false;
-			lockX = regA;
-			lockY = regB;
+			lockedTarget = null;
 		}
 		else
 		{
 			lockSuccess = true;
 			lockTime = game.getCycleCount();
 			
-			Entity target = targets.get(random.nextInt(targets.size()));
-			Vector2D position = target.getCenterPosition();
-			
-			lockX = (int)position.getX();
-			lockY = (int)position.getY();
+			lockedTarget = targets.get(random.nextInt(targets.size()));
 		}
 	}
 	
 	private void setLockToRegisters()
 	{
+		int lockX, lockY;
+		
+		if (lockedTarget == null)
+		{
+			lockX = regA;
+			lockY = regB;
+		}
+		else
+		{
+			Vector2D pos = lockedTarget.getCenterPosition();
+			
+			lockX = (int)pos.getX();
+			lockY = (int)pos.getY();
+		}
+		
 		int elapsedCycles = game.getCycleCount() - lockTime;
 
 		int offsetX = 0, offsetY = 0;

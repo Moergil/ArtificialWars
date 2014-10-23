@@ -1,5 +1,5 @@
 ;;;;;;;;;;;;;;;;;;;;;
-; Mauser-9000 bot   ;
+; Ratte bot         ;
 ; coded by @Moergil ;
 ;;;;;;;;;;;;;;;;;;;;;
 
@@ -11,23 +11,26 @@ begin:
 	jmp begin
 	
 macro movement moveLabel loopLabel reverseLabel reverseLoopLabel finishLabel
-	moveLabel:
+	%moveLabel%:
 		rnd 8
 		swp
 		seta 50
-		move
-	loopLabel:
-		jmpc reverseLabel
-		jmpm loopLabel
-		jmp finishLabel
-	reverseLabel:
+		move 2
+	%loopLabel%:
+		jmpc %reverseLabel%
+		;jmpm %loopLabel%
+		;jmp %finishLabel%
+		wait 3
+		jmp %finishLabel%
+	%reverseLabel%:
 		seta -30
 		setb 48
-		move
-		reverseLoopLabel:
-			jmpm reverseLoopLabel
-		jmp moveLabel
-	finishLabel:
+		move -1
+		%reverseLoopLabel%:
+			;jmpm %reverseLoopLabel%
+			wait 1
+		jmp %moveLabel%
+	%finishLabel%:
 /macro
 
 macro quickFire

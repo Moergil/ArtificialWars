@@ -1,0 +1,4 @@
+# Draken robot properties
+name=Ratte
+arch=eph32
+code=ratte.txt

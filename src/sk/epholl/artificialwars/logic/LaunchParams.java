@@ -70,7 +70,7 @@ public class LaunchParams
 		return seed != null;
 	}
 	
-	public long getSeed()
+	public Long getSeed()
 	{
 		return seed;
 	}
