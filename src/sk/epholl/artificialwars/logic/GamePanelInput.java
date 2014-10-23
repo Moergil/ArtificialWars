@@ -45,11 +45,11 @@ public class GamePanelInput
 		buttons.add(button);
 
 		button = new GameButton(310, 390, 545, 565, "Slow");
-		button.setActivationListener(() -> runner.run(10));
+		button.setActivationListener(() -> {runner.setSpeed(100); runner.run();});
 		buttons.add(button);
 		
 		button = new GameButton(410, 490, 545, 565, "Fast");
-		button.setActivationListener(() -> runner.run(1));
+		button.setActivationListener(() -> {runner.setSpeed(1000); runner.run();});
 		buttons.add(button);
 	}
 

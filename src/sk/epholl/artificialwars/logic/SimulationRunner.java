@@ -6,9 +6,13 @@ public interface SimulationRunner
 	void dispose();
 
 	void pause();
-	void run(long millisDelay);
+	void run();
 	
 	void step();
+	
+	void setSpeed(double speed);
+	void setAutoStart(boolean autoStart);
+	void setAutoRestart(boolean autoRestart);
 	
 	Simulation getSimulation();
 }

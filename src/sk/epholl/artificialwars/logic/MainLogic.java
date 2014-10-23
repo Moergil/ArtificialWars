@@ -23,6 +23,7 @@ import sk.epholl.artificialwars.graphics.ErrorWindow;
 import sk.epholl.artificialwars.graphics.GamePanel;
 import sk.epholl.artificialwars.graphics.MenuPanel;
 import sk.epholl.artificialwars.graphics.TWM1608RobotDebug;
+import sk.epholl.artificialwars.graphics.GamePanel.SimulationCreatedListener;
 import sk.epholl.artificialwars.logic.RobotCreator.AbstractRobot;
 import sk.epholl.artificialwars.logic.objectives.ArenaObjective;
 import sk.epholl.artificialwars.logic.objectives.CommandAtLeastUnitsObjective;
@@ -47,28 +48,77 @@ public class MainLogic implements Runnable
 		if (p.getLevelName() == null)
 		{
 			showMenu();
+			return;
 		}
-		else
+		
+		if (p.isArena())
 		{
-			String levelName = p.getLevelName();
-			if (p.isArena())
+			if (hasAllArenaParameters(p))
 			{
-				List<String> robotsNames = p.getRobotsNames();
-				
-				if (robotsNames.size() < 2)
-				{
-					// TODO show arena menu instead
-					System.exit(2);
-				}
-				
-				String robot1Name = robotsNames.get(0);
-				String robot2Name = robotsNames.get(1);
-				createArenaGame(levelName, robot1Name, robot2Name);
+				createArenaGame(p);
 			}
 			else
 			{
-				createGame(levelName);
+				showArenaProperties();
 			}
+		}
+		else
+		{
+			createMissionGame(p);
+		}
+	}
+	
+	private boolean hasAllArenaParameters(LaunchParams p)
+	{
+		return p.getLevelName() != null && p.getRobotsNames().size() >= 2;
+	}
+	
+	public void createArenaGame(LaunchParams p)
+	{
+		String levelName = p.getLevelName() + ".lvl";
+		
+		List<String> robotsNames = p.getRobotsNames();
+		
+		String robot1Name = robotsNames.get(0) + ".rbt";
+		String robot2Name = robotsNames.get(1) + ".rbt";
+		
+		SimulationCreatedListener listener = (simulation) -> prepareArena(simulation, robot1Name, robot2Name);
+		GamePanel gamePanel = createGame(levelName, listener);
+		
+		configureSimulationRunner(gamePanel, p);
+	}
+	
+	public GamePanel createMissionGame(String levelName)
+	{
+		SimulationCreatedListener listener = (simulation) -> {};
+		return createGame(levelName, listener);
+	}
+	
+	public void createMissionGame(LaunchParams p)
+	{
+		String levelName = p.getLevelName() + ".lvl";
+		GamePanel gamePanel = createMissionGame(levelName);
+		
+		configureSimulationRunner(gamePanel, p);
+	}
+	
+	private void configureSimulationRunner(SimulationRunner runner, LaunchParams p)
+	{
+		boolean autoStart = p.isAutoStart();
+		
+		runner.setAutoStart(autoStart);
+		
+		runner.setAutoRestart(p.isAutoRestart());
+
+		Double speed = p.getSpeed();
+		if (speed != null)
+		{
+			runner.setSpeed(speed);
+		}
+		
+		if (autoStart)
+		{
+			runner.run();
 		}
 	}
 
@@ -107,22 +157,16 @@ public class MainLogic implements Runnable
 		setScreenComponent(menu);
 	}
 
-	public void createGame(String levelName)
+	public GamePanel createGame(String levelName, SimulationCreatedListener listener)
 	{
 		long seed = masterSeed;
 		GamePanel panel = new GamePanel(this, levelName, seed);
 		
-		setGamePanel(panel);
-	}
-	
-	public void createArenaGame(String levelName, String robot1Name, String robot2Name)
-	{
-		long seed = masterSeed;
-		GamePanel panel = new GamePanel(this, levelName, seed);
-		
-		panel.setSimulationCreatedListener((simulation) -> prepareArena(simulation, robot1Name, robot2Name));
+		panel.setSimulationCreatedListener(listener);
 		
 		setGamePanel(panel);
+		
+		return panel;
 	}
 	
 	private void setGamePanel(GamePanel panel)
@@ -190,11 +234,11 @@ public class MainLogic implements Runnable
 			spawn.setCreationFailedListener((r) -> {
 				new ErrorWindow("Error", String.format("Creating robot %s failed: %s%n", robotName, r)).show();
 			});
+			
+			spawn.act();
 		}
 		
 		simulation.addObjective(new ArenaObjective(1));
-		
-		simulation.step();
 	}
 
 	public void setScreenComponent(Container component)
@@ -230,14 +274,15 @@ public class MainLogic implements Runnable
 			}
 			catch (IOException exc)
 			{
-				System.out.println(exc.getMessage());
+				System.out.println("Can't save arena properties: " + exc.getMessage());
 			}
 			
 			String levelFileName = panel.getLevel().getFileName();
 			String robot1FileName = panel.getRobot(1).getFileName();
 			String robot2FileName = panel.getRobot(2).getFileName();
 			
-			createArenaGame(levelFileName, robot1FileName, robot2FileName);
+			SimulationCreatedListener listener = (simulation) -> prepareArena(simulation, robot1FileName, robot2FileName);
+			createGame(levelFileName, listener);
 		});
 		
 		setScreenComponent(panel);

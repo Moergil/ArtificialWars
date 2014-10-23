@@ -132,12 +132,17 @@ public class Arguments
 		
 		public <V> Fetcher valueLong(String argument, Getter<Long> getter)
 		{
-			return value(argument, (s) -> Long.decode(s), getter);
+			return value(argument, (s) -> Long.valueOf(s), getter);
 		}
 		
 		public <V> Fetcher valueInt(String argument, Getter<Integer> getter)
 		{
-			return value(argument, (s) -> Integer.decode(s), getter);
+			return value(argument, (s) -> Integer.valueOf(s), getter);
+		}
+		
+		public <V> Fetcher valueDouble(String argument, Getter<Double> getter)
+		{
+			return value(argument, (s) -> Double.valueOf(s), getter);
 		}
 		
 		public Fetcher contains(String argument, Getter<Boolean> mapper)

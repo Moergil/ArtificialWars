@@ -11,6 +11,7 @@ import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -59,6 +60,8 @@ public class GamePanel extends JPanel implements SimulationRunner
 	private boolean finished, success;
 	
 	private SimulationCreatedListener simulationCreatedListener = (s) -> {};
+	
+	private boolean autoStart, autoRestart;
 
 	public GamePanel(MainLogic mainLogic, String levelName, long seed)
 	{
@@ -100,9 +103,8 @@ public class GamePanel extends JPanel implements SimulationRunner
 	}
 	
 	@Override
-	public void run(long millisDelay)
+	public void run()
 	{
-		logicTimer.setDelay((int)millisDelay);
 		logicTimer.start();
 	}
 	
@@ -127,6 +129,11 @@ public class GamePanel extends JPanel implements SimulationRunner
 		{
 			new ErrorWindow("Error", e.getMessage()).show();
 			throw e;
+		}
+		
+		if (autoStart)
+		{
+			run();
 		}
 	}
 	
@@ -153,11 +160,50 @@ public class GamePanel extends JPanel implements SimulationRunner
 		pause();
 	}
 	
+	@Override
+	public void setSpeed(double speed)
+	{
+		int delay = (int)(TimeUnit.SECONDS.toMillis(1) / speed);
+		
+		if (delay < 0)
+		{
+			delay = 1;
+		}
+		
+		logicTimer.setDelay(delay);
+	}
+
+	@Override
+	public void setAutoStart(boolean autoStart)
+	{
+		this.autoStart = autoStart;
+	}
+
+	@Override
+	public void setAutoRestart(boolean autoRestart)
+	{
+		this.autoRestart = autoRestart;
+	}
+	
 	private void update()
 	{
 		if (finished)
 		{
-			pause();
+			if (autoRestart)
+			{
+				try
+				{
+					restart();
+				}
+				catch (Exception e)
+				{
+					mainLogic.showMenu();
+				}
+			}
+			else
+			{
+				pause();
+			}
 			return;
 		}
 

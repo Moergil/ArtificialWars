@@ -38,7 +38,7 @@ public class MenuPanel extends JPanel
 			int down = up + height;
 
 			MenuButton button = new MenuButton(left, right, up, down, text);
-			button.setActivationListener(() -> mainLogic.createGame(text + ".txt"));
+			button.setActivationListener(() -> mainLogic.createMissionGame(text + ".txt"));
 			buttons.add(button);
 			
 			y = down + spacing;

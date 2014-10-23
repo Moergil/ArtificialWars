@@ -5,6 +5,7 @@ import java.util.List;
 
 import sk.epholl.artificialwars.logic.LaunchParams;
 import sk.epholl.artificialwars.logic.MainLogic;
+import sk.epholl.artificialwars.util.FileName;
 
 public class Launcher
 {
@@ -43,7 +44,10 @@ public class Launcher
 		.contains("autostart", (v) -> p.setAutostart(v));
 		
 		a.start()
-		.contains("restart", (v) -> p.setRestart(v));
+		.contains("autorestart", (v) -> p.setRestart(v));
+		
+		a.start()
+		.valueDouble("speed", (v) -> p.setSpeed(v));
 		
 		a.start()
 		.valueLong("seed", (v) -> p.setSeed(v));

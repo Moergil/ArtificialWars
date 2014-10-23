@@ -13,6 +13,8 @@ public class LaunchParams
 	
 	private final List<String> robotsNames = new ArrayList<>();
 	
+	private Double speed;
+	
 	public void setLevelName(String levelName)
 	{
 		this.levelName = levelName;
@@ -43,7 +45,7 @@ public class LaunchParams
 		this.autostart = autostart;
 	}
 	
-	public boolean isAutostart()
+	public boolean isAutoStart()
 	{
 		return autostart;
 	}
@@ -53,7 +55,7 @@ public class LaunchParams
 		this.restart = restart;
 	}
 	
-	public boolean isRestart()
+	public boolean isAutoRestart()
 	{
 		return restart;
 	}
@@ -71,5 +73,15 @@ public class LaunchParams
 	public long getSeed()
 	{
 		return seed;
+	}
+
+	public void setSpeed(Double speed)
+	{
+		this.speed = speed;
+	}
+	
+	public Double getSpeed()
+	{
+		return speed;
 	}
 }
