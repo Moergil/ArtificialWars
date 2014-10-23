@@ -35,12 +35,15 @@ public class MainLogic implements Runnable
 
 	private WindowListener windowListener;
 	
-	private long masterSeed = 1;
+	private final long masterSeed;
 	
 	public MainLogic(LaunchParams p)
 	{
 		gameWindow = createGameWindow();
 
+		Long seed = p.getSeed();
+		masterSeed = (seed != null) ? seed : new Random().nextLong();
+		
 		if (p.getLevelName() == null)
 		{
 			showMenu();
@@ -54,6 +57,7 @@ public class MainLogic implements Runnable
 				
 				if (robotsNames.size() < 2)
 				{
+					// TODO show arena menu instead
 					System.exit(2);
 				}
 				

@@ -7,6 +7,9 @@ public class LaunchParams
 {
 	private String levelName;
 	private boolean arena;
+	private boolean autostart, restart;
+
+	private Long seed;
 	
 	private final List<String> robotsNames = new ArrayList<>();
 	
@@ -33,5 +36,40 @@ public class LaunchParams
 	public List<String> getRobotsNames()
 	{
 		return robotsNames;
+	}
+	
+	public void setAutostart(boolean autostart)
+	{
+		this.autostart = autostart;
+	}
+	
+	public boolean isAutostart()
+	{
+		return autostart;
+	}
+	
+	public void setRestart(boolean restart)
+	{
+		this.restart = restart;
+	}
+	
+	public boolean isRestart()
+	{
+		return restart;
+	}
+
+	public void setSeed(long seed)
+	{
+		this.seed = seed;
+	}
+	
+	public boolean hasSeed()
+	{
+		return seed != null;
+	}
+	
+	public long getSeed()
+	{
+		return seed;
 	}
 }
