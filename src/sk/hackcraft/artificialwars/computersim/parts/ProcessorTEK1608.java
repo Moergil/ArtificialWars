@@ -16,53 +16,38 @@ import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.Opcode;
 /**
  * LittleEndian (16bit = low byte, high byte)
  * 
- * TODO implement interrupt and bcd, or decide to throw them away
- * TODO position instructions properly in instruction table
- * TODO test everything!
+ * TODO implement interrupt and bcd, or decide to throw them away TODO position
+ * instructions properly in instruction table TODO test everything!
  */
 public class ProcessorTEK1608 implements Device
 {
-	private static final int
-		READWRITE_PIN = 0,
-		ADDRESS_PINS_START = READWRITE_PIN + 1,
-		ADDRESS_PINS_COUNT = 16,
-		DATA_PINS_START = ADDRESS_PINS_START + ADDRESS_PINS_COUNT,
-		DATA_PINS_COUNT = 8,
-		RES_PIN = DATA_PINS_START + DATA_PINS_COUNT,
-		NMI_PIN = RES_PIN + 1,
-		IRQ_PIN = NMI_PIN + 1,
-		BRK_PIN = IRQ_PIN + 1;
-	
-	private static final Runnable EmptyRunnable = () -> {};
-	
-	protected byte a, x, y, sp = (byte)0xFF, sr;
+	private static final int READWRITE_PIN = 0,
+			ADDRESS_PINS_START = READWRITE_PIN + 1, ADDRESS_PINS_COUNT = 16,
+			DATA_PINS_START = ADDRESS_PINS_START + ADDRESS_PINS_COUNT,
+			DATA_PINS_COUNT = 8, RES_PIN = DATA_PINS_START + DATA_PINS_COUNT,
+			NMI_PIN = RES_PIN + 1, IRQ_PIN = NMI_PIN + 1;
+
+	private static final Runnable EmptyRunnable = () -> {
+	};
+
+	protected byte a, x, y, sp = (byte) 0xFF, sr = Flag.UNUSED;
 	protected short pc;
 	protected byte ir;
 
 	protected int mar;
-	
-	private interface Interrupt
+
+	private interface InterruptAddresses
 	{
-		static final int
-			NMI = 0xFFFA,
-			RES = 0xFFFC,
-			IRQ = 0xFFFE;
+		static final int NMI = 0xFFFA, RES = 0xFFFC, IRQ = 0xFFFE;
 	}
-	
-	
+
 	private interface Flag
 	{
-		static final int
-			CARRY = 1,
-			ZERO = 2,
-			INTERRUPT = 4,
-			// DECIMAL MODE NOT SUPPORTED
-			BREAK = 16,
-			// 32 is ignored
-			OVERFLOW = 64,
-			NEGATIVE = 128;
+		static final int CARRY = 1, ZERO = 2, INTERRUPT = 4,
+		// DECIMAL MODE NOT SUPPORTED
+				BREAK = 16, UNUSED = 32, OVERFLOW = 64, NEGATIVE = 128;
 	}
-	
+
 	@FunctionalInterface
 	public interface InstructionListener
 	{
@@ -70,128 +55,91 @@ public class ProcessorTEK1608 implements Device
 	}
 
 	private Map<TEK1608MemoryAddressing, Runnable[]> memoryAddressingSetups = new EnumMap<>(TEK1608MemoryAddressing.class);
-	
+
 	private Pins pins = Pins.DUMMY;
-	
-	private final boolean
-			addressBits[] = new boolean[ADDRESS_PINS_COUNT],
+
+	private final boolean addressBits[] = new boolean[ADDRESS_PINS_COUNT],
 			dataBits[] = new boolean[DATA_PINS_COUNT];
-	
-	private final int
-		addressIndexes[] = PinUtil.createSequenceIndexes(ADDRESS_PINS_START, ADDRESS_PINS_COUNT),
-		dataIndexes[] = PinUtil.createSequenceIndexes(DATA_PINS_START, DATA_PINS_COUNT);
+
+	private final int addressIndexes[] = PinUtil.createSequenceIndexes(ADDRESS_PINS_START, ADDRESS_PINS_COUNT),
+			dataIndexes[] = PinUtil.createSequenceIndexes(DATA_PINS_START, DATA_PINS_COUNT);
 
 	private final InstructionSet instructionSet;
-	
+
 	private final Operation[] operations = new Operation[256];
-	private final Operation loadInstruction = new LoadInstruction();
-	
+
+	private final Operation loadInstruction = new LoadInstruction(),
+			nmiHandler = new Interrupt(InterruptAddresses.NMI, true, false),
+			resHandler = new Interrupt(InterruptAddresses.RES, false, false),
+			irqHandler = new Interrupt(InterruptAddresses.IRQ, true, false);
+
 	private Operation currentOperation;
-	
+
 	private InstructionListener instructionListener;
-	
+
 	public ProcessorTEK1608()
 	{
-		setInitialOperandLoader(TEK1608MemoryAddressing.ACCUMULATOR, new Runnable[]{});
-		setInitialOperandLoader(TEK1608MemoryAddressing.ABSOLUTE, new Runnable[]{
-			() -> {
-				mar = readDataBus();
-				setAddressBus(pc - 1);
-			},
-			EmptyRunnable,
-			() -> 
-			{
-				mar += readDataBus() << 8;
-				setAddressBus(mar);
-			},
-			EmptyRunnable
-		});
-		setInitialOperandLoader(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, new Runnable[]{
-			() -> {
-				mar = readDataBus();
-				setAddressBus(pc - 1);
-			},
-			EmptyRunnable,
-			() -> 
-			{
-				mar += readDataBus() << 8;
-				setAddressBus(mar + x);
-			},
-			EmptyRunnable
-		});
-		setInitialOperandLoader(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, new Runnable[]{
-			() -> {
-				mar = readDataBus();
-				setAddressBus(pc - 1);
-			},
-			EmptyRunnable,
-			() -> 
-			{
-				mar += (byte)(x + readDataBus() << 8);
-				setAddressBus(mar + x);
-			},
-			EmptyRunnable
-		});
-		setInitialOperandLoader(TEK1608MemoryAddressing.IMMEDIATE, new Runnable[]{});
-		setInitialOperandLoader(TEK1608MemoryAddressing.IMPLIED, new Runnable[]{});
-		setInitialOperandLoader(TEK1608MemoryAddressing.X_INDEXED_INDIRECT, new Runnable[]{
-			() -> {
-				mar = readDataBus();
-				setAddressBus(mar + x);
-			},
-			() -> setAddressBus(mar + x + 1),
-			() -> {
-				mar = readDataBus();
-			},
-			() -> {
-				mar = readDataBus() << 8;
-				setAddressBus(mar);
-			},
-			EmptyRunnable
-		});
-		setInitialOperandLoader(TEK1608MemoryAddressing.INDIRECT_Y_INDEXED, new Runnable[]{
-			() -> {
-				mar = readDataBus();
-				setAddressBus(mar);
-			},
-			() -> setAddressBus(mar + 1),
-			() -> {
-				mar = readDataBus();
-			},
-			() -> {
-				mar = readDataBus() << 8;
-				int carry = ((sr & Flag.CARRY) != 0) ? 1 : 0;
-				setAddressBus(mar + y + carry);
-			},
-			EmptyRunnable
-		});
-		setInitialOperandLoader(TEK1608MemoryAddressing.RELATIVE, new Runnable[]{});
-		setInitialOperandLoader(TEK1608MemoryAddressing.ZEROPAGE, new Runnable[]{
-			() -> {
-				mar = readDataBus();
-				setAddressBus(mar);
-			},
-			EmptyRunnable
-		});
-		setInitialOperandLoader(TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, new Runnable[]{
-			() -> {
-				mar = readDataBus();
-				setAddressBus(mar + x);
-			},
-			EmptyRunnable
-		});
-		setInitialOperandLoader(TEK1608MemoryAddressing.ZEROPAGE_Y_INDEXED, new Runnable[]{
-			() -> {
-				mar = readDataBus();
-				setAddressBus(mar + y);
-			},
-			EmptyRunnable
-		});
-		
-		currentOperation = loadInstruction;
-		
+		setInitialOperandLoader(TEK1608MemoryAddressing.ACCUMULATOR, new Runnable[] {});
+		setInitialOperandLoader(TEK1608MemoryAddressing.ABSOLUTE, new Runnable[] { () -> {
+			mar = readDataBus();
+			setAddressBus(pc - 1);
+		}, EmptyRunnable, () -> {
+			mar += readDataBus() << 8;
+			setAddressBus(mar);
+		}, EmptyRunnable });
+		setInitialOperandLoader(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X, new Runnable[] { () -> {
+			mar = readDataBus();
+			setAddressBus(pc - 1);
+		}, EmptyRunnable, () -> {
+			mar += readDataBus() << 8;
+			setAddressBus(mar + x);
+		}, EmptyRunnable });
+		setInitialOperandLoader(TEK1608MemoryAddressing.ABSOLUTE_INDEXED_Y, new Runnable[] { () -> {
+			mar = readDataBus();
+			setAddressBus(pc - 1);
+		}, EmptyRunnable, () -> {
+			mar += (byte) (x + readDataBus() << 8);
+			setAddressBus(mar + x);
+		}, EmptyRunnable });
+		setInitialOperandLoader(TEK1608MemoryAddressing.IMMEDIATE, new Runnable[] {});
+		setInitialOperandLoader(TEK1608MemoryAddressing.IMPLIED, new Runnable[] {});
+		setInitialOperandLoader(TEK1608MemoryAddressing.X_INDEXED_INDIRECT, new Runnable[] { () -> {
+			mar = readDataBus();
+			setAddressBus(mar + x);
+		}, () -> setAddressBus(mar + x + 1), () -> {
+			mar = readDataBus();
+		}, () -> {
+			mar = readDataBus() << 8;
+			setAddressBus(mar);
+		}, EmptyRunnable });
+		setInitialOperandLoader(TEK1608MemoryAddressing.INDIRECT_Y_INDEXED, new Runnable[] { () -> {
+			mar = readDataBus();
+			setAddressBus(mar);
+		}, () -> setAddressBus(mar + 1), () -> {
+			mar = readDataBus();
+		}, () -> {
+			mar = readDataBus() << 8;
+			int carry = ((sr & Flag.CARRY) != 0) ? 1 : 0;
+			setAddressBus(mar + y + carry);
+		}, EmptyRunnable });
+		setInitialOperandLoader(TEK1608MemoryAddressing.RELATIVE, new Runnable[] {});
+		setInitialOperandLoader(TEK1608MemoryAddressing.ZEROPAGE, new Runnable[] { () -> {
+			mar = readDataBus();
+			setAddressBus(mar);
+		}, EmptyRunnable });
+		setInitialOperandLoader(TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, new Runnable[] { () -> {
+			mar = readDataBus();
+			setAddressBus(mar + x);
+		}, EmptyRunnable });
+		setInitialOperandLoader(TEK1608MemoryAddressing.ZEROPAGE_Y_INDEXED, new Runnable[] { () -> {
+			mar = readDataBus();
+			setAddressBus(mar + y);
+		}, EmptyRunnable });
+
+		currentOperation = resHandler;
+
 		instructionSet = TEK1608InstructionSet.getInstance();
-		
+
 		// ADC add with carry
 		setInitialInstruction(0x69, (ma) -> new ModifyRegisterWithValue(ma, this::add));
 		setInitialInstruction(0x65, (ma) -> new ModifyRegisterWithValue(ma, this::add));
@@ -201,7 +149,7 @@ public class ProcessorTEK1608 implements Device
 		setInitialInstruction(0x79, (ma) -> new ModifyRegisterWithValue(ma, this::add));
 		setInitialInstruction(0x61, (ma) -> new ModifyRegisterWithValue(ma, this::add));
 		setInitialInstruction(0x71, (ma) -> new ModifyRegisterWithValue(ma, this::add));
-		
+
 		// AND logical and
 		setInitialInstruction(0x29, (ma) -> new ModifyRegisterWithValue(ma, this::and));
 		setInitialInstruction(0x25, (ma) -> new ModifyRegisterWithValue(ma, this::and));
@@ -211,57 +159,57 @@ public class ProcessorTEK1608 implements Device
 		setInitialInstruction(0x39, (ma) -> new ModifyRegisterWithValue(ma, this::and));
 		setInitialInstruction(0x21, (ma) -> new ModifyRegisterWithValue(ma, this::and));
 		setInitialInstruction(0x31, (ma) -> new ModifyRegisterWithValue(ma, this::and));
-		
+
 		// ASL shift left one bit
 		setInitialInstruction(0x0A, (ma) -> new ModifyRegister(this::shiftLeftAccumulator));
 		setInitialInstruction(0x06, (ma) -> new ModifyMemory(ma, this::shiftLeft));
 		setInitialInstruction(0x16, (ma) -> new ModifyMemory(ma, this::shiftLeft));
 		setInitialInstruction(0x0E, (ma) -> new ModifyMemory(ma, this::shiftLeft));
 		setInitialInstruction(0x1E, (ma) -> new ModifyMemory(ma, this::shiftLeft));
-		
+
 		// BCC branch on carry clear
 		setInitialInstruction(0x90, (ma) -> new JumpWhen(Flag.CARRY, false));
-		
+
 		// BCS branch on carry set
 		setInitialInstruction(0xB0, (ma) -> new JumpWhen(Flag.CARRY, true));
-		
+
 		// BEQ branch on result zero
 		setInitialInstruction(0xF0, (ma) -> new JumpWhen(Flag.ZERO, true));
-		
+
 		// BIT test bits in memory with accumulator TODO
 		setInitialInstruction(0x24, (ma) -> new ModifyRegisterWithValue(ma, this::testBits));
 		setInitialInstruction(0x2C, (ma) -> new ModifyRegisterWithValue(ma, this::testBits));
-		
+
 		// BMI branch on result minus
 		setInitialInstruction(0x30, (ma) -> new JumpWhen(Flag.NEGATIVE, true));
-		
+
 		// BNE branch on result not zero
 		setInitialInstruction(0xD0, (ma) -> new JumpWhen(Flag.ZERO, false));
-		
+
 		// BPL branch on result plus
 		setInitialInstruction(0x10, (ma) -> new JumpWhen(Flag.NEGATIVE, false));
-		
-		// BRK force break TODO
-		setInitialInstruction(0x00, (ma) -> new Break());
-		
+
+		// BRK force break
+		setInitialInstruction(0x00, (ma) -> new Interrupt(InterruptAddresses.IRQ, true, true));
+
 		// BVC branch on overflow clear
 		setInitialInstruction(0x50, (ma) -> new JumpWhen(Flag.OVERFLOW, false));
-		
+
 		// BVS branch on overflow set
 		setInitialInstruction(0x70, (ma) -> new JumpWhen(Flag.OVERFLOW, true));
-		
+
 		// CLC clear carry flag
 		setInitialInstruction(0x18, (ma) -> new ModifyStatusRegister(Flag.CARRY, false));
-		
+
 		// CLD clear decimal mode
-		//null,
-		
+		// null,
+
 		// CLI clear interrupt disable bit
-		//null,
-		
+		setInitialInstruction(0x58, (ma) -> new ModifyStatusRegister(Flag.INTERRUPT, false));
+
 		// CLV clear overflow flag
 		setInitialInstruction(0xB8, (ma) -> new ModifyStatusRegister(Flag.OVERFLOW, false));
-		
+
 		// CMP compare memory with accumulator
 		setInitialInstruction(0xC9, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
 		setInitialInstruction(0xC5, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
@@ -271,29 +219,29 @@ public class ProcessorTEK1608 implements Device
 		setInitialInstruction(0xD9, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
 		setInitialInstruction(0xC1, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
 		setInitialInstruction(0xD1, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithAccumulator));
-		
+
 		// CPX compare memory and index X
 		setInitialInstruction(0xE0, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithX));
 		setInitialInstruction(0xE4, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithX));
 		setInitialInstruction(0xEC, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithX));
-		
+
 		// CPY compare memory and index Y
 		setInitialInstruction(0xC0, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithY));
 		setInitialInstruction(0xC4, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithY));
 		setInitialInstruction(0xCC, (ma) -> new ModifyRegisterWithValue(ma, this::compareWithY));
-		
+
 		// DEC decrement memory by one
 		setInitialInstruction(0xC6, (ma) -> new ModifyMemory(ma, this::decrement));
 		setInitialInstruction(0xD6, (ma) -> new ModifyMemory(ma, this::decrement));
 		setInitialInstruction(0xCE, (ma) -> new ModifyMemory(ma, this::decrement));
 		setInitialInstruction(0xDE, (ma) -> new ModifyMemory(ma, this::decrement));
-		
+
 		// DEX decrement index X by one
 		setInitialInstruction(0xCA, (ma) -> new ModifyRegister(this::decrementX));
-		
+
 		// DEY decrement index Y by one
 		setInitialInstruction(0x88, (ma) -> new ModifyRegister(this::decrementY));
-		
+
 		// EOR xor memory with accumulator
 		setInitialInstruction(0x49, (ma) -> new ModifyRegisterWithValue(ma, this::xor));
 		setInitialInstruction(0x45, (ma) -> new ModifyRegisterWithValue(ma, this::xor));
@@ -303,26 +251,26 @@ public class ProcessorTEK1608 implements Device
 		setInitialInstruction(0x59, (ma) -> new ModifyRegisterWithValue(ma, this::xor));
 		setInitialInstruction(0x41, (ma) -> new ModifyRegisterWithValue(ma, this::xor));
 		setInitialInstruction(0x51, (ma) -> new ModifyRegisterWithValue(ma, this::xor));
-		
+
 		// INC increment memory by one
 		setInitialInstruction(0xE6, (ma) -> new ModifyMemory(ma, this::increment));
 		setInitialInstruction(0xF6, (ma) -> new ModifyMemory(ma, this::increment));
 		setInitialInstruction(0xEE, (ma) -> new ModifyMemory(ma, this::increment));
 		setInitialInstruction(0xFE, (ma) -> new ModifyMemory(ma, this::increment));
-		
+
 		// INX increment index X by one
 		setInitialInstruction(0xE8, (ma) -> new ModifyRegister(this::incrementX));
-		
+
 		// INY increment index Y by one
 		setInitialInstruction(0xC8, (ma) -> new ModifyRegister(this::incrementY));
-		
+
 		// JMP jump to setInstruction(0x, new location
-		setInitialInstruction(0x4C, (ma) -> new Jump(TEK1608MemoryAddressing.ABSOLUTE));
-		setInitialInstruction(0x6C, (ma) -> new Jump(TEK1608MemoryAddressing.INDIRECT));
-		
+		setInitialInstruction(0x4C, (ma) -> new AbsoluteJump());
+		setInitialInstruction(0x6C, (ma) -> new IndirectJump());
+
 		// JSR jump to setInstruction(0x, new location saving return address
-		setInitialInstruction(0x20, (ma) -> new Call());
-		
+		setInitialInstruction(0x20, (ma) -> new JumpSubroutine());
+
 		// LDA load accumulator with memory
 		setInitialInstruction(0xA9, (ma) -> new LoadRegister(ma, this::loadAccumulator));
 		setInitialInstruction(0xA5, (ma) -> new LoadRegister(ma, this::loadAccumulator));
@@ -332,31 +280,31 @@ public class ProcessorTEK1608 implements Device
 		setInitialInstruction(0xB9, (ma) -> new LoadRegister(ma, this::loadAccumulator));
 		setInitialInstruction(0xA1, (ma) -> new LoadRegister(ma, this::loadAccumulator));
 		setInitialInstruction(0xB1, (ma) -> new LoadRegister(ma, this::loadAccumulator));
-		
+
 		// LDX load index X with memory
 		setInitialInstruction(0xA2, (ma) -> new LoadRegister(ma, this::loadX));
 		setInitialInstruction(0xA6, (ma) -> new LoadRegister(ma, this::loadX));
 		setInitialInstruction(0xB6, (ma) -> new LoadRegister(ma, this::loadX));
 		setInitialInstruction(0xAE, (ma) -> new LoadRegister(ma, this::loadX));
 		setInitialInstruction(0xBE, (ma) -> new LoadRegister(ma, this::loadX));
-		
+
 		// LDY load index Y with memory
 		setInitialInstruction(0xA0, (ma) -> new LoadRegister(ma, this::loadY));
 		setInitialInstruction(0xA4, (ma) -> new LoadRegister(ma, this::loadY));
 		setInitialInstruction(0xB4, (ma) -> new LoadRegister(ma, this::loadY));
 		setInitialInstruction(0xAC, (ma) -> new LoadRegister(ma, this::loadY));
 		setInitialInstruction(0xBC, (ma) -> new LoadRegister(ma, this::loadY));
-		
+
 		// LSR shift one bit right
 		setInitialInstruction(0x4A, (ma) -> new ModifyRegister(this::shiftRightAccumulator));
 		setInitialInstruction(0x46, (ma) -> new ModifyMemory(ma, this::shiftRight));
 		setInitialInstruction(0x56, (ma) -> new ModifyMemory(ma, this::shiftRight));
 		setInitialInstruction(0x4E, (ma) -> new ModifyMemory(ma, this::shiftRight));
 		setInitialInstruction(0x5E, (ma) -> new ModifyMemory(ma, this::shiftRight));
-		
+
 		// NOP
 		setInitialInstruction(0xEA, (ma) -> new NoOperation());
-		
+
 		// ORA or memory with accumulator
 		setInitialInstruction(0x09, (ma) -> new ModifyRegisterWithValue(ma, this::or));
 		setInitialInstruction(0x05, (ma) -> new ModifyRegisterWithValue(ma, this::or));
@@ -366,58 +314,58 @@ public class ProcessorTEK1608 implements Device
 		setInitialInstruction(0x19, (ma) -> new ModifyRegisterWithValue(ma, this::or));
 		setInitialInstruction(0x01, (ma) -> new ModifyRegisterWithValue(ma, this::or));
 		setInitialInstruction(0x11, (ma) -> new ModifyRegisterWithValue(ma, this::or));
-		
+
 		// PHA push accumulator on stack
 		setInitialInstruction(0x48, (ma) -> new Push(() -> a));
-		
+
 		// PHP push processor status on stack
-		setInitialInstruction(0x08, (ma) -> new Push(() -> sr));
-		
+		setInitialInstruction(0x08, (ma) -> new Push(() -> (byte) (sr | Flag.BREAK)));
+
 		// PLA pull accumulator from stack
 		setInitialInstruction(0x68, (ma) -> new Pop((v) -> a = v));
-		
+
 		// PLP pull processor status from stack
-		setInitialInstruction(0x28, (ma) -> new Pop((v) -> sr = v));
-		
+		setInitialInstruction(0x28, (ma) -> new Pop((v) -> sr = (byte) (v & ~Flag.BREAK)));
+
 		// ROL rotate one bit left
 		setInitialInstruction(0x2A, (ma) -> new ModifyRegister(this::rotateLeftAccumulator));
 		setInitialInstruction(0x26, (ma) -> new ModifyMemory(ma, this::rotateLeft));
 		setInitialInstruction(0x36, (ma) -> new ModifyMemory(ma, this::rotateLeft));
 		setInitialInstruction(0x2E, (ma) -> new ModifyMemory(ma, this::rotateLeft));
 		setInitialInstruction(0x3E, (ma) -> new ModifyMemory(ma, this::rotateLeft));
-		
+
 		// ROR rotate one bit right
 		setInitialInstruction(0x6A, (ma) -> new ModifyRegister(this::rotateRightAccumulator));
 		setInitialInstruction(0x66, (ma) -> new ModifyMemory(ma, this::rotateRight));
 		setInitialInstruction(0x76, (ma) -> new ModifyMemory(ma, this::rotateRight));
 		setInitialInstruction(0x6E, (ma) -> new ModifyMemory(ma, this::rotateRight));
 		setInitialInstruction(0x7E, (ma) -> new ModifyMemory(ma, this::rotateRight));
-		
+
 		// RTI return from interrupt
-		//null,
-		
+		setInitialInstruction(0x40, (ma) -> new ReturnInterrupt());
+
 		// RTS return from subroutine
-		setInitialInstruction(0x60, (ma) -> new Return());
-		
+		setInitialInstruction(0x60, (ma) -> new ReturnSubroutine());
+
 		// SBC subtract memory from accumulator with borrow
 		setInitialInstruction(0xE9, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
 		setInitialInstruction(0xE5, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
 		setInitialInstruction(0xF5, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
 		setInitialInstruction(0xED, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
-		setInitialInstruction(0xFD, (ma) -> new ModifyRegisterWithValue(ma,  this::sub));
+		setInitialInstruction(0xFD, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
 		setInitialInstruction(0xFA, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
 		setInitialInstruction(0xE1, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
 		setInitialInstruction(0xF1, (ma) -> new ModifyRegisterWithValue(ma, this::sub));
-		
+
 		// SEC set carry flag
 		setInitialInstruction(0x38, (ma) -> new ModifyStatusRegister(Flag.CARRY, true));
-		
+
 		// SED set decimal flag ***UNSUPPORTED***
-		//null,
-		
+		// null,
+
 		// SEI set interrupt disable status
-		//null,
-		
+		setInitialInstruction(0x78, (ma) -> new ModifyStatusRegister(Flag.INTERRUPT, true));
+
 		// STA store accumulator in memory
 		setInitialInstruction(0x85, (ma) -> new StoreRegister(ma, this::storeAccumulator));
 		setInitialInstruction(0x95, (ma) -> new StoreRegister(ma, this::storeAccumulator));
@@ -426,42 +374,42 @@ public class ProcessorTEK1608 implements Device
 		setInitialInstruction(0x99, (ma) -> new StoreRegister(ma, this::storeAccumulator));
 		setInitialInstruction(0x81, (ma) -> new StoreRegister(ma, this::storeAccumulator));
 		setInitialInstruction(0x91, (ma) -> new StoreRegister(ma, this::storeAccumulator));
-		
+
 		// STX store index X in memory
 		setInitialInstruction(0x86, (ma) -> new StoreRegister(ma, this::storeX));
 		setInitialInstruction(0x96, (ma) -> new StoreRegister(ma, this::storeX));
 		setInitialInstruction(0x8E, (ma) -> new StoreRegister(ma, this::storeX));
-		
+
 		// STY store index Y in memory
 		setInitialInstruction(0x84, (ma) -> new StoreRegister(ma, this::storeY));
 		setInitialInstruction(0x94, (ma) -> new StoreRegister(ma, this::storeY));
 		setInitialInstruction(0x8C, (ma) -> new StoreRegister(ma, this::storeY));
-		
+
 		// TAX transfer accumulator to index X
 		setInitialInstruction(0xAA, (ma) -> new TransferRegister(() -> x = a));
-		
+
 		// TAY transfer accumulator to index Y
 		setInitialInstruction(0xA8, (ma) -> new TransferRegister(() -> y = a));
-		
+
 		// TSX transfer stack register to index X
 		setInitialInstruction(0xBA, (ma) -> new TransferRegister(() -> x = sp));
-		
+
 		// TXA transfer index X to accumulator
 		setInitialInstruction(0x8A, (ma) -> new TransferRegister(() -> a = x));
-		
+
 		// TXS transfer index X to stack register
 		setInitialInstruction(0x9A, (ma) -> new TransferRegister(() -> sp = x));
-		
+
 		// TYA transfer index Y to accumulator
 		setInitialInstruction(0x98, (ma) -> new TransferRegister(() -> a = y));
 	}
-	
+
 	@Override
 	public String getName()
 	{
 		return "Processor TEK1608";
 	}
-	
+
 	public void setInstructionListener(InstructionListener instructionListener)
 	{
 		this.instructionListener = instructionListener;
@@ -471,32 +419,32 @@ public class ProcessorTEK1608 implements Device
 	{
 		Opcode opcode = instructionSet.getOpcode(code);
 		MemoryAddressing memoryAddressing = opcode.getMemoryAddressing();
-		
+
 		operations[code] = creator.create(memoryAddressing);
 	}
-	
+
 	private interface OperationCreator
 	{
 		Operation create(MemoryAddressing ma);
 	}
-	
+
 	private void setInitialOperandLoader(TEK1608MemoryAddressing memoryAddressing, Runnable[] steps)
 	{
 		memoryAddressingSetups.put(memoryAddressing, steps);
 	}
-	
+
 	@Override
 	public int getPinsCount()
 	{
 		return 26;
 	}
-	
+
 	@Override
 	public void update()
 	{
 		tick();
 	}
-	
+
 	private void tick()
 	{
 		if (currentOperation.isMemoryFinished())
@@ -504,18 +452,18 @@ public class ProcessorTEK1608 implements Device
 			Operation nextOperation;
 			if (currentOperation instanceof LoadInstruction)
 			{
-				int index = Byte.toUnsignedInt((byte)ir);
+				int index = Byte.toUnsignedInt((byte) ir);
 				nextOperation = operations[index];
-				
+
 				// TODO handle illegal instruction
 				if (nextOperation == null)
 				{
 					String data = String.format("PC: %h IR: %h", pc, ir);
 					throw new IllegalStateException("Illegal instruction opcode: " + index + " " + data);
 				}
-				
+
 				pc += instructionSet.getOpcode(index).getBytesSize();
-				
+
 				if (instructionListener != null)
 				{
 					instructionListener.instructionLoaded(pc, index);
@@ -523,32 +471,53 @@ public class ProcessorTEK1608 implements Device
 			}
 			else
 			{
-				Interrupt interrupt = getInterrupt();
-				
-				// process interrupts TODO
-				
-				nextOperation = loadInstruction;
+				if (isInterruptActive())
+				{
+					nextOperation = getInterruptHandler();
+				}
+				else
+				{
+					nextOperation = loadInstruction;
+				}
 			}
-			
+
 			if (!currentOperation.isFinished())
 			{
 				runCurrentOperation();
 			}
-			
+
 			currentOperation = nextOperation;
 			currentOperation.prepare();
 		}
-		
+
 		runCurrentOperation();
 	}
-	
-	private Interrupt getInterrupt()
+
+	private boolean isInterruptActive()
 	{
-		// process interrupts TODO
-		//pins.readPin(RES_PIN);
-		return null;
+		return pins.readPin(RES_PIN) || pins.readPin(NMI_PIN) || pins.readPin(IRQ_PIN);
 	}
-	
+
+	private Operation getInterruptHandler()
+	{
+		if (pins.readPin(RES_PIN))
+		{
+			return resHandler;
+		}
+		else if (pins.readPin(NMI_PIN))
+		{
+			return nmiHandler;
+		}
+		else if (pins.readPin(IRQ_PIN) && (sr & Flag.INTERRUPT) == 0)
+		{
+			return irqHandler;
+		}
+		else
+		{
+			throw new IllegalStateException("This shouldn't happen.");
+		}
+	}
+
 	private void runCurrentOperation()
 	{
 		currentOperation.run();
@@ -559,45 +528,50 @@ public class ProcessorTEK1608 implements Device
 	{
 		this.pins = pins;
 	}
-	
+
 	private void setAddressBus(int address)
 	{
 		PinUtil.codeValue(address, addressBits);
 		pins.setPins(addressIndexes, addressBits);
 	}
-	
+
 	private void setDataBus(byte data)
 	{
 		PinUtil.codeValue(data, dataBits);
 		pins.setPins(dataIndexes, dataBits);
 	}
-	
+
+	/**
+	 * Clearing data bus is used when data are expected on data bus from
+	 * external device. If not cleared, pins set by processor will be combined
+	 * with pins set by external device.
+	 */
 	private void clearDataBus()
 	{
-		setDataBus((byte)0);
+		setDataBus((byte) 0);
 	}
-	
+
 	private int readDataBus()
 	{
 		pins.readPins(dataIndexes, dataBits);
-		return (int)PinUtil.decodeValue(dataBits);
+		return (int) PinUtil.decodeValue(dataBits);
 	}
 
 	private void setWrite(boolean value)
 	{
 		pins.setPin(READWRITE_PIN, value);
 	}
-	
+
 	private short getMemorySP()
 	{
-		return (short)(0x0100 | (sp & 0x00FF));
+		return (short) (0x0100 | (sp & 0x00FF));
 	}
-	
+
 	private void incrSP()
 	{
 		sp--;
 	}
-	
+
 	private void decrSP()
 	{
 		sp++;
@@ -606,125 +580,125 @@ public class ProcessorTEK1608 implements Device
 	private void add(byte value)
 	{
 		int result = a + value + (checkFlag(Flag.CARRY) ? 1 : 0);
-		
-		a = (byte)result;
-		
+
+		a = (byte) result;
+
 		setNegativeFlagByValue(a);
 		setZeroFlagByValue(a);
 		setCarryFlagByValue(a);
 		setOverflowFlagByValue(a);
 	}
-	
+
 	private void sub(byte value)
 	{
 		int result = a - value - (checkFlag(Flag.CARRY) ? 1 : 0);
-		
-		a = (byte)result;
-		
+
+		a = (byte) result;
+
 		setNegativeFlagByValue(a);
 		setZeroFlagByValue(a);
 		setCarryFlagByValue(a);
 		setOverflowFlagByValue(a);
 	}
-	
+
 	private void and(byte value)
 	{
-		a = (byte)(a & value);
-		
+		a = (byte) (a & value);
+
 		setNegativeFlagByValue(a);
 		setZeroFlagByValue(a);
 		setCarryFlagByValue(a);
 	}
-	
+
 	private void testBits(byte value)
 	{
 		setFlag(Flag.NEGATIVE, (value & Flag.NEGATIVE) != 0);
 		setFlag(Flag.OVERFLOW, (value & Flag.OVERFLOW) != 0);
-		
+
 		if ((a & value) == 0)
 		{
 			sr |= Flag.ZERO;
 		}
 	}
-	
+
 	private byte shiftLeft(byte value)
 	{
 		int result = value << 1;
 
 		setZeroFlagByValue(result);
 		setCarryFlagByValue(result);
-		
-		return (byte)result;
+
+		return (byte) result;
 	}
-	
+
 	private byte shiftRight(byte value)
 	{
 		int result = value >>> 1;
 
 		setZeroFlagByValue(value);
 		setCarryFlagByValue(result);
-		
-		return (byte)result;
+
+		return (byte) result;
 	}
-	
+
 	private byte rotateLeft(byte value)
 	{
-		return (byte)(shiftLeft(value) | value >>> 7);
+		return (byte) (shiftLeft(value) | value >>> 7);
 	}
-	
+
 	private byte rotateRight(byte value)
 	{
-		return (byte)(shiftRight(value) | value << 7);
+		return (byte) (shiftRight(value) | value << 7);
 	}
-	
+
 	private void shiftLeftAccumulator()
 	{
 		a = shiftLeft(a);
 	}
-	
+
 	private void shiftRightAccumulator()
 	{
 		a = shiftRight(a);
 	}
-	
+
 	private void rotateLeftAccumulator()
 	{
 		a = rotateLeft(a);
 	}
-	
+
 	private void rotateRightAccumulator()
 	{
 		a = rotateRight(a);
 	}
-	
+
 	private boolean checkFlag(int flag)
 	{
 		return (sr & flag) != 0;
 	}
-	
+
 	private void setZeroFlagByValue(int value)
 	{
 		setFlag(Flag.ZERO, value == 0);
 	}
-	
+
 	private void setNegativeFlagByValue(int value)
 	{
 		setFlag(Flag.ZERO, value < 0);
 	}
-	
+
 	private void setCarryFlagByValue(int value)
 	{
-		value = Byte.toUnsignedInt((byte)value);
+		value = Byte.toUnsignedInt((byte) value);
 		setFlag(Flag.OVERFLOW, value < 0 || value > 255);
 	}
-	
+
 	private void setOverflowFlagByValue(int value)
 	{
-		value = Byte.toUnsignedInt((byte)value);
+		value = Byte.toUnsignedInt((byte) value);
 
 		setFlag(Flag.OVERFLOW, value > 255);
 	}
-	
+
 	private void setFlag(int flag, boolean value)
 	{
 		if (value)
@@ -736,181 +710,198 @@ public class ProcessorTEK1608 implements Device
 			sr &= ~flag;
 		}
 	}
-	
+
 	private void compareWithAccumulator(byte value)
 	{
 		int result = a - value;
-		
+
 		setZeroFlagByValue(result);
 		setNegativeFlagByValue(result);
 		setCarryFlagByValue(value);
 	}
-	
+
 	private void compareWithX(byte value)
 	{
 		int result = x - value;
-		
+
 		setZeroFlagByValue(result);
 		setNegativeFlagByValue(result);
 		setCarryFlagByValue(value);
 	}
-	
+
 	private void compareWithY(byte value)
 	{
 		int result = y - value;
-		
+
 		setZeroFlagByValue(result);
 		setNegativeFlagByValue(result);
 		setCarryFlagByValue(value);
 	}
-	
+
 	private byte decrement(byte value)
 	{
 		value--;
-		
+
 		setZeroFlagByValue(value);
 		setNegativeFlagByValue(value);
-		
+
 		return value;
 	}
-	
+
 	private byte increment(byte value)
 	{
 		value++;
-		
+
 		setZeroFlagByValue(value);
 		setNegativeFlagByValue(value);
-		
+
 		return value;
 	}
-	
+
 	private void decrementX()
 	{
 		x--;
-		
+
 		setZeroFlagByValue(x);
 		setNegativeFlagByValue(x);
 	}
-	
+
 	private void incrementX()
 	{
 		x++;
-		
+
 		setZeroFlagByValue(x);
 		setNegativeFlagByValue(x);
 	}
-	
+
 	private void decrementY()
 	{
 		y--;
-		
+
 		setZeroFlagByValue(y);
 		setNegativeFlagByValue(y);
 	}
-	
+
 	private void incrementY()
 	{
 		y++;
-		
+
 		setZeroFlagByValue(y);
 		setNegativeFlagByValue(y);
 	}
-	
+
 	private void xor(byte value)
 	{
-		a = (byte)(a ^ value);
-		
+		a = (byte) (a ^ value);
+
 		setZeroFlagByValue(a);
 		setNegativeFlagByValue(a);
 	}
-	
+
 	private void or(byte value)
 	{
-		a = (byte)(a | value);
-		
+		a = (byte) (a | value);
+
 		setZeroFlagByValue(a);
 		setNegativeFlagByValue(a);
 	}
-	
+
 	private void loadAccumulator(byte value)
 	{
 		a = value;
-		
+
 		setNegativeFlagByValue(a);
 		setZeroFlagByValue(a);
 	}
-	
+
 	private void loadX(byte value)
 	{
 		x = value;
-		
+
 		setNegativeFlagByValue(x);
 		setZeroFlagByValue(x);
 	}
-	
+
 	private void loadY(byte value)
 	{
 		y = value;
-		
+
 		setNegativeFlagByValue(y);
 		setZeroFlagByValue(y);
 	}
-	
+
 	private byte storeAccumulator()
 	{
 		return a;
 	}
-	
+
 	private byte storeX()
 	{
 		return x;
 	}
-	
+
 	private byte storeY()
 	{
 		return y;
 	}
-	
+
 	private interface Operation extends Runnable
 	{
 		void prepare();
-		
+
 		boolean isMemoryFinished();
+
 		boolean isFinished();
+
+		public class StepsBuilder
+		{
+			private List<Runnable> steps = new ArrayList<>();
+
+			public StepsBuilder add(Runnable r)
+			{
+				steps.add(r);
+				return this;
+			}
+
+			public Runnable[] create()
+			{
+				return steps.toArray(new Runnable[steps.size()]);
+			}
+		}
 	}
-	
-	private abstract class AbstractOperation implements Operation
+
+	private abstract class AbstractMemoryAddressingOperation implements Operation
 	{
 		private final Runnable[] addressSteps, executionSteps;
-		
+
 		private Runnable[] activeSteps;
-		
+
 		private final int steps;
-		
+
 		private int step = 0, offset = 0;
-		
-		public AbstractOperation(MemoryAddressing memoryAddressing)
+
+		public AbstractMemoryAddressingOperation(MemoryAddressing memoryAddressing)
 		{
 			this.addressSteps = memoryAddressingSetups.get(memoryAddressing);
 
 			StepsBuilder builder = new StepsBuilder();
 			createSteps(builder);
-			
+
 			executionSteps = builder.create();
-			
+
 			steps = addressSteps.length + executionSteps.length;
-			
+
 			prepareActiveSteps();
 		}
-		
+
 		public void prepare()
 		{
 			step = 0;
 			offset = 0;
-			
+
 			prepareActiveSteps();
 		}
-		
+
 		private void prepareActiveSteps()
 		{
 			if (addressSteps.length == 0)
@@ -922,8 +913,8 @@ public class ProcessorTEK1608 implements Device
 				activeSteps = addressSteps;
 			}
 		}
-		
-		public abstract void createSteps(StepsBuilder b);
+
+		protected abstract void createSteps(StepsBuilder b);
 
 		@Override
 		public void run()
@@ -935,65 +926,48 @@ public class ProcessorTEK1608 implements Device
 				offset += addressSteps.length;
 				activeSteps = executionSteps;
 			}
-			
+
 			step++;
 		}
-		
+
 		private void runStep(int step)
 		{
 			activeSteps[step - offset].run();
 		}
-		
+
 		public boolean isMemoryFinished()
 		{
 			return step >= steps - 1;
 		}
-		
+
 		@Override
 		public boolean isFinished()
 		{
 			return step >= steps;
 		}
-		
+
 		@Override
 		public String toString()
 		{
 			return this.getClass().getSimpleName();
 		}
-		
-		public class StepsBuilder
-		{
-			private List<Runnable> steps = new ArrayList<>();
-			
-			public StepsBuilder add(Runnable r)
-			{
-				steps.add(r);
-				return this;
-			}
-			
-			public Runnable[] create()
-			{
-				return steps.toArray(new Runnable[steps.size()]);
-			}
-		}
 	}
 
-	private class LoadInstruction implements Operation
+	private abstract class AbstractRawOperation implements Operation
 	{
-		private int step;
-		private Runnable[] steps = {
-			() -> {
-				setAddressBus(pc);
-			},
-			() -> {
-				setAddressBus(pc + 1);
-			},
-			() -> {
-				ir = (byte)readDataBus();
-			},
-			EmptyRunnable
-		};
-		
+		protected int step;
+		protected final Runnable steps[];
+
+		public AbstractRawOperation()
+		{
+			StepsBuilder builder = new StepsBuilder();
+			createSteps(builder);
+
+			steps = builder.create();
+		}
+
+		protected abstract void createSteps(StepsBuilder b);
+
 		@Override
 		public void run()
 		{
@@ -1007,45 +981,54 @@ public class ProcessorTEK1608 implements Device
 		}
 
 		@Override
+		public boolean isFinished()
+		{
+			return step >= steps.length;
+		}
+	}
+
+	private class LoadInstruction extends AbstractRawOperation
+	{
+		@Override
 		public boolean isMemoryFinished()
 		{
 			return step >= steps.length - 1;
 		}
 
 		@Override
-		public boolean isFinished()
+		protected void createSteps(StepsBuilder b)
 		{
-			return step >= steps.length;
+			b.add(() -> setAddressBus(pc)).add(() -> setAddressBus(pc + 1)).add(() -> ir = (byte) readDataBus()).add(EmptyRunnable);
 		}
 	}
-	
-	private class LoadRegister extends AbstractOperation
+
+	private class LoadRegister extends AbstractMemoryAddressingOperation
 	{
 		private final RegisterValueSetter setter;
-		
+
 		public LoadRegister(MemoryAddressing memoryAddressing, RegisterValueSetter setter)
 		{
 			super(memoryAddressing);
 			this.setter = setter;
 		}
-		
+
 		@Override
 		public void createSteps(StepsBuilder b)
 		{
-			b.add(() -> setter.set((byte)readDataBus()));
+			b.add(() -> setter.set((byte) readDataBus()));
 		}
 	}
-	
+
 	@FunctionalInterface
 	private interface RegisterValueSetter
 	{
 		void set(byte value);
 	}
-	
-	private class StoreRegister extends AbstractOperation
-	{		
+
+	private class StoreRegister extends AbstractMemoryAddressingOperation
+	{
 		private final RegisterValueGetter getter;
-		
+
 		public StoreRegister(MemoryAddressing memoryAddressing, RegisterValueGetter getter)
 		{
 			super(memoryAddressing);
@@ -1055,25 +1038,22 @@ public class ProcessorTEK1608 implements Device
 		@Override
 		public void createSteps(StepsBuilder b)
 		{
-			b
-			.add(() -> {
+			b.add(() -> {
 				setDataBus(getter.get());
 				setWrite(true);
-			})
-			.add(EmptyRunnable)
-			.add(() -> {
+			}).add(EmptyRunnable).add(() -> {
 				setWrite(false);
 				clearDataBus();
 			});
 		}
 	}
-	
+
 	@FunctionalInterface
 	private interface RegisterValueGetter
 	{
 		byte get();
 	}
-	
+
 	private abstract class OneTickOperation implements Operation
 	{
 		private boolean runned;
@@ -1102,16 +1082,16 @@ public class ProcessorTEK1608 implements Device
 			return runned;
 		}
 	}
-	
+
 	private abstract class OneTickRunnableOperation extends OneTickOperation
 	{
 		private Runnable runnable;
-		
+
 		public OneTickRunnableOperation(Runnable runnable)
 		{
 			this.runnable = runnable;
 		}
-		
+
 		@Override
 		public void run()
 		{
@@ -1119,7 +1099,7 @@ public class ProcessorTEK1608 implements Device
 			runnable.run();
 		}
 	}
-	
+
 	private class TransferRegister extends OneTickRunnableOperation
 	{
 		public TransferRegister(Runnable transfer)
@@ -1127,7 +1107,7 @@ public class ProcessorTEK1608 implements Device
 			super(transfer);
 		}
 	}
-	
+
 	private class ModifyRegister extends OneTickRunnableOperation
 	{
 		public ModifyRegister(Runnable modifier)
@@ -1135,87 +1115,84 @@ public class ProcessorTEK1608 implements Device
 			super(modifier);
 		}
 	}
-	
+
 	private class ModifyStatusRegister extends OneTickOperation
 	{
 		private final int flag;
 		private final boolean value;
-		
+
 		public ModifyStatusRegister(int flag, boolean value)
 		{
 			this.flag = flag;
 			this.value = value;
 		}
-		
+
 		@Override
 		public void run()
 		{
 			setFlag(flag, value);
 		}
 	}
-	
-	private class ModifyRegisterWithValue extends AbstractOperation
+
+	private class ModifyRegisterWithValue extends AbstractMemoryAddressingOperation
 	{
 		private final RegisterModifier modifier;
-		
+
 		public ModifyRegisterWithValue(MemoryAddressing memoryAddressing, RegisterModifier modifier)
 		{
 			super(memoryAddressing);
 			this.modifier = modifier;
 		}
-		
+
 		@Override
 		public void createSteps(StepsBuilder b)
 		{
-			b.add(() -> modifier.modify((byte)readDataBus()));
+			b.add(() -> modifier.modify((byte) readDataBus()));
 		}
 	}
-	
+
 	@FunctionalInterface
 	private interface RegisterModifier
 	{
 		void modify(byte value);
 	}
-	
-	private class ModifyMemory extends AbstractOperation
+
+	private class ModifyMemory extends AbstractMemoryAddressingOperation
 	{
 		private final MemoryModifier modifier;
-		
+
 		public ModifyMemory(MemoryAddressing memoryAddressing, MemoryModifier modifier)
 		{
 			super(memoryAddressing);
 			this.modifier = modifier;
 		}
-		
+
 		@Override
 		public void createSteps(StepsBuilder b)
 		{
-			b
-			.add(() -> {
-				byte value = (byte)readDataBus();
+			b.add(() -> {
+				byte value = (byte) readDataBus();
 				value = modifier.modify(value);
 				setDataBus(value);
 				setWrite(true);
-			})
-			.add(EmptyRunnable)
-			.add(() -> {
+			}).add(EmptyRunnable).add(() -> {
 				setWrite(false);
 				clearDataBus();
 			});
 		}
 	}
-	
+
 	@FunctionalInterface
 	private interface MemoryModifier
 	{
 		byte modify(byte value);
 	}
-	
+
 	private class JumpWhen extends OneTickOperation
 	{
 		private final int flag;
 		private final boolean value;
-		
+
 		public JumpWhen(int flag, boolean value)
 		{
 			this.flag = flag;
@@ -1226,11 +1203,11 @@ public class ProcessorTEK1608 implements Device
 		public void run()
 		{
 			super.run();
-			
+
 			boolean result = (sr & flag) != 0;
 			if (result == value)
 			{
-				pc += (byte)readDataBus();
+				pc += (byte) readDataBus();
 			}
 		}
 
@@ -1245,70 +1222,19 @@ public class ProcessorTEK1608 implements Device
 			return true;
 		}
 	}
-	
-	private class Jump implements Operation
+
+	private class AbsoluteJump extends AbstractRawOperation
 	{
-		private final int bytesSize;
-		
-		private final Runnable[] steps;
-
-		private int step;
-		
-		public Jump(TEK1608MemoryAddressing memoryAddressing)
-		{
-			this.bytesSize = memoryAddressing.getOperandsWordsSize() + 1;
-
-			switch (memoryAddressing)
-			{
-				case ABSOLUTE:
-					steps = new Runnable[]{
-						() -> {
-							mar = readDataBus();
-							setAddressBus(pc - 1);
-						},
-						EmptyRunnable,
-						() -> {
-							mar |= readDataBus() << 8;
-							pc = (short)mar;
-						}
-					};
-					break;
-				case INDIRECT:
-					steps = new Runnable[]{
-						() -> {
-							mar = readDataBus();
-							setAddressBus(pc - 1);
-						},
-						EmptyRunnable,
-						() -> {
-							mar |= readDataBus() << 8;
-							setAddressBus(mar);
-						},
-						() -> setAddressBus(mar + 1),
-						() -> {
-							mar = readDataBus();
-						},
-						() -> {
-							mar |= readDataBus() << 8;
-							pc = (short)mar;
-						}
-					};
-					break;
-				default:
-					steps = new Runnable[]{};
-			}
-		}
-		
 		@Override
-		public void run()
+		protected void createSteps(StepsBuilder b)
 		{
-			steps[step++].run();
-		}
-
-		@Override
-		public void prepare()
-		{
-			step = 0;
+			b.add(() -> {
+				mar = readDataBus();
+				setAddressBus(pc - 1);
+			}).add(EmptyRunnable).add(() -> {
+				mar |= readDataBus() << 8;
+				pc = (short) mar;
+			});
 		}
 
 		@Override
@@ -1316,122 +1242,109 @@ public class ProcessorTEK1608 implements Device
 		{
 			return isFinished();
 		}
-		
+	}
+
+	private class IndirectJump extends AbstractRawOperation
+	{
 		@Override
-		public boolean isFinished()
+		protected void createSteps(StepsBuilder b)
 		{
-			return step >= steps.length;
+			b.add(() -> {
+				mar = readDataBus();
+				setAddressBus(pc - 1);
+			}).add(EmptyRunnable).add(() -> {
+				mar |= readDataBus() << 8;
+				setAddressBus(mar);
+			}).add(() -> setAddressBus(mar + 1)).add(() -> {
+				mar = readDataBus();
+			}).add(() -> {
+				mar |= readDataBus() << 8;
+				pc = (short) mar;
+			});
+		}
+
+		@Override
+		public boolean isMemoryFinished()
+		{
+			return isFinished();
 		}
 	}
-	
+
 	@FunctionalInterface
 	private interface JumpCondition
 	{
 		boolean test();
 	}
-	
-	private class Push extends AbstractOperation
+
+	private class Push extends AbstractMemoryAddressingOperation
 	{
 		private final RegisterValueGetter getter;
-		
+
 		public Push(RegisterValueGetter getter)
 		{
 			super(TEK1608MemoryAddressing.IMPLIED);
 			this.getter = getter;
 		}
-		
+
 		@Override
 		public void createSteps(StepsBuilder b)
 		{
-			b
-			.add(() -> {
+			b.add(() -> {
 				setAddressBus(getMemorySP());
 				incrSP();
 				setDataBus(getter.get());
 				setWrite(true);
-			})
-			.add(EmptyRunnable)
-			.add(() -> {
+			}).add(EmptyRunnable).add(() -> {
 				setWrite(false);
 				clearDataBus();
 			});
 		}
 	}
 
-	private class Pop extends AbstractOperation
+	private class Pop extends AbstractMemoryAddressingOperation
 	{
 		private final RegisterValueSetter setter;
-		
+
 		public Pop(RegisterValueSetter setter)
 		{
 			super(TEK1608MemoryAddressing.IMPLIED);
 			this.setter = setter;
 		}
-		
+
 		@Override
 		public void createSteps(StepsBuilder b)
 		{
-			b
-			.add(() -> {
+			b.add(() -> {
 				decrSP();
 				setAddressBus(getMemorySP());
-			})
-			.add(EmptyRunnable)
-			.add(() -> setter.set((byte)readDataBus()));
+			}).add(EmptyRunnable).add(() -> setter.set((byte) readDataBus()));
 		}
 	}
-	
-	private class Call implements Operation
+
+	private class JumpSubroutine extends AbstractRawOperation
 	{
-		private final int bytesSize;
-		
-		private final Runnable[] steps;
-
-		private int step;
-		
-		public Call()
-		{
-			this.bytesSize = TEK1608MemoryAddressing.ABSOLUTE.getOperandsWordsSize() + 1;
-			
-			steps = new Runnable[]{
-				() -> {
-					mar = readDataBus();
-					setAddressBus(pc - 1);
-				},
-				EmptyRunnable,
-				() -> {
-					mar |= readDataBus() << 8;
-		
-					setAddressBus(getMemorySP());
-					incrSP();
-					setDataBus((byte)pc);
-					setWrite(true);
-				},
-				EmptyRunnable,
-				() -> {
-					setAddressBus(getMemorySP());
-					incrSP();
-					setDataBus((byte)(pc >>>= 8));
-				},
-				() -> {
-					setWrite(false);
-					clearDataBus();
-					pc = (short)mar;
-				},
-				EmptyRunnable
-			};
-		}
-
 		@Override
-		public void run()
+		protected void createSteps(StepsBuilder b)
 		{
-			steps[step++].run();
-		}
+			b.add(() -> {
+				mar = readDataBus();
+				setAddressBus(pc - 1);
+			}).add(EmptyRunnable).add(() -> {
+				mar |= readDataBus() << 8;
 
-		@Override
-		public void prepare()
-		{
-			step = 0;
+				setAddressBus(getMemorySP());
+				incrSP();
+				setDataBus((byte) pc);
+				setWrite(true);
+			}).add(EmptyRunnable).add(() -> {
+				setAddressBus(getMemorySP());
+				incrSP();
+				setDataBus((byte) (pc >>>= 8));
+			}).add(() -> {
+				setWrite(false);
+				clearDataBus();
+				pc = (short) mar;
+			}).add(EmptyRunnable);
 		}
 
 		@Override
@@ -1439,17 +1352,11 @@ public class ProcessorTEK1608 implements Device
 		{
 			return isFinished();
 		}
-		
-		@Override
-		public boolean isFinished()
-		{
-			return step >= steps.length;
-		}
 	}
-	
-	private class Return extends AbstractOperation
+
+	private class ReturnSubroutine extends AbstractMemoryAddressingOperation
 	{
-		public Return()
+		public ReturnSubroutine()
 		{
 			super(TEK1608MemoryAddressing.IMPLIED);
 		}
@@ -1457,35 +1364,102 @@ public class ProcessorTEK1608 implements Device
 		@Override
 		public void createSteps(StepsBuilder b)
 		{
-			b
-			.add(() -> {
+			b.add(() -> {
 				decrSP();
 				setAddressBus(getMemorySP());
-			})
-			.add(() -> {
+			}).add(() -> {
 				decrSP();
 				setAddressBus(getMemorySP());
-			})
-			.add(() -> {
-				pc = (short)((byte)readDataBus() << 8);
-			})
-			.add(() -> {
-				pc |= (byte)readDataBus();
-			})
-			.add(EmptyRunnable);
+			}).add(() -> {
+				pc = (short) ((byte) readDataBus() << 8);
+			}).add(() -> {
+				pc |= (byte) readDataBus();
+			}).add(EmptyRunnable);
 		}
 	}
-	
+
+	private class ReturnInterrupt extends AbstractMemoryAddressingOperation
+	{
+		public ReturnInterrupt()
+		{
+			super(TEK1608MemoryAddressing.IMPLIED);
+		}
+
+		@Override
+		public void createSteps(StepsBuilder b)
+		{
+			b.add(() -> {
+				decrSP();
+				setAddressBus(getMemorySP());
+			}).add(EmptyRunnable).add(() -> {
+				sr = (byte) readDataBus();
+
+				decrSP();
+				setAddressBus(getMemorySP());
+			}).add(() -> {
+				decrSP();
+				setAddressBus(getMemorySP());
+			}).add(() -> pc = (short) ((byte) readDataBus() << 8)).add(() -> pc |= (byte) readDataBus()).add(EmptyRunnable);
+		}
+	}
+
 	private class NoOperation extends OneTickOperation
 	{
 	}
-	
-	private class Break extends OneTickOperation
+
+	private class Interrupt extends AbstractRawOperation
 	{
-		public void run()
+		private final short address;
+		// TODO behaviour of break flag
+		private final boolean breakFlag;
+		private final boolean push;
+
+		public Interrupt(int address, boolean push, boolean breakFlag)
 		{
-			// TODO
-			//System.out.println("Break!");
+			this.address = (short) address;
+			this.push = push;
+			this.breakFlag = breakFlag;
+		}
+
+		@Override
+		protected void createSteps(StepsBuilder b)
+		{
+			b.add(() -> {
+				setAddressBus(getMemorySP());
+				incrSP();
+				setDataBus((byte) pc);
+				setWrite(push);
+			}).add(EmptyRunnable).add(() -> {
+				setAddressBus(getMemorySP());
+				incrSP();
+				setDataBus((byte) (pc >>>= 8));
+			}).add(() -> {
+				setAddressBus(getMemorySP());
+				incrSP();
+
+				byte flags = sr;
+
+				if (breakFlag)
+				{
+					flags |= Flag.BREAK;
+				}
+
+				setDataBus(flags);
+			}).add(EmptyRunnable).add(() -> {
+				setWrite(false);
+				clearDataBus();
+				setAddressBus(address);
+			}).add(() -> setAddressBus(address + 1)).add(() -> {
+				pc = (short) readDataBus();
+			}).add(() -> {
+				pc |= (short) (readDataBus() << 8);
+			});
+		}
+
+		@Override
+		public boolean isMemoryFinished()
+		{
+			return isFinished();
 		}
 	}
 }

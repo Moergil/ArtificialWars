@@ -21,6 +21,7 @@ public class ComputerTest
 			int v = c.getProcessorProbe().getUnsignedByteValue(RegisterTEK1608.A);
 			
 			System.out.println(c.getBusProbe());
+			System.out.println(c.getProcessorProbe());
 			System.out.println(v);
 		}
 		

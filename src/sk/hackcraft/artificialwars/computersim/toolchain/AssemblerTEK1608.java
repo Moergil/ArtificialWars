@@ -113,8 +113,7 @@ public class AssemblerTEK1608 extends AbstractAssembler
 		// NMI = 0,
 		// RES = 1,
 		// IRQ = 2;
-		
-		int addresses[] = {0xFFFA, 0xFFFC, 0xFFFE};
+
 		String labelsNames[] = {"_NMI", "_RES", "_IRQ"};
 		
 		Map<String, Integer> labels = state.getLabels();
@@ -128,22 +127,19 @@ public class AssemblerTEK1608 extends AbstractAssembler
 			{
 				throw new LinkingException("Subroutine for handling " + labelName + " interrupt is missing.");
 			}
-			
-			int address = addresses[i];
-			byte value[] = endianness.valueToBytes(address, 2);
+
+			byte value[] = endianness.valueToBytes(labelAddress, 2);
 			
 			output.write(value);
 		}
 
 		int programStartAddress = state.getSegmentStartAddress(Segment.PROGRAM);
-		byte programStart[] = endianness.valueToBytes(programStartAddress, 2);
 		byte program[] = state.getSegmentBytes(Segment.PROGRAM);
-		byte programLength[] = endianness.valueToBytes(program.length, 2);
+		int programLength = program.length;
 		
 		int dataStartAddress = state.getSegmentStartAddress(Segment.DATA);
-		byte dataStart[] = endianness.valueToBytes(dataStartAddress, 2);
 		byte data[] = state.getSegmentBytes(Segment.DATA);
-		byte dataLength[] = endianness.valueToBytes(data.length, 2);
+		int dataLength = data.length;
 
 		int programSegmentEnd = programStartAddress + program.length;
 		if (programSegmentEnd > dataStartAddress)
@@ -154,13 +150,13 @@ public class AssemblerTEK1608 extends AbstractAssembler
 		DataOutputStream dataOutput = new DataOutputStream(output);
 		dataOutput.writeByte(2);
 		
-		output.write(programStart);
-		output.write(programLength);
-		output.write(program);
+		dataOutput.writeInt(programStartAddress);
+		dataOutput.writeInt(programLength);
+		dataOutput.write(program);
 		
-		output.write(dataStart);
-		output.write(dataLength);
-		output.write(data);
+		dataOutput.writeInt(dataStartAddress);
+		dataOutput.writeInt(dataLength);
+		dataOutput.write(data);
 	}
 	
 	private enum TEK1608LabelType implements LabelType

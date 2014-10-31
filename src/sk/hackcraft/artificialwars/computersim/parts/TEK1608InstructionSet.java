@@ -82,7 +82,7 @@ public class TEK1608InstructionSet extends InstructionSet
 		// UNSUPPORTED,
 		
 		// CLI clear interrupt disable bit
-		// TODO,
+		add(0x58, Name.CLI, TEK1608MemoryAddressing.IMPLIED);
 		
 		// CLV clear overflow flag
 		add(0xB8, Name.CLV, TEK1608MemoryAddressing.IMPLIED);
@@ -219,7 +219,7 @@ public class TEK1608InstructionSet extends InstructionSet
 		add(0x7E, Name.ROR, TEK1608MemoryAddressing.ABSOLUTE_INDEXED_X);
 		
 		// RTI return from interrupt
-		// TODO
+		add(0x40, Name.RTI, TEK1608MemoryAddressing.IMPLIED);
 				
 		// RTS return from subroutine
 		add(0x60, Name.RTS, TEK1608MemoryAddressing.IMPLIED);
@@ -241,7 +241,7 @@ public class TEK1608InstructionSet extends InstructionSet
 		// UNSUPORTED
 		
 		// SEI set interrupt disable status
-		// TODO,
+		add(0x78, Name.SEI, TEK1608MemoryAddressing.IMPLIED);
 		
 		// STA store accumulator in memory
 		add(0x85, Name.STA, TEK1608MemoryAddressing.ZEROPAGE);

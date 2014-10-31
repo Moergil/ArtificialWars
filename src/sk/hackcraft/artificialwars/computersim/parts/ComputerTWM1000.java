@@ -63,10 +63,13 @@ public class ComputerTWM1000 extends Computer
 		A14 = 22,
 		A15 = 23,
 		RW = 24,
-		MCS0 = 25,
-		MCS1 = 26,
-		IOCS0 = 27,
-		IOCS1 = 28;
+		RES = 25,
+		NMI = 26,
+		IRQ = 27,
+		MCS0 = 28,
+		MCS1 = 29,
+		IOCS0 = 30,
+		IOCS1 = 31;
 
 		bus.addCircuit((b) -> !b.readBusPin(A10) || b.readBusPin(A15), MCS0);
 		bus.addCircuit((b) -> b.readBusPin(A15), MCS1);
@@ -88,6 +91,10 @@ public class ComputerTWM1000 extends Computer
 				{
 					builder.append(" RW");
 				}
+				else if (i == RES)
+				{
+					builder.append("I");
+				}
 				else if (i == MCS0)
 				{
 					builder.append("CS");
@@ -98,11 +105,11 @@ public class ComputerTWM1000 extends Computer
 		});
 		
 		// data(0-7), address(0-15), readwrite, chipSelect(0-2)
-		bus.connectDevice(busProbe, new int[]{D0, D1, D2, D3, D4, D5, D6, D7, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, RW, MCS0, MCS1, IOCS0, IOCS1});
+		bus.connectDevice(busProbe, new int[]{D0, D1, D2, D3, D4, D5, D6, D7, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, RW, RES, NMI, IRQ, MCS0, MCS1, IOCS0, IOCS1});
 		
 		processor = new ProcessorTEK1608();		
 		// readwrite, address(0-15), data(0-7)
-		bus.connectDevice(processor, new int[]{RW, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, D0, D1, D2, D3, D4, D5, D6, D7});
+		bus.connectDevice(processor, new int[]{RW, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, D0, D1, D2, D3, D4, D5, D6, D7, RES, NMI, IRQ});
 		
 		processorProbe = new ProbeProcessorTEK1608(processor);
 		
@@ -140,7 +147,7 @@ public class ComputerTWM1000 extends Computer
 		byte memoryData[] = memory.getMemory();
 		
 		// setting address for interrupt subroutines
-		int offset = 0xFFFA;
+		int offset = 0x03FA;
 		byte interruptAddress[] = new byte[2];
 		
 		for (int i = 0; i < 3; i++)
@@ -159,13 +166,13 @@ public class ComputerTWM1000 extends Computer
 		for (int i = 0; i < segmentsCount; i++)
 		{
 			// loading program
-			start = dataInput.readUnsignedShort();
-			length = dataInput.readUnsignedShort();
+			start = dataInput.readInt();
+			length = dataInput.readInt();
 			
 			data = new byte[length];
 			dataInput.readFully(data, 0, length);
 			
-			System.arraycopy(data, 0, memoryData, start, interruptAddress.length);
+			System.arraycopy(data, 0, memoryData, start, data.length);
 		}
 	}
 	

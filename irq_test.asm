@@ -15,6 +15,9 @@ _IRQ:
 
 _RES:
 	LDA #10
+ADD_L:
+	ADC #1
+	JMP ADD_L
 
 INF:
 	JMP INF
