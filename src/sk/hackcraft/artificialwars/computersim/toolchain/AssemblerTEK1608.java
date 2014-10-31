@@ -33,16 +33,16 @@ public class AssemblerTEK1608 extends AbstractAssembler
 		addMemoryAddressingFormat(TEK1608MemoryAddressing.ZEROPAGE_X_INDEXED, "%,X");
 		addMemoryAddressingFormat(TEK1608MemoryAddressing.ZEROPAGE_Y_INDEXED, "%,Y");
 
-		addLabelType("BCC", TEK1608LabelType.RELATIVE);
-		addLabelType("BCS", TEK1608LabelType.RELATIVE);
-		addLabelType("BEQ", TEK1608LabelType.RELATIVE);
-		addLabelType("BMI", TEK1608LabelType.RELATIVE);
-		addLabelType("BNE", TEK1608LabelType.RELATIVE);
-		addLabelType("BPL", TEK1608LabelType.RELATIVE);
-		addLabelType("BVC", TEK1608LabelType.RELATIVE);
-		addLabelType("BVS", TEK1608LabelType.RELATIVE);
-		addLabelType("JMP", TEK1608LabelType.ABSOLUTE);
-		addLabelType("JSR", TEK1608LabelType.ABSOLUTE);
+		enableLabels("BCC", TEK1608LabelType.RELATIVE);
+		enableLabels("BCS", TEK1608LabelType.RELATIVE);
+		enableLabels("BEQ", TEK1608LabelType.RELATIVE);
+		enableLabels("BMI", TEK1608LabelType.RELATIVE);
+		enableLabels("BNE", TEK1608LabelType.RELATIVE);
+		enableLabels("BPL", TEK1608LabelType.RELATIVE);
+		enableLabels("BVC", TEK1608LabelType.RELATIVE);
+		enableLabels("BVS", TEK1608LabelType.RELATIVE);
+		enableLabels("JMP", TEK1608LabelType.ABSOLUTE);
+		enableLabels("JSR", TEK1608LabelType.ABSOLUTE);
 		
 		addVariableType("BYTE", Byte.BYTES);
 		addVariableType("WORD", Short.BYTES);
