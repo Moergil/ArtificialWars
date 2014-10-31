@@ -9,23 +9,23 @@ public class Launcher
 {
 	public static void main(String args[])
 	{
-		if (checkHelp(args))
-		{
-			return;
-		}
-		
-		LaunchParams p = processLaunchParams(args);
-		
-		new MainLogic(p).run();
-	}
-	
-	private static boolean checkHelp(String args[])
-	{
 		Arguments a = new Arguments(args);
 		
-		Boolean b;
+		if (checkHelp(a))
+		{
+			showHelp();
+		}
+		else
+		{
+			LaunchParams p = processLaunchParams(a);	
+			new MainLogic(p).run();
+		}
+	}
+	
+	private static boolean checkHelp(Arguments a)
+	{
 		
-		return a.contains("help", (v) -> {if (v) showHelp();});
+		return a.contains("help", (v) -> {});
 	}
 	
 	private static void showHelp()
@@ -35,6 +35,7 @@ public class Launcher
 				"",
 				"Help guide for command line parameters:",
 				"",
+				"-help \t\t shows this help, without running the game.",
 				"-level \t\t name of level, without .lvl extension.",
 				"-robots \t list of robots names, without .rbt extension. Usable only in arena mode.",
 				"-arena \t\t arena mode.",
@@ -50,10 +51,8 @@ public class Launcher
 		}
 	}
 	
-	private static LaunchParams processLaunchParams(String args[])
+	private static LaunchParams processLaunchParams(Arguments a)
 	{
-		Arguments a = new Arguments(args);
-
 		LaunchParams p = new LaunchParams();
 
 		a.value("level", (v) -> p.setLevelName(v));
