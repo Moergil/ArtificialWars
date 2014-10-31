@@ -45,11 +45,11 @@ public class AssemblerEPH32 extends AbstractAssembler
 			}
 		};
 		
-		enableLabels("jmp", labelType);
-		enableLabels("jmpz", labelType);
-		enableLabels("jmpc", labelType);
-		enableLabels("jmpm", labelType);
-		enableLabels("jmpl", labelType);
+		addLabelType("jmp", labelType);
+		addLabelType("jmpz", labelType);
+		addLabelType("jmpc", labelType);
+		addLabelType("jmpm", labelType);
+		addLabelType("jmpl", labelType);
 		
 		addValueParser((value) -> {
 			return Integer.decode(value);

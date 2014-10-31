@@ -1,0 +1,28 @@
+.SEG PRG $0200
+.SEG DAT $0300
+
+COUNT = 10
+
+; load X to value 10, used in loop
+LDX #COUNT
+
+LDA #0
+STA $00
+LDA #1
+STA $01
+
+FIBONACCI:
+	ADC $00
+	STA $00
+
+	DEX
+	BEQ END
+
+	ADC $01
+	STA $01
+
+	DEX
+	BNE FIBONACCI
+
+END:
+JMP END

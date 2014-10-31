@@ -1,6 +1,8 @@
-package sk.epholl.artificialwars.logic;
+package sk.epholl.artificialwars.logic.robotcreators;
 
 import sk.epholl.artificialwars.entities.robots.RobotTWM1608;
+import sk.epholl.artificialwars.logic.AbstractRobotCreator;
+import sk.epholl.artificialwars.logic.Simulation;
 
 public class TWM1608RobotCreator extends AbstractRobotCreator<RobotTWM1608>
 {

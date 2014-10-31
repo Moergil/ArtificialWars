@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,7 +35,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 	
 	private final Map<String, Integer> variableTypes = new HashMap<>();
 	
-	private final Map<String, LabelType> relativeLabelAddressing = new HashMap<>();
+	private final Map<String, LabelType> labelTypes = new HashMap<>();
 	
 	private final Set<ValueParser> valueParsers = new HashSet<>();
 	
@@ -68,9 +69,9 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		segmentIdentifiers.put(identifier, segment);
 	}
 	
-	protected void enableLabels(String instructionName, LabelType type)
+	protected void addLabelType(String instructionName, LabelType type)
 	{
-		relativeLabelAddressing.put(instructionName, type);
+		labelTypes.put(instructionName, type);
 	}
 	
 	protected void addVariableType(String name, int bytesSize)
@@ -136,6 +137,37 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		}
 		
 		return false;
+	}
+	
+	private boolean isImmediateValue(String value)
+	{
+		if (value == null || value.length() == 0)
+		{
+			throw new IllegalArgumentException("Value can't be null or of length 0.");
+		}
+		
+		char first = value.charAt(0);
+		
+		String numberStartValues = "0123456789$%";
+		
+		return numberStartValues.indexOf(first) != -1;
+	}
+	
+	private String tryProcessValue(AssemblerState state, String value)
+	{
+		String constant = state.getConstants().get(value);
+		if (constant != null)
+		{
+			return constant;
+		}
+		else
+		{
+			Integer variable = state.getVariables().get(value);
+			if (variable != null)
+			{
+				return Integer.toString(variable);
+			}
+		}
 	}
 	
 	@Override
@@ -342,7 +374,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			
 			boolean implicitValue = ma.getOperandsWordsSize() == 0;
 
-			String operandValue;
+			String operandValue = null;
 			if (!implicitValue)
 			{
 				if (mam.groupCount() < 1)
@@ -352,37 +384,16 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 				
 				operandValue = mam.group(1);
 				
-				boolean finalized = false;
-				
-				String constant = state.getConstants().get(operandValue);
-				if (constant != null)
+				String processedValue = null;
+				if (!isImmediateValue(operandValue))
 				{
-					operandValue = constant;
-					finalized = true;
-				}
-				else
-				{
-					Integer variable = state.getVariables().get(operandValue);
-					if (variable != null)
-					{
-						operandValue = Integer.toString(variable);
-						finalized = true;
-					}
-					else
-					{
-						if (state.getLabels().containsKey(operandValue) && relativeLabelAddressing.containsKey(name))
-						{
-							finalized = false;
-						}
-						else
-						{
-							finalized = true;
-						}
-					}
+					processedValue = tryProcessValue(state, operandValue);
 				}
 				
-				if (finalized)
+				if (processedValue != null)
 				{
+					operandValue = processedValue;
+					
 					int bytesCount = ma.getOperandsWordsSize();
 					
 					if (!validateValue(operandValue, bytesCount))
@@ -390,10 +401,6 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 						continue;
 					}
 				}
-			}
-			else
-			{
-				operandValue = null;
 			}
 
 			int address = state.getSegmentActualAddress(Segment.PROGRAM);
@@ -431,6 +438,16 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 
 		if (parameter != null)
 		{
+			// TODO
+			/*if (isImmediateValue(parameter))
+			{
+				
+			}
+			else
+			{
+				
+			}*/
+			
 			if (state.getConstants().containsKey(parameter))
 			{
 				parameter = state.getConstants().get(parameter);
@@ -440,7 +457,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			{
 				endianness.valueToBytes(state.getVariables().get(parameter), operandValue);
 			}
-			else if (state.getLabels().containsKey(parameter) && relativeLabelAddressing.containsKey(name))
+			else if (state.getLabels().containsKey(parameter))
 			{
 				Integer labelValue = state.getLabels().get(parameter);
 				if (labelValue == null)
@@ -448,19 +465,26 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 					throw new CodeSyntaxException(record.getLine(), "Label " + parameter + " doesn't exists.");
 				}
 				
-				LabelType labelType = relativeLabelAddressing.get(name);
-				
 				int labelAddress = labelValue.intValue();
 				int programCounterAddress = state.getSegmentActualAddress(Segment.PROGRAM) + opcode.getWordsSize();
 				
-				try
+				LabelType labelType = labelTypes.get(name);
+				
+				if (labelType == null)
 				{
-					int address = labelType.getOperandValue(labelAddress, programCounterAddress);
-					endianness.valueToBytes(address, operandValue);
+					endianness.valueToBytes(labelAddress, operandValue);
 				}
-				catch (IllegalArgumentException e)
+				else
 				{
-					throw new CodeSyntaxException(record.getLine(), e.getMessage());
+					try
+					{
+						int address = labelType.getOperandValue(labelAddress, programCounterAddress);
+						endianness.valueToBytes(address, operandValue);
+					}
+					catch (IllegalArgumentException e)
+					{
+						throw new CodeSyntaxException(record.getLine(), e.getMessage());
+					}
 				}
 			}
 			else if (validateValue(parameter, ma.getOperandsWordsSize()))
@@ -504,11 +528,14 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		
 		private ByteArrayOutputStream segmentOutput[] = new ByteArrayOutputStream[SIZE];
 		private DataOutput segmentDataOutput[] = new DataOutput[SIZE];
-		
-		private final Map<String, Integer> labels = new HashMap<>();
-		private final Map<String, String> constants = new HashMap<>();
-		private final Map<String, Integer> variables = new HashMap<>();
+
 		private final List<InstructionRecord> instructions = new LinkedList<>();
+		
+		private final Map<String, NamedValueProcessor> namedValuesProcessors = new HashMap<>();
+		private final Map<String, byte[]> namedValues = new HashMap<>();
+		
+		private final NamedValueProcessor constantProcessor = new ConstantProcessor();
+		private final NamedValueProcessor variableProcessor = new VariablesProcessor();
 		
 		public AssemblerState()
 		{
@@ -521,19 +548,32 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			}
 		}
 		
-		public Map<String, Integer> getLabels()
+		public void addLabel(String name, byte address[], LabelType labelType)
 		{
-			return labels;
+			namedValuesProcessors.put(name, new LabelProcessor(labelType));
+			namedValues.put(name, address);
 		}
 		
-		public Map<String, String> getConstants()
+		public void addConstant(String name, byte value[])
 		{
-			return constants;
+			addNamed(name, value, constantProcessor);
 		}
 		
-		public Map<String, Integer> getVariables()
+		public void addVariable(String name, byte address[])
 		{
-			return variables;
+			addNamed(name, address, variableProcessor);
+		}
+		
+		private void addNamed(String name, byte value[], NamedValueProcessor processor)
+		{
+			namedValuesProcessors.put(name, processor);
+			namedValues.put(name, value);
+		}
+
+		public byte[] getValue(String name)
+		{
+			byte value[] = namedValues.get(name);
+			return namedValuesProcessors.get(name).process(this, value);
 		}
 		
 		public List<InstructionRecord> getInstructions()
@@ -582,6 +622,40 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 			for (Segment segment : Segment.values())
 			{
 				setSegmentActualAddress(segment, getSegmentStartAddress(segment));
+			}
+		}
+		
+		@FunctionalInterface
+		private interface NamedValueProcessor
+		{
+			byte[] process(AssemblerState state, String value);
+		}
+		
+		private static class ValueProcessor implements NamedValueProcessor
+		{
+			@Override
+			public byte[] process(AssemblerState state, String name)
+			{
+				return state.namedValues.get(name);
+			}
+		}
+		
+		private static class LabelProcessor implements NamedValueProcessor
+		{
+			private final LabelType labelType;
+			
+			public LabelProcessor(LabelType labelType)
+			{
+				this.labelType = labelType;
+			}
+			
+			@Override
+			public byte[] process(AssemblerState state, String value)
+			{
+				int labelAddress = Integer.valueOf(value);
+				int pcAddress = state.getSegmentActualAddress(Segment.PROGRAM);
+				
+				return labelType.getOperandValue(labelAddress, pcAddress); 
 			}
 		}
 	}
@@ -633,7 +707,7 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 	protected interface LabelType
 	{
 		int getOperandsBitsSize();
-		int getOperandValue(int labelAddress, int programCounterAddress);
+		byte[] getOperandValue(int labelAddress, int programCounterAddress);
 	}
 
 	@FunctionalInterface

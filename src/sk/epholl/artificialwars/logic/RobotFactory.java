@@ -5,6 +5,8 @@ import java.io.IOException;
 import sk.epholl.artificialwars.entities.robots.FirmwareCompiler;
 import sk.epholl.artificialwars.entities.robots.Robot;
 import sk.epholl.artificialwars.logic.RobotCreator.AbstractRobot;
+import sk.epholl.artificialwars.logic.robotcreators.Eph32RobotCreator;
+import sk.epholl.artificialwars.logic.robotcreators.TWM1608RobotCreator;
 import sk.hackcraft.artificialwars.computersim.toolchain.CodeProcessor.ProgramException;
 
 public class RobotFactory

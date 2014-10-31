@@ -59,13 +59,15 @@ public class ComputerTWM1000 extends Computer
 		A14 = 22,
 		A15 = 23,
 		RW = 24,
-		CS0 = 25,
-		CS1 = 26,
-		CS2 = 27;
+		MCS0 = 25,
+		MCS1 = 26,
+		IOCS0 = 27,
+		IOCS1 = 28;
 
-		bus.addCircuit((b) -> !b.readBusPin(A10), CS0);
-		bus.addCircuit((b) -> b.readBusPin(A10) && !b.readBusPin(A4), CS1);
-		bus.addCircuit((b) -> b.readBusPin(A10) && b.readBusPin(A4), CS2);
+		bus.addCircuit((b) -> !b.readBusPin(A10) || b.readBusPin(A15), MCS0);
+		bus.addCircuit((b) -> b.readBusPin(A15), MCS1);
+		bus.addCircuit((b) -> b.readBusPin(A10) && !b.readBusPin(A15) && !b.readBusPin(A4), IOCS0);
+		bus.addCircuit((b) -> b.readBusPin(A10) && !b.readBusPin(A15) && b.readBusPin(A4), IOCS1);
 		
 		busProbe = new BusProbe(allPinsCount, (builder, bits) -> {
 			for (int i = bits.length - 1; i >= 0; i--)
@@ -82,7 +84,7 @@ public class ComputerTWM1000 extends Computer
 				{
 					builder.append(" RW");
 				}
-				else if (i == CS2)
+				else if (i == MCS0)
 				{
 					builder.append("CS");
 				}
@@ -92,7 +94,7 @@ public class ComputerTWM1000 extends Computer
 		});
 		
 		// data(0-7), address(0-15), readwrite, chipSelect(0-2)
-		bus.connectDevice(busProbe, new int[]{D0, D1, D2, D3, D4, D5, D6, D7, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, RW, CS0, CS1, CS2});
+		bus.connectDevice(busProbe, new int[]{D0, D1, D2, D3, D4, D5, D6, D7, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, RW, MCS0, MCS1, IOCS0, IOCS1});
 		
 		processor = new ProcessorTEK1608();		
 		// readwrite, address(0-15), data(0-7)
@@ -102,19 +104,19 @@ public class ComputerTWM1000 extends Computer
 		
 		memory = new MemChip1024();
 		// readwrite, chipSelect, address(0-9), data(0-7)
-		bus.connectDevice(memory, new int[]{RW, CS0, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, D0, D1, D2, D3, D4, D5, D6, D7});
+		bus.connectDevice(memory, new int[]{RW, MCS0, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, D0, D1, D2, D3, D4, D5, D6, D7});
 		
 		memoryProbe = new MemoryProbe(memory);
 		
 		io = new MEXTIOChip();
 		// data(0-7), address(8-11), readwrite, chipSelect
-		bus.connectDevice(io, new int[]{D0, D1, D2, D3, D4, D5, D6, D7, A0, A1, A2, A3, RW, CS1});
+		bus.connectDevice(io, new int[]{D0, D1, D2, D3, D4, D5, D6, D7, A0, A1, A2, A3, RW, IOCS0});
 		
 		ioProbe = new ProbeMEXTIOChip(io);
 		
 		display = new TextLineDisplay(8);
 		// readwrite, address, data(0-7), chipSelect
-		bus.connectDevice(display, new int[]{RW, D0, D1, D2, D3, D4, D5, D6, D7, CS2});
+		bus.connectDevice(display, new int[]{RW, D0, D1, D2, D3, D4, D5, D6, D7, IOCS1});
 
 		addPart(processor);
 		addPart(memory);
