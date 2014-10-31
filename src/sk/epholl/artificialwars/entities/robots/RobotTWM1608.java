@@ -32,8 +32,6 @@ public class RobotTWM1608 extends Robot
 	
 	private final ComputerTWM1000 computer;
 	
-	private final short PROGRAM_OFFSET = 0x0200;
-	
 	private final SegmentDetector segmentDetector;
 	private final GradientDetector gradientDetector;
 	
@@ -68,7 +66,7 @@ public class RobotTWM1608 extends Robot
 	@Override
 	public void setFirmware(byte firmware[]) throws IOException
 	{
-		computer.loadFirmware(PROGRAM_OFFSET, firmware);
+		computer.loadFirmware(firmware);
 	}
 	
 	public ComputerTWM1000 getComputer()

@@ -1,5 +1,9 @@
 package sk.hackcraft.artificialwars.computersim.parts;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+
 import sk.hackcraft.artificialwars.computersim.Bus;
 import sk.hackcraft.artificialwars.computersim.Computer;
 import sk.hackcraft.artificialwars.computersim.parts.ProbeProcessorTEK1608.RegisterTEK1608;
@@ -126,13 +130,43 @@ public class ComputerTWM1000 extends Computer
 		addPart(busProbe);		
 	}
 	
-	public void loadFirmware(short pc, byte firmware[])
+	@Deprecated
+	// use some kind of persisent storage, ROM or such
+	public void loadFirmware(byte firmware[]) throws IOException
 	{
-		processorProbe.setValue(RegisterTEK1608.PC, pc);
+		ByteArrayInputStream input = new ByteArrayInputStream(firmware);
+		DataInputStream dataInput = new DataInputStream(input);
 		
 		byte memoryData[] = memory.getMemory();
 		
-		System.arraycopy(firmware, 0, memoryData, 0, firmware.length);
+		// setting address for interrupt subroutines
+		int offset = 0xFFFA;
+		byte interruptAddress[] = new byte[2];
+		
+		for (int i = 0; i < 3; i++)
+		{
+			dataInput.readFully(interruptAddress);
+			
+			System.arraycopy(interruptAddress, 0, memoryData, offset, interruptAddress.length);
+			offset += 2;
+		}
+		
+		// loading segments
+		int start, length;
+		byte data[];
+		
+		int segmentsCount = dataInput.readUnsignedByte();
+		for (int i = 0; i < segmentsCount; i++)
+		{
+			// loading program
+			start = dataInput.readUnsignedShort();
+			length = dataInput.readUnsignedShort();
+			
+			data = new byte[length];
+			dataInput.readFully(data, 0, length);
+			
+			System.arraycopy(data, 0, memoryData, start, interruptAddress.length);
+		}
 	}
 	
 	public byte getMemoryValue(int address)

@@ -26,8 +26,8 @@ import sk.hackcraft.artificialwars.computersim.toolchain.InstructionSet.Opcode;
 
 public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.AssemblerState>
 {
-	private final InstructionSet instructionSet;
-	private final Endianness endianness;
+	protected final InstructionSet instructionSet;
+	protected final Endianness endianness;
 	
 	private final Map<MemoryAddressing, Pattern> memoryAddressingFormats = new HashMap<>();
 	private final Pattern labelCatchPattern;
@@ -185,12 +185,12 @@ public abstract class AbstractAssembler extends CodeProcessor<AbstractAssembler.
 		}
 		
 		// write result
-		linkTogether(state, output);
+		export(state, output);
 		
 		finished(state);
 	}
 	
-	protected abstract void linkTogether(AssemblerState state, OutputStream output) throws LinkingException, IOException;
+	protected abstract void export(AssemblerState state, OutputStream output) throws LinkingException, IOException;
 
 	protected boolean scanDeclarations(Line line, AssemblerState state) throws CodeSyntaxException, IOException
 	{

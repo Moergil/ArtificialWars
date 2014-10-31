@@ -10,7 +10,7 @@ public class Util
 		return value >= fromInc && value < toExc;
 	}
 	
-	public static byte[] valueToLittleEndianBytes(int value, byte array[])
+	public static void valueToLittleEndianBytes(int value, byte array[])
 	{
 		int to = Math.min(array.length, Integer.BYTES);
 		for (int i = 0; i < to; i++)
@@ -18,11 +18,9 @@ public class Util
 			array[i] = (byte)value;
 			value >>>= 8;
 		}
-		
-		return array;
 	}
 	
-	public static byte[] valueToBigEndianBytes(int value, byte array[])
+	public static void valueToBigEndianBytes(int value, byte array[])
 	{
 		int from = Math.min(array.length, Integer.BYTES);
 		for (int i = from - 1; i >= 0; i--)
@@ -30,8 +28,6 @@ public class Util
 			array[i] = (byte)value;
 			value >>>= 8;
 		}
-		
-		return array;
 	}
 	
 	public static String byteArrayToHexaString(byte array[])

@@ -9,9 +9,12 @@
 ;STA $FFFF
 ;ADC $FFFF
 
-TEST:
-LDA TEST
+_NMI:
+_IRQ:
+	JMP INF ; todo, implementnut a odskusat RTI
 
-LDY #1
+_RES:
+	LDA #10
+
 INF:
 	JMP INF

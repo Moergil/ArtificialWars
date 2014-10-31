@@ -41,6 +41,15 @@ public class ProcessorTEK1608 implements Device
 
 	protected int mar;
 	
+	private interface Interrupt
+	{
+		static final int
+			NMI = 0xFFFA,
+			RES = 0xFFFC,
+			IRQ = 0xFFFE;
+	}
+	
+	
 	private interface Flag
 	{
 		static final int
@@ -1477,26 +1486,6 @@ public class ProcessorTEK1608 implements Device
 		{
 			// TODO
 			//System.out.println("Break!");
-		}
-	}
-	
-	private enum Interrupt
-	{
-		RES(1),
-		NMI(2),
-		IRQ(4),
-		BRK(8);
-		
-		private final int value;
-		
-		private Interrupt(int value)
-		{
-			this.value = value;
-		}
-		
-		public int getValue()
-		{
-			return value;
 		}
 	}
 }

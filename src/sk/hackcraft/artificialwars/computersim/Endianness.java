@@ -5,19 +5,27 @@ public enum Endianness
 	LITTLE
 	{
 		@Override
-		public byte[] valueToBytes(int value, byte[] array)
+		public void valueToBytes(int value, byte[] array)
 		{
-			return Util.valueToLittleEndianBytes(value, array);
+			Util.valueToLittleEndianBytes(value, array);
 		}
 	},
 	BIG
 	{
 		@Override
-		public byte[] valueToBytes(int value, byte[] array)
+		public void valueToBytes(int value, byte[] array)
 		{
-			return Util.valueToBigEndianBytes(value, array);
+			Util.valueToBigEndianBytes(value, array);
 		}
 	};
 	
-	public abstract byte[] valueToBytes(int value, byte array[]);
+	public abstract void valueToBytes(int value, byte array[]);
+	public byte[] valueToBytes(int value, int bytes)
+	{
+		byte array[] = new byte[bytes];
+		
+		valueToBytes(value, array);
+		
+		return array;
+	}
 }

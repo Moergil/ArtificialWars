@@ -13,7 +13,7 @@ public class ComputerTest
 		
 		byte firmware[] = FirmwareCompiler.compileFirmware("twm1608", "irq_test.asm");
 		
-		c.loadFirmware((short)0x0200, firmware);
+		c.loadFirmware(firmware);
 		
 		while (c.getProcessorProbe().getUnsignedByteValue(RegisterTEK1608.Y) != 1)
 		{

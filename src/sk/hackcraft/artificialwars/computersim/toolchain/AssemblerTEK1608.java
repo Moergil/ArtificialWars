@@ -1,7 +1,10 @@
 package sk.hackcraft.artificialwars.computersim.toolchain;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Map;
 
 import sk.hackcraft.artificialwars.computersim.Endianness;
 import sk.hackcraft.artificialwars.computersim.parts.TEK1608InstructionSet;
@@ -105,32 +108,58 @@ public class AssemblerTEK1608 extends AbstractAssembler
 	}
 	
 	@Override
-	protected void linkTogether(AssemblerState state, OutputStream output) throws IOException, LinkingException
+	protected void export(AssemblerState state, OutputStream output) throws IOException, LinkingException
 	{
-		byte offset[];
+		// NMI = 0,
+		// RES = 1,
+		// IRQ = 2;
 		
+		int addresses[] = {0xFFFA, 0xFFFC, 0xFFFE};
+		String labelsNames[] = {"_NMI", "_RES", "_IRQ"};
+		
+		Map<String, Integer> labels = state.getLabels();
+
+		for (int i = 0; i < 3; i++)
+		{
+			String labelName = labelsNames[i];
+			Integer labelAddress = labels.get(labelName);
+			
+			if (labelAddress == null)
+			{
+				throw new LinkingException("Subroutine for handling " + labelName + " interrupt is missing.");
+			}
+			
+			int address = addresses[i];
+			byte value[] = endianness.valueToBytes(address, 2);
+			
+			output.write(value);
+		}
+
 		int programStartAddress = state.getSegmentStartAddress(Segment.PROGRAM);
+		byte programStart[] = endianness.valueToBytes(programStartAddress, 2);
 		byte program[] = state.getSegmentBytes(Segment.PROGRAM);
+		byte programLength[] = endianness.valueToBytes(program.length, 2);
 		
 		int dataStartAddress = state.getSegmentStartAddress(Segment.DATA);
+		byte dataStart[] = endianness.valueToBytes(dataStartAddress, 2);
 		byte data[] = state.getSegmentBytes(Segment.DATA);
-		
-		offset = new byte[programStartAddress];
-		
-		output.write(offset);
-		output.write(program);
+		byte dataLength[] = endianness.valueToBytes(data.length, 2);
 
-		int programSegmentEnd = offset.length + program.length;
+		int programSegmentEnd = programStartAddress + program.length;
 		if (programSegmentEnd > dataStartAddress)
 		{
 			throw new LinkingException("Segments collision.");
 		}
 		
-		int gap = dataStartAddress - programSegmentEnd;
+		DataOutputStream dataOutput = new DataOutputStream(output);
+		dataOutput.writeByte(2);
 		
-		offset = new byte[gap];
+		output.write(programStart);
+		output.write(programLength);
+		output.write(program);
 		
-		output.write(offset);
+		output.write(dataStart);
+		output.write(dataLength);
 		output.write(data);
 	}
 	

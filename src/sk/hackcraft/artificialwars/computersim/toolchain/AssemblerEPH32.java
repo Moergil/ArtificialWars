@@ -70,7 +70,7 @@ public class AssemblerEPH32 extends AbstractAssembler
 	}
 	
 	@Override
-	protected void linkTogether(AssemblerState state, OutputStream output) throws LinkingException, IOException
+	protected void export(AssemblerState state, OutputStream output) throws LinkingException, IOException
 	{
 		byte program[] = state.getSegmentBytes(Segment.PROGRAM);
 		byte data[] = state.getSegmentBytes(Segment.DATA);
