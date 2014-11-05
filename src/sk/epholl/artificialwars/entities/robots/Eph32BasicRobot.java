@@ -609,8 +609,11 @@ public class Eph32BasicRobot extends Robot
 
 			int offset = (int)(LOCK_OFFSET * multiplier);
 			
-			offsetX = random.nextInt(offset * 2) - offset;
-			offsetY = random.nextInt(offset * 2) - offset;
+			if (offset > 0)
+			{
+				offsetX = random.nextInt(offset * 2) - offset;
+				offsetY = random.nextInt(offset * 2) - offset;
+			}
 		}
 		
 		regA = lockX + offsetX;

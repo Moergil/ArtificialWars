@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import javax.swing.JFrame;
 
@@ -16,6 +17,7 @@ import sk.epholl.artificialwars.entities.Spawn;
 import sk.epholl.artificialwars.entities.robots.Robot;
 import sk.epholl.artificialwars.entities.robots.StockRobotsId;
 import sk.epholl.artificialwars.graphics.ArenaPropertiesPanel;
+import sk.epholl.artificialwars.graphics.CampaignsPanel;
 import sk.epholl.artificialwars.graphics.Eph32BasicRobotDebug;
 import sk.epholl.artificialwars.graphics.ErrorWindow;
 import sk.epholl.artificialwars.graphics.GamePanel;
@@ -46,7 +48,7 @@ public class MainLogic implements Runnable
 			showMenu();
 			return;
 		}
-		
+
 		if (p.isArena())
 		{
 			if (hasAllArenaParameters(p))
@@ -228,7 +230,7 @@ public class MainLogic implements Runnable
 			});
 			
 			spawn.setCreationFailedListener((r) -> {
-				new ErrorWindow("Error", String.format("Creating robot %s failed: %s%n", robotName, r)).show();
+				new ErrorWindow("Robot creation error", String.format("Creating robot %s failed: %s%n", robotName, r)).show();
 			});
 			
 			spawn.act();
@@ -273,12 +275,35 @@ public class MainLogic implements Runnable
 				System.out.println("Can't save arena properties: " + exc.getMessage());
 			}
 			
-			String levelFileName = panel.getLevel().getFileName();
-			String robot1FileName = panel.getRobot(1).getFileName();
-			String robot2FileName = panel.getRobot(2).getFileName();
+			String levelFileName = panel.getLevelPath();
+			String robot1FileName = panel.getRobotName(1);
+			String robot2FileName = panel.getRobotName(2);
 			
-			SimulationCreatedListener listener = (simulation) -> prepareArena(simulation, robot1FileName, robot2FileName);
-			createGame(levelFileName, listener);
+			LaunchParams p = new LaunchParams();
+			
+			p.setLevelName(levelFileName);
+
+			List<String> robotsNames = p.getRobotsNames();
+			robotsNames.add(robot1FileName);
+			robotsNames.add(robot2FileName);
+			
+			createArenaGame(p);
+		});
+		
+		setScreenComponent(panel);
+	}
+	
+	public void showCampaigns()
+	{
+		CampaignsPanel panel = new CampaignsPanel();
+		
+		panel.loadAvailableCampaignFiles();
+		
+		panel.setBackListener((e) -> showMenu());
+		panel.setStartListener((e) -> {
+			String levelFileName = panel.getLevelPath();
+			
+			createMissionGame(levelFileName);
 		});
 		
 		setScreenComponent(panel);

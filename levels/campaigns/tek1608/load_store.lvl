@@ -1,0 +1,10 @@
+//obstacle posX posY
+//obstacle leftBorder rightBorder upperBorder lowerBorder
+
+//objective_units leftBorder rightBorder upperBorder lowerBorder ownerPlayer numberOfUnits opt.String "invisible"
+// ^^ whole line message.
+
+//robot red green blue player posX posY instructionFileName
+
+objective capture 550 250 300 300 0 1
+robot 255 128 128 0 200 300 player1

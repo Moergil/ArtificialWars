@@ -29,7 +29,7 @@ public class LevelLoader
 
 	public void loadLevel(String fileName) throws IOException, IllegalArgumentException
 	{
-		try (BufferedReader inputReader = new BufferedReader(new FileReader(fileName)))
+		try (BufferedReader inputReader = new BufferedReader(new FileReader("levels/" + fileName)))
 		{
 			String line;
 	

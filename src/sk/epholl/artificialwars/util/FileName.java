@@ -16,13 +16,6 @@ public class FileName
 		return "lvl".equals(getExtension(name));
 	}
 	
-	public static boolean isLevelType(String name, String type)
-	{
-		String typeInName = name.substring(0, type.length());
-		
-		return typeInName.equals(type);
-	}
-	
 	public static boolean isRobotFile(String name)
 	{
 		return "rbt".equals(getExtension(name));

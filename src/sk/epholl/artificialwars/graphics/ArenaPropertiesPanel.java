@@ -31,17 +31,17 @@ public class ArenaPropertiesPanel extends JPanel
 		PLAYER_2 = "player_2",
 		LEVEL = "level";
 
-	private final JComboBox<ComboBoxEntry> robot1FileSelect, robot2FileSelect;
-	private final JComboBox<ComboBoxEntry> levelFileSelect;
+	private final JComboBox<FileComboBoxEntry> robot1FileSelect, robot2FileSelect;
+	private final JComboBox<FileComboBoxEntry> levelFileSelect;
 	
-	private final DefaultComboBoxModel<ComboBoxEntry> robot1FileSelectListModel, robot2FileSelectListModel;
-	private final DefaultComboBoxModel<ComboBoxEntry> levelFileSelectListModel;
+	private final DefaultComboBoxModel<FileComboBoxEntry> robot1FileSelectListModel, robot2FileSelectListModel;
+	private final DefaultComboBoxModel<FileComboBoxEntry> levelFileSelectListModel;
 	
 	private JButton backButton, startButton;
 	
 	private final File propertiesFile;
 	
-	private Map<String, ComboBoxEntry> entries = new HashMap<>();
+	private Map<String, FileComboBoxEntry> entries = new HashMap<>();
 	
 	public ArenaPropertiesPanel()
 	{
@@ -140,7 +140,7 @@ public class ArenaPropertiesPanel extends JPanel
 			{
 				String robotName = getRobotName(fileName);
 				
-				ComboBoxEntry entry = new ComboBoxEntry(fileName, robotName);
+				FileComboBoxEntry entry = new FileComboBoxEntry(fileName, robotName);
 				robot1FileSelectListModel.addElement(entry);
 				robot2FileSelectListModel.addElement(entry);
 				
@@ -152,7 +152,7 @@ public class ArenaPropertiesPanel extends JPanel
 			}
 		}
 		
-		File arenaLevelFiles[] = new File(".").listFiles();
+		File arenaLevelFiles[] = new File("./levels/arena").listFiles();
 		
 		if (arenaLevelFiles == null)
 		{
@@ -168,14 +168,14 @@ public class ArenaPropertiesPanel extends JPanel
 			
 			String fileName = file.getName();
 			
-			if (!FileName.isLevelFile(fileName) || !FileName.isLevelType(fileName, "dm"))
+			if (!FileName.isLevelFile(fileName))
 			{
 				continue;
 			}
 			
 			String levelName = getLevelName(file.getName());
 			
-			ComboBoxEntry entry = new ComboBoxEntry(fileName, levelName);
+			FileComboBoxEntry entry = new FileComboBoxEntry(fileName, levelName);
 			levelFileSelectListModel.addElement(entry);
 			
 			entries.put(levelName, entry);
@@ -208,17 +208,17 @@ public class ArenaPropertiesPanel extends JPanel
 			properties.load(input);
 			
 			String player1 = properties.getProperty(PLAYER_1);
-			robot1FileSelect.setSelectedItem(getComboBoxEntry(player1));
+			robot1FileSelect.setSelectedItem(getFileComboBoxEntry(player1));
 			
 			String player2 = properties.getProperty(PLAYER_2);
-			robot2FileSelect.setSelectedItem(getComboBoxEntry(player2));
+			robot2FileSelect.setSelectedItem(getFileComboBoxEntry(player2));
 			
 			String levelName = properties.getProperty(LEVEL);
-			levelFileSelect.setSelectedItem(getComboBoxEntry(levelName));
+			levelFileSelect.setSelectedItem(getFileComboBoxEntry(levelName));
 		}
 	}
 	
-	private ComboBoxEntry getComboBoxEntry(String key)
+	private FileComboBoxEntry getFileComboBoxEntry(String key)
 	{
 		return entries.get(key);
 	}
@@ -247,22 +247,27 @@ public class ArenaPropertiesPanel extends JPanel
 		startButton.addActionListener(startListener);
 	}
 
-	public ComboBoxEntry getLevel()
+	private FileComboBoxEntry getLevel()
 	{
-		return (ComboBoxEntry)levelFileSelect.getSelectedItem();
+		return (FileComboBoxEntry)levelFileSelect.getSelectedItem();
+	}
+	
+	public String getLevelPath()
+	{
+		return "arena/" + getLevel().getName();
 	}
 
-	public ComboBoxEntry getRobot(int i)
+	private FileComboBoxEntry getRobot(int i)
 	{
-		ComboBoxEntry entry;
+		FileComboBoxEntry entry;
 		
 		switch (i)
 		{
 			case 1:
-				entry = (ComboBoxEntry)robot1FileSelect.getSelectedItem();
+				entry = (FileComboBoxEntry)robot1FileSelect.getSelectedItem();
 				break;
 			case 2:
-				entry = (ComboBoxEntry)robot2FileSelect.getSelectedItem();
+				entry = (FileComboBoxEntry)robot2FileSelect.getSelectedItem();
 				break;
 			default:
 				throw new IllegalArgumentException("Robot index is out of range: " + i);
@@ -271,30 +276,8 @@ public class ArenaPropertiesPanel extends JPanel
 		return entry;
 	}
 	
-	public static class ComboBoxEntry
+	public String getRobotName(int i)
 	{
-		private final String fileName, name;
-
-		public ComboBoxEntry(String fileName, String name)
-		{
-			this.fileName = fileName;
-			this.name = name;
-		}
-		
-		public String getFileName()
-		{
-			return fileName;
-		}
-		
-		public String getName()
-		{
-			return name;
-		}
-		
-		@Override
-		public String toString()
-		{
-			return name;
-		}
+		return getRobot(i).getName();
 	}
 }

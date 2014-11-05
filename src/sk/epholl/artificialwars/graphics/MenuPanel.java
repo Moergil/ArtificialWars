@@ -23,28 +23,12 @@ public class MenuPanel extends JPanel
 	private final ArrayList<MenuButton> buttons = new ArrayList<MenuButton>();
 
 	public MenuPanel(MainLogic mainLogic)
-	{
-		int left = 60;
-		int right = 140;
-		int y = 100;
-		int height = 30;
-		int spacing = 20;
-		for (int i = 0; i < 5; i++)
-		{
-			int levelIndex = i + 1;
-			String text = "Level " + levelIndex;
-			
-			int up = y;
-			int down = up + height;
-
-			MenuButton button = new MenuButton(left, right, up, down, text);
-			button.setActivationListener(() -> mainLogic.createMissionGame(text + ".txt"));
-			buttons.add(button);
-			
-			y = down + spacing;
-		}
+	{		
+		MenuButton campaignButton = new MenuButton(60, 140, 100, 130, "Campaign");
+		campaignButton.setActivationListener(() -> mainLogic.showCampaigns());
+		buttons.add(campaignButton);
 		
-		MenuButton arenaButton = new MenuButton(60, 140, 450, 480, "Arena");
+		MenuButton arenaButton = new MenuButton(60, 140, 150, 180, "Arena");
 		arenaButton.setActivationListener(() -> mainLogic.showArenaProperties());
 		buttons.add(arenaButton);
 		
